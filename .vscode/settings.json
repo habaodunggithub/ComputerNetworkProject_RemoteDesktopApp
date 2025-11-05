@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "functional": "cpp",
+        "system_error": "cpp",
+        "iostream": "cpp",
+        "charconv": "cpp"
+    }
+}
