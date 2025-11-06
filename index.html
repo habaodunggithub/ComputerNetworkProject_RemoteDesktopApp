@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full bg-gray-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng điều khiển Server C++</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Tùy chỉnh thanh cuộn cho đẹp hơn */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #2d3748; } /* gray-800 */
+        ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 3px; } /* gray-600 */
+        ::-webkit-scrollbar-thumb:hover { background: #718096; } /* gray-500 */
+    </style>
+</head>
+<body class="h-full text-gray-200 p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-white mb-6">Bảng điều khiển Server C++</h1>
+
+        <!-- 1. Trạng thái kết nối -->
+        <div class="mb-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+            <h2 class="text-xl font-semibold mb-2 text-white">Trạng thái kết nối</h2>
+            <div class="flex items-center space-x-2">
+                <div id="status-indicator" class="w-4 h-4 rounded-full bg-red-500 animate-pulse"></div>
+                <span id="status-text" class="text-gray-400">Chưa kết nối</span>
+            </div>
+            <input
+                type="text"
+                id="ws-url"
+                class="w-full p-2 mt-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400"
+                value="ws://127.0.0.1:9002"
+            >
+            <button id="connect-btn" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
+                Kết nối
+            </button>
+        </div>
+
+        <!-- 2. Quản lý Ứng dụng (Khởi động) -->
+        <div class="mb-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+            <h2 class="text-xl font-semibold mb-3 text-white">Khởi động Ứng dụng</h2>
+            <div class="flex flex-col sm:flex-row sm:space-x-2">
+                <input
+                    type="text"
+                    id="app-name"
+                    class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 mb-2 sm:mb-0"
+                    placeholder="Tên ứng dụng (ví dụ: notepad.exe hoặc /usr/bin/gedit)"
+                >
+                <button id="start-app-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 whitespace-nowrap">
+                    Bắt đầu Ứng dụng
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. Danh sách Ứng dụng đang chạy -->
+        <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-xl font-semibold text-white">Danh sách Ứng dụng đang chạy</h2>
+                <button id="list-apps-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
+                    Làm mới Danh sách
+                </button>
+            </div>
+            
+            <!-- Danh sách -->
+            <div id="app-list" class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
+                <p class="text-gray-500 text-center">Nhấn "Làm mới Danh sách" để xem các ứng dụng.</p>
+            </div>
+        </div>
+
+        <!-- 4. Bảng ghi (Log) -->
+        <div class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+             <h2 class="text-xl font-semibold mb-3 text-white">Log (Nhật ký)</h2>
+             <div id="log-output" class="h-32 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700 text-sm font-mono">
+                <p class="text-gray-500">Chưa có hoạt động nào...</p>
+             </div>
+        </div>
+    </div>
+
+    <!-- TOÀN BỘ JAVASCRIPT NẰM TRONG NÀY -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const wsUrlInput = document.getElementById("ws-url");
+            const connectBtn = document.getElementById("connect-btn");
+            const statusIndicator = document.getElementById("status-indicator");
+            const statusText = document.getElementById("status-text");
+            const startAppBtn = document.getElementById("start-app-btn");
+            const appNameInput = document.getElementById("app-name");
+            const listAppsBtn = document.getElementById("list-apps-btn");
+            const appListDiv = document.getElementById("app-list");
+            const logOutput = document.getElementById("log-output");
+
+            let ws = null;
+
+            function initWebSocket(url) {
+                if (ws && ws.readyState !== WebSocket.CLOSED) {
+                    ws.close();
+                }
+
+                addToLog("Đang cố gắng kết nối đến " + url, "info");
+                statusText.textContent = "Đang kết nối...";
+                statusIndicator.className = "w-4 h-4 rounded-full bg-yellow-500 animate-pulse";
+
+                try {
+                    ws = new WebSocket(url);
+                } catch (error) {
+                    addToLog("Lỗi khởi tạo WebSocket: " + error.message, "error");
+                    statusIndicator.className = "w-4 h-4 rounded-full bg-red-500";
+                    statusText.textContent = "Lỗi khởi tạo";
+                    return;
+                }
+
+                ws.onopen = () => {
+                    statusIndicator.className = "w-4 h-4 rounded-full bg-green-500";
+                    statusText.textContent = "Đã kết nối";
+                    addToLog("Kết nối WebSocket thành công!", "success");
+                    // Tự động lấy danh sách ứng dụng khi kết nối
+                    listApplications();
+                };
+
+                ws.onclose = () => {
+                    statusIndicator.className = "w-4 h-4 rounded-full bg-red-500";
+                    statusText.textContent = "Đã ngắt kết nối";
+                    addToLog("Kết nối WebSocket đã bị đóng.", "error");
+                    ws = null;
+                };
+
+                ws.onerror = (error) => {
+                    statusIndicator.className = "w-4 h-4 rounded-full bg-red-500";
+                    statusText.textContent = "Lỗi kết nối";
+                    addToLog("Lỗi WebSocket. Hãy kiểm tra console.", "error");
+                };
+
+                ws.onmessage = (event) => {
+                    console.log("Đã nhận tin nhắn:", event.data);
+                    try {
+                        const msg = JSON.parse(event.data);
+                        handleServerMessage(msg);
+                    } catch (e) {
+                        addToLog("Nhận được dữ liệu không phải JSON: " + event.data, "error");
+                    }
+                };
+            }
+
+            function handleServerMessage(msg) {
+                if (msg.type === "application_list") {
+                    displayApplications(msg.data);
+                    addToLog(`Đã nhận ${msg.data.length} ứng dụng.`, "info");
+                } else if (msg.type === "status") {
+                    addToLog(`Trạng thái: ${msg.message}`, msg.success ? "success" : "error");
+                    // Tự động làm mới danh sách sau khi có thay đổi
+                    if (msg.success) {
+                        listApplications();
+                    }
+                } else if (msg.type === "error") {
+                    addToLog(`Lỗi từ Server: ${msg.message}`, "error");
+                }
+            }
+
+            function displayApplications(apps) {
+                appListDiv.innerHTML = ""; // Xóa nội dung cũ
+
+                if (!apps || apps.length === 0) {
+                    appListDiv.innerHTML = '<p class="text-gray-500 text-center">Không có ứng dụng nào đang chạy.</p>';
+                    return;
+                }
+                
+                // Sắp xếp danh sách theo tên
+                apps.sort((a, b) => a.name.localeCompare(b.name));
+
+                const table = document.createElement("table");
+                table.className = "w-full text-left table-auto";
+                table.innerHTML = `
+                    <thead>
+                        <tr class="border-b border-gray-600">
+                            <th class="p-2">Tên Ứng dụng</th>
+                            <th class="p-2 text-center">Số tiến trình</th>
+                            <th class="p-2">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                `;
+                
+                const tbody = table.querySelector("tbody");
+                apps.forEach(app => {
+                    const tr = document.createElement("tr");
+                    tr.className = "border-b border-gray-700 hover:bg-gray-700";
+                    
+                    const nameTd = document.createElement("td");
+                    nameTd.className = "p-2";
+                    nameTd.textContent = app.name;
+                    
+                    const countTd = document.createElement("td");
+                    countTd.className = "p-2 font-mono text-center";
+                    countTd.textContent = app.process_count;
+                    
+                    const actionTd = document.createElement("td");
+                    actionTd.className = "p-2";
+                    
+                    const stopBtn = document.createElement("button");
+                    stopBtn.textContent = "Dừng";
+                    stopBtn.className = "bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition duration-200";
+                    stopBtn.onclick = () => stopApplication(app.name);
+                    
+                    actionTd.appendChild(stopBtn);
+                    tr.appendChild(nameTd);
+                    tr.appendChild(countTd);
+                    tr.appendChild(actionTd);
+                    tbody.appendChild(tr);
+                });
+
+                appListDiv.appendChild(table);
+            }
+
+            function sendCommand(cmdObject) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    addToLog("Không thể gửi lệnh: Chưa kết nối WebSocket.", "error");
+                    return;
+                }
+                const cmdString = JSON.stringify(cmdObject);
+                ws.send(cmdString);
+                // ĐÃ SỬA LỖI Ở ĐÂY (bỏ dấu "V" thừa)
+                addToLog("Đã gửi: " + cmdString, "info");
+            }
+
+            function listApplications() {
+                sendCommand({ command: "list_applications" });
+            }
+
+            function startApp() {
+                const appName = appNameInput.value.trim();
+                if (!appName) {
+                    addToLog("Tên ứng dụng không được để trống.", "error");
+                    return;
+                }
+                sendCommand({ command: "start_app", app_name: appName });
+                appNameInput.value = ""; // Xóa input sau khi gửi
+            }
+
+            function stopApplication(appName) {
+                // Tạm thời vô hiệu hóa confirm() vì nó có thể không hoạt động tốt trong mọi môi trường
+                // if (confirm(`Bạn có chắc muốn dừng TẤT CẢ tiến trình của ứng dụng "${appName}" không?`)) {
+                //     sendCommand({ command: "stop_application", app_name: appName });
+                // }
+                
+                // Gửi lệnh trực tiếp
+                 sendCommand({ command: "stop_application", app_name: appName });
+            }
+
+            function addToLog(message, type = "info") {
+                const placeholder = logOutput.querySelector("p.text-gray-500");
+                if (placeholder) {
+                    placeholder.remove();
+                }
+
+                const p = document.createElement("p");
+                const timestamp = new Date().toLocaleTimeString();
+                
+                let colorClass = "text-gray-400";
+                if (type === "success") colorClass = "text-green-400";
+                else if (type === "error") colorClass = "text-red-400";
+                else if (type === "info") colorClass = "text-blue-400";
+                
+                p.className = colorClass;
+                p.textContent = `[${timestamp}] ${message}`;
+                
+                logOutput.appendChild(p);
+                // Tự động cuộn xuống dòng mới nhất
+                logOutput.scrollTop = logOutput.scrollHeight;
+            }
+
+            // Gán sự kiện
+            connectBtn.onclick = () => initWebSocket(wsUrlInput.value.trim());
+            listAppsBtn.onclick = listApplications;
+            startAppBtn.onclick = startApp;
+
+            // Tự động kết nối khi tải trang (có thể bật nếu muốn)
+            // initWebSocket(wsUrlInput.value.trim());
+        });
+    </script>
+</body>
+</html>
