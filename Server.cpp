@@ -1,143 +1,263 @@
 #include "Server.h"
 
-// Bao gồm các thư viện cần thiết cho on_message
+#include <asio.hpp>
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
 #include <iostream>
-#include <string>
-#include "nlohmann/json.hpp" // Cần cho việc xử lý JSON
-#include "AppsManager.h"     // Cần cho các hàm (get_application_list, v.v.)
+#include <unordered_map>
+#include <vector>
 
-// Sử dụng namespace cho gọn
+// JSON
+#include <nlohmann/json.hpp>
 using json = nlohmann::json;
-using namespace std::placeholders;
+
+// Managers
+#include "AppsManager.h"    // giữ nguyên bộ lệnh app-level cũ
+#include "ProcessManager.h" // bộ lệnh process mới
+
+static std::string toLowerCopy(std::string s)
+{
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c)
+                   { return char(std::tolower(c)); });
+    return s;
+}
 
 RemoteServer::RemoteServer()
 {
-    // Thiết lập cài đặt logging (logging)
-    m_endpoint.set_error_channels(websocketpp::log::elevel::all);
-    m_endpoint.set_access_channels(websocketpp::log::alevel::all ^ websocketpp::log::alevel::frame_payload);
-
-    // Khởi tạo Asio
     m_endpoint.init_asio();
+    m_endpoint.clear_access_channels(websocketpp::log::alevel::all);
 
-    // Gán các hàm xử lý sự kiện
-    // Sử dụng std::bind để gán các hàm thành viên (member functions)
-    m_endpoint.set_open_handler(std::bind(
-        &RemoteServer::on_open,
-        this,
-        _1));
+    using websocketpp::lib::bind;
+    using websocketpp::lib::placeholders::_1;
+    using websocketpp::lib::placeholders::_2;
 
-    m_endpoint.set_close_handler(std::bind(
-        &RemoteServer::on_close,
-        this,
-        _1));
+    m_endpoint.set_open_handler(bind(&RemoteServer::on_open, this, _1));
+    m_endpoint.set_close_handler(bind(&RemoteServer::on_close, this, _1));
+    m_endpoint.set_message_handler(bind(&RemoteServer::on_message, this, _1, _2));
+}
 
-    m_endpoint.set_message_handler(std::bind(
-        &RemoteServer::on_message,
-        this,
-        _1,
-        _2));
+void RemoteServer::setAllowedProcs(const std::unordered_set<std::string> &names)
+{
+    m_procAllow.clear();
+    for (auto s : names)
+        m_procAllow.insert(toLowerCopy(std::move(s)));
+    // Đồng bộ sang ProcessManager
+    ProcessManager::setAllowList(std::vector<std::string>(m_procAllow.begin(), m_procAllow.end()));
 }
 
 void RemoteServer::run()
 {
-    uint16_t port = 9002;
-    std::cout << "WebSocket server C++ (OOP) đang lắng nghe trên cổng " << port << std::endl;
+    // Đọc token ENV (nếu có)
+    if (m_authToken.empty())
+    {
+        if (const char *tok = std::getenv("REMOTE_DESKTOP_TOKEN"))
+        {
+            m_authToken = tok;
+        }
+    }
 
-    // Lắng nghe trên cổng 9002
-    m_endpoint.listen(port);
+#if defined(_WIN32)
+    // Nếu chưa set allow-list, đặt mặc định an toàn cho demo
+    if (m_procAllow.empty())
+    {
+        setAllowedProcs({"notepad.exe", "calc.exe"});
+    }
+#endif
 
-    // Đưa vào hàng đợi một hoạt động chấp nhận kết nối
-    m_endpoint.start_accept();
-
-    // Bắt đầu vòng lặp chạy io_service của Asio
-    m_endpoint.run();
-}
-
-// --- TRIỂN KHAI CÁC HÀM XỬ LÝ SỰ KIỆN ---
-
-void RemoteServer::on_open(websocketpp::connection_hdl hdl)
-{
-    std::cout << "Client đã kết nối." << std::endl;
-    json welcome;
-    welcome["type"] = "status";
-    welcome["success"] = true;
-    welcome["message"] = "Chào mừng bạn đến với Server C++!";
+    const std::string host = "127.0.0.1";
+    const uint16_t port = 9002;
 
     try
     {
-        // Chú ý: Dùng m_endpoint (thành viên của lớp)
-        m_endpoint.send(hdl, welcome.dump(), websocketpp::frame::opcode::text);
+        asio::ip::tcp::endpoint ep(asio::ip::make_address(host), port);
+        m_endpoint.listen(ep);
+        m_endpoint.start_accept();
+
+        std::cout << "[Server] Listening on " << host << ":" << port << "\n";
+        std::cout << "[Server] Auth: " << (m_authToken.empty() ? "DISABLED" : "ENABLED") << "\n";
+
+        m_endpoint.run();
     }
-    catch (websocketpp::exception const &e)
+    catch (const std::exception &e)
     {
-        std::cerr << "Lỗi khi gửi tin nhắn chào mừng: " << e.what() << std::endl;
+        std::cerr << "[Server] listen/run error: " << e.what() << std::endl;
     }
 }
 
-void RemoteServer::on_close(websocketpp::connection_hdl hdl)
+void RemoteServer::on_open(websocketpp::connection_hdl)
 {
-    std::cout << "Client đã ngắt kết nối." << std::endl;
+    std::cout << "[WS] Client connected\n";
+}
+void RemoteServer::on_close(websocketpp::connection_hdl)
+{
+    std::cout << "[WS] Client disconnected\n";
 }
 
-void RemoteServer::on_message(websocketpp::connection_hdl hdl, server::message_ptr msg)
+bool RemoteServer::checkAuth(const std::string &token) const
 {
-    std::cout << "Nhận được tin nhắn từ client" << std::endl;
-    std::string payload = msg->get_payload();
-    json response;
+    if (m_authToken.empty())
+        return true;
+    return token == m_authToken;
+}
+
+void RemoteServer::on_message(websocketpp::connection_hdl hdl, WsServer::message_ptr msg)
+{
+    std::string out;
+    try
+    {
+        out = handleMessage(msg->get_payload());
+    }
+    catch (const std::exception &e)
+    {
+        out = json({{"type", "error"}, {"message", std::string("internal error: ") + e.what()}}).dump();
+    }
 
     try
     {
-        json j = json::parse(payload);
-        std::string command = j.value("command", "");
-
-        if (command == "list_applications")
-        {
-            response["type"] = "application_list";
-            response["data"] = get_application_list(); // Gọi hàm từ process_manager
-        }
-        else if (command == "start_app")
-        {
-            std::string app_name = j.value("app_name", "");
-            bool success = start_application(app_name); // Gọi hàm từ process_manager
-            response["type"] = "status";
-            response["success"] = success;
-            response["message"] = success ? "Đã khởi động " + app_name : "Không thể khởi động " + app_name;
-        }
-        else if (command == "stop_application")
-        {
-            std::string app_name = j.value("app_name", "");
-            bool success = stop_application(app_name); // Gọi hàm từ process_manager
-            response["type"] = "status";
-            response["success"] = success;
-            response["message"] = success ? "Đã dừng ứng dụng " + app_name : "Không thể dừng ứng dụng " + app_name;
-        }
-        else
-        {
-            response["type"] = "error";
-            response["message"] = "Lệnh không xác định: " + command;
-        }
+        m_endpoint.send(hdl, out, msg->get_opcode());
     }
-    catch (json::parse_error &e)
+    catch (const websocketpp::exception &e)
     {
-        std::cerr << "Lỗi phân tích JSON: " << e.what() << std::endl;
-        response["type"] = "error";
-        response["message"] = "Tin nhắn không phải là JSON hợp lệ.";
+        std::cerr << "[WS] send error: " << e.what() << std::endl;
     }
-    catch (std::exception &e)
-    {
-        std::cerr << "Lỗi runtime: " << e.what() << std::endl;
-        response["type"] = "error";
-        response["message"] = "Lỗi máy chủ nội bộ: " + std::string(e.what());
-    }
+}
 
-    // Gửi phản hồi lại cho client
+std::string RemoteServer::handleMessage(const std::string &payload)
+{
+    json req;
     try
     {
-        // Chú ý: Dùng m_endpoint (thành viên của lớp)
-        m_endpoint.send(hdl, response.dump(), msg->get_opcode());
+        req = json::parse(payload);
     }
-    catch (websocketpp::exception const &e)
+    catch (...)
     {
-        std::cerr << "Lỗi khi gửi tin nhắn phản hồi: " << e.what() << std::endl;
+        return json({{"type", "error"}, {"message", "invalid json"}}).dump();
     }
+
+    // Auth
+    if (!checkAuth(req.value("auth_token", "")))
+    {
+        return json({{"type", "error"}, {"message", "unauthorized"}}).dump();
+    }
+
+    // Command + alias thường gặp
+    std::string cmd = req.value("command", "");
+    std::string C = toLowerCopy(cmd);
+    if (C == "list_apps" || C == "list_app")
+        C = "list_applications";
+    if (C == "start_app" || C == "start")
+        C = "start_application";
+    if (C == "stop_app" || C == "stop")
+        C = "stop_application";
+    if (C == "list_proc" || C == "process_list")
+        C = "list_processes";
+    if (C == "kill_pid" || C == "terminate_pid")
+        C = "stop_process_pid";
+    if (C == "kill_name" || C == "stop_by_name" ||
+        C == "terminate_name")
+        C = "stop_process_name";
+
+    // ================= APPS (dùng ProcessManager để thống nhất dữ liệu) =================
+    if (C == "list_applications")
+    {
+        // Lấy toàn bộ tiến trình và group theo tên image
+        auto procs = ProcessManager::listProcesses();
+        std::unordered_map<std::string, int> cnt;
+        for (auto &p : procs)
+        {
+            if (!p.name.empty())
+                cnt[p.name] += 1;
+        }
+        std::vector<std::pair<std::string, int>> vec(cnt.begin(), cnt.end());
+        std::sort(vec.begin(), vec.end(), [](auto &a, auto &b)
+                  { return a.first < b.first; });
+
+        json arr = json::array();
+        for (auto &kv : vec)
+        {
+            arr.push_back({{"name", kv.first}, {"process_count", kv.second}});
+        }
+        return json({{"type", "application_list"}, {"data", arr}}).dump();
+    }
+
+    if (C == "start_application")
+    {
+        std::string path = req.value("app_name", ""); // UI đang gửi vào app_name
+        if (path.empty())
+        {
+            return json({{"type", "status"}, {"success", false}, {"message", "app_name required"}}).dump();
+        }
+        unsigned long pid{};
+        bool ok = ProcessManager::startProcess(path, "", &pid);
+        json res = {{"type", "status"}, {"success", ok}, {"pid", pid}};
+        if (!ok)
+            res["message"] = "failed to start (maybe not allowed?)";
+        return res.dump();
+    }
+
+    if (C == "stop_application")
+    {
+        std::string app = req.value("app_name", "");
+        int stopped = app.empty() ? 0 : ProcessManager::stopProcessesByName(app);
+        return json({{"type", "status"}, {"success", stopped > 0}, {"stopped", stopped}}).dump();
+    }
+
+    // ================= PROCESSES (ProcessManager) =================
+    if (C == "list_processes")
+    {
+        auto v = ProcessManager::listProcesses();
+        json arr = json::array();
+        for (auto &p : v)
+        {
+            arr.push_back({{"pid", p.pid},
+                           {"name", p.name},
+                           {"workingSet", p.workingSet},
+                           {"exePath", p.exePath}});
+        }
+        return json({{"type", "process_list"}, {"data", arr}}).dump();
+    }
+
+    if (C == "start_process")
+    {
+        const std::string path = req.value("path", "");
+        const std::string args = req.value("args", "");
+        if (path.empty())
+            return json({{"type", "status"}, {"success", false}, {"message", "path required"}}).dump();
+        unsigned long pid{};
+        const bool ok = ProcessManager::startProcess(path, args, &pid);
+        json res = {{"type", "status"}, {"success", ok}, {"pid", pid}};
+        if (!ok)
+            res["message"] = "failed to start (maybe not allowed?)";
+        return res.dump();
+    }
+
+    if (C == "stop_process_pid")
+    {
+        if (!req.contains("pid"))
+            return json({{"type", "status"}, {"success", false}, {"message", "pid required"}}).dump();
+        unsigned long pid = req["pid"].get<unsigned long>();
+        const bool ok = ProcessManager::stopProcessByPid(pid);
+        return json({{"type", "status"}, {"success", ok}}).dump();
+    }
+
+    if (C == "stop_process_name")
+    {
+        const std::string name = req.value("name", "");
+        if (name.empty())
+            return json({{"type", "status"}, {"success", false}, {"message", "name required"}}).dump();
+        const int stopped = ProcessManager::stopProcessesByName(name);
+        return json({{"type", "status"}, {"success", stopped > 0}, {"stopped", stopped}}).dump();
+    }
+
+    // help
+    if (C == "help")
+    {
+        return json({{"type", "help"},
+                     {"commands", {"list_applications", "start_application", "stop_application", "list_processes", "start_process", "stop_process_pid", "stop_process_name"}}})
+            .dump();
+    }
+
+    return json({{"type", "error"}, {"message", std::string("Lệnh không xác định: ") + cmd}}).dump();
 }

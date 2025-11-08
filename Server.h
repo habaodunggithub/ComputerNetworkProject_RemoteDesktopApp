@@ -1,53 +1,42 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-// -------------------------------------
+// WebSocket++ (Asio standalone)
 
-// Dòng include này PHẢI nằm SAU 2 dòng #define ở trên
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
 
-#include <functional> // Cho std::bind
+#include <string>
+#include <unordered_set>
 
-// Định nghĩa kiểu cho server
-typedef websocketpp::server<websocketpp::config::asio> server;
+using WsServer = websocketpp::server<websocketpp::config::asio>;
 
-/**
- * @class RemoteServer
- * @brief Một lớp (class) đóng gói logic của WebSocket server.
- */
-class RemoteServer
-{
+class RemoteServer {
 public:
-    /**
-     * @brief Constructor: Khởi tạo server và gán các hàm xử lý.
-     */
     RemoteServer();
 
-    /**
-     * @brief Bắt đầu chạy server (lắng nghe, chấp nhận kết nối, và chạy vòng lặp).
-     */
+    // Chạy server: bind 127.0.0.1:9002, đọc REMOTE_DESKTOP_TOKEN nếu có
     void run();
 
-private:
-    /**
-     * @brief Được gọi khi nhận được một tin nhắn.
-     * Đây là nơi tất cả logic nghiệp vụ (list/start/stop) được xử lý.
-     */
-    void on_message(websocketpp::connection_hdl hdl, server::message_ptr msg);
+    // Tuỳ chọn cấu hình trước khi run()
+    void setAuthToken(const std::string& token) { m_authToken = token; }
+    // Cho phép đặt allow-list process theo tên image (lowercase), vd: {"notepad.exe","calc.exe"}
+    void setAllowedProcs(const std::unordered_set<std::string>& names);
 
-    /**
-     * @brief Được gọi khi có một client kết nối.
-     */
+private:
+    // WS handlers
     void on_open(websocketpp::connection_hdl hdl);
-
-    /**
-     * @brief Được gọi khi một client ngắt kết nối.
-     */
     void on_close(websocketpp::connection_hdl hdl);
+    void on_message(websocketpp::connection_hdl hdl, WsServer::message_ptr msg);
+
+    // Xử lý JSON 1 request -> JSON string response
+    std::string handleMessage(const std::string& payload);
+    bool checkAuth(const std::string& token) const;
 
 private:
-    server m_endpoint; // Đối tượng server của websocketpp
+    WsServer m_endpoint;
+    std::string m_authToken;                 // rỗng => không yêu cầu auth
+    std::unordered_set<std::string> m_procAllow; // tên process cho phép (lowercase)
 };
 
 #endif // SERVER_H
