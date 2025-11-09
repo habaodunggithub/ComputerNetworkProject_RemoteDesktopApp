@@ -168,30 +168,48 @@
                 <p class="text-gray-500">Chưa có hoạt động nào...</p>
             </div>
         </div>
-        <section class="pm-card" id="pm-section" style="margin-top:16px;">
-            <div class="pm-head">
-                <h2>Danh sách Tiến trình đang chạy</h2>
-                <button id="pm-refresh" class="pm-btn">Làm mới</button>
-            </div>
 
-            <div class="pm-wrap">
-                <table class="pm-table" id="pm-table">
-                    <thead>
-                        <tr>
-                            <th>Tên tiến trình</th>
-                            <th style="width:140px;">Số tiến trình</th>
-                            <th style="width:120px;">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody><!-- render by JS --></tbody>
-                </table>
+        <!-- Khởi động Tiến trình -->
+        <div class="mb-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+            <h2 class="text-xl font-semibold mb-3 text-white">Khởi động Tiến trình</h2>
+            <div class="flex flex-col sm:flex-row sm:space-x-2">
+                <input type="text" id="proc-path"
+                    class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 mb-2 sm:mb-0"
+                    placeholder="Full path tới .exe (bắt buộc) — ví dụ: C:\Windows\System32\notepad.exe">
+                <input type="text" id="proc-args"
+                    class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 mb-2 sm:mb-0"
+                    placeholder="args (tuỳ chọn)">
+                <button id="proc-start-btn"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 whitespace-nowrap">
+                    Start Process
+                </button>
             </div>
+        </div>
 
-            <!-- tùy chọn: token riêng cho PM (nếu bạn bật auth) -->
-            <input id="pm-token" placeholder="auth token (optional)" style="
+
+        <div class="pm-head">
+            <h2>Danh sách Tiến trình đang chạy</h2>
+            <button id="pm-refresh" class="pm-btn">Làm mới</button>
+        </div>
+
+        <div class="pm-wrap">
+            <table class="pm-table" id="pm-table">
+                <thead>
+                    <tr>
+                        <th>Tên tiến trình</th>
+                        <th style="width:140px;">Số tiến trình</th>
+                        <th style="width:120px;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody><!-- render by JS --></tbody>
+            </table>
+        </div>
+
+        <!-- tùy chọn: token riêng cho PM (nếu bạn bật auth) -->
+        <input id="pm-token" placeholder="auth token (optional)" style="
       margin-top:12px;width:320px;padding:8px 10px;border:1px solid #334155;
       background:#0b1220;color:#e5e7eb;border-radius:8px;">
-        </section>
+
     </div>
 
 
@@ -207,6 +225,11 @@
             const listAppsBtn = document.getElementById("list-apps-btn");
             const appListDiv = document.getElementById("app-list");
             const logOutput = document.getElementById("log-output");
+
+            // --- START PROCESS (card riêng) ---
+            const procPath = document.getElementById("proc-path");
+            const procArgs = document.getElementById("proc-args");
+            const procStartBtn = document.getElementById("proc-start-btn");
 
             let ws = null;
 
@@ -427,6 +450,54 @@
             // --- UI refs ---
             const pmRefresh = document.getElementById("pm-refresh");
             const pmTBody = document.querySelector("#pm-table tbody");
+
+            const pmPath = document.getElementById("pm-path");
+            const pmArgs = document.getElementById("pm-args");
+            const pmStart = document.getElementById("pm-start");
+
+            // --- START PROCESS (card riêng) ---
+            const procPath = document.getElementById("proc-path");
+            const procArgs = document.getElementById("proc-args");
+            const procStartBtn = document.getElementById("proc-start-btn");
+
+            function startProcessFromCard() {
+                const path = (procPath?.value || "").trim();
+                const args = (procArgs?.value || "").trim();
+                if (!path) { addToLog("Bạn phải nhập full path tới file .exe", "error"); return; }
+                // lấy token dùng chung (nếu bạn bật auth)
+                const token = (document.getElementById("pm-token")?.value ||
+                    document.getElementById("global-token")?.value || "").trim();
+
+                // dùng webSocket đã gán global
+                if (!window.ws || window.ws.readyState !== WebSocket.OPEN) {
+                    addToLog("Không thể gửi lệnh: Chưa kết nối WebSocket.", "error"); return;
+                }
+                const cmd = { command: "start_process", path, args, auth_token: token };
+                window.ws.send(JSON.stringify(cmd));
+                addToLog("Đã gửi: " + JSON.stringify(cmd), "info");
+
+                // refresh bảng Tiến trình sau một chút
+                setTimeout(() => {
+                    window.ws && window.ws.send(JSON.stringify({ command: "list_processes", auth_token: token }));
+                }, 350);
+            }
+
+            procStartBtn?.addEventListener("click", startProcessFromCard);
+
+
+            function pmStartProcess() {
+                const path = (pmPath?.value || "").trim();
+                const args = (pmArgs?.value || "").trim();
+                if (!path) {
+                    alert("Bạn phải nhập full path tới file .exe");
+                    return;
+                }
+                sendJSON({ command: "start_process", path, args, auth_token: getToken() });
+                // làm mới danh sách sau chút xíu
+                setTimeout(() => sendJSON({ command: "list_processes", auth_token: getToken() }), 350);
+            }
+
+            pmStart?.addEventListener("click", pmStartProcess);
 
             // --- Group rows by process name: {name: count} ---
             function groupByName(rows) {
