@@ -111,7 +111,7 @@
 </head>
 
 <body class="h-full text-gray-200 p-4 md:p-8">
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-4xl mx-auto space-y-6">
         <h1 class="text-3xl font-bold text-white mb-6">Bảng điều khiển Server C++</h1>
 
         <!-- 1. Trạng thái kết nối -->
@@ -130,8 +130,17 @@
             </button>
         </div>
 
-        <!-- 2. Quản lý Ứng dụng (Khởi động) -->
-        <div class="mb-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+        <!-- 2. Bảng ghi (Log) -->
+        <div id="log-card" class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+            <h2 class="text-xl font-semibold mb-3 text-white">Log (Nhật ký)</h2>
+            <div id="log-output"
+                class="h-32 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700 text-sm font-mono">
+                <p class="text-gray-500">Chưa có hoạt động nào...</p>
+            </div>
+        </div>
+
+        <!-- 3. Quản lý Ứng dụng (Khởi động) -->
+        <div class="mt-6 mb-6 bg-gray-800 p-4 rounded-lg shadow-lg">
             <h2 class="text-xl font-semibold mb-3 text-white">Khởi động Ứng dụng</h2>
             <div class="flex flex-col sm:flex-row sm:space-x-2">
                 <input type="text" id="app-name"
@@ -144,7 +153,7 @@
             </div>
         </div>
 
-        <!-- 3. Danh sách Ứng dụng đang chạy -->
+        <!-- 4. Danh sách Ứng dụng đang chạy -->
         <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-xl font-semibold text-white">Danh sách Ứng dụng đang chạy</h2>
@@ -160,17 +169,10 @@
             </div>
         </div>
 
-        <!-- 4. Bảng ghi (Log) -->
-        <div class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
-            <h2 class="text-xl font-semibold mb-3 text-white">Log (Nhật ký)</h2>
-            <div id="log-output"
-                class="h-32 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700 text-sm font-mono">
-                <p class="text-gray-500">Chưa có hoạt động nào...</p>
-            </div>
-        </div>
 
-        <!-- Khởi động Tiến trình -->
-        <div class="mb-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+
+        <!-- 5. Khởi động Tiến trình -->
+        <div id="proc-start-card" class="mt-10 mb-6 bg-gray-800 p-4 rounded-lg shadow-lg">
             <h2 class="text-xl font-semibold mb-3 text-white">Khởi động Tiến trình</h2>
             <div class="flex flex-col sm:flex-row sm:space-x-2">
                 <input type="text" id="proc-path"
@@ -181,40 +183,46 @@
                     placeholder="args (tuỳ chọn)">
                 <button id="proc-start-btn"
                     class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 whitespace-nowrap">
-                    Start Process
+                    Bắt đầu tiến trình
                 </button>
             </div>
         </div>
 
 
-        <div class="pm-head">
-            <!-- Đặt toggle ở đây, cạnh nút Làm mới -->
-            <div class="flex items-center gap-3">
-                <label class="text-sm text-gray-400 flex items-center gap-2">
-                    <input type="checkbox" id="pm-toggle-raw">
-                    Hiển thị từng PID
-                </label>
-                <button id="pm-refresh" class="pm-btn">Làm mới</button>
+        <!-- 6. Danh sách Tiến trình đang chạy -->
+        <div id="proc-list-card" class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-xl font-semibold text-white">Danh sách Tiến trình đang chạy</h2>
+                <div class="flex items-center gap-4">
+                    <label class="text-sm text-gray-400 flex items-center gap-2">
+                        <input type="checkbox" id="pm-toggle-raw">
+                        Hiển thị từng PID
+                    </label>
+                    <button id="pm-refresh"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
+                        Làm mới
+                    </button>
+                </div>
             </div>
-        </div>
 
-        <div class="pm-wrap">
-            <table class="pm-table" id="pm-table">
-                <thead>
-                    <tr>
-                        <th>Tên tiến trình</th>
-                        <th style="width:140px;">Số tiến trình</th>
-                        <th style="width:120px;">Hành động</th>
-                    </tr>
-                </thead>
-                <tbody><!-- render by JS --></tbody>
-            </table>
-        </div>
+            <div id="pm-list" class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
+                <table class="w-full text-left table-auto" id="pm-table">
+                    <thead>
+                        <tr>
+                            <th>Tên tiến trình</th>
+                            <th style="width:140px;">Số tiến trình</th>
+                            <th style="width:120px;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody><!-- render by JS --></tbody>
+                </table>
+            </div>
 
-        <!-- tùy chọn: token riêng cho PM (nếu bạn bật auth) -->
-        <input id="pm-token" placeholder="auth token (optional)" style="
-      margin-top:12px;width:320px;padding:8px 10px;border:1px solid #334155;
-      background:#0b1220;color:#e5e7eb;border-radius:8px;">
+            <!-- token (nếu bật auth) -->
+            <input id="pm-token" placeholder="auth token (optional)" style="
+    margin-top:12px;width:320px;padding:8px 10px;border:1px solid #334155;
+    background:#0b1220;color:#e5e7eb;border-radius:8px;">
+        </div>
 
     </div>
 
@@ -263,10 +271,12 @@
                     statusText.textContent = "Đã kết nối";
                     addToLog("Kết nối WebSocket thành công!", "success");
                     // Tự động lấy danh sách ứng dụng khi kết nối
-                    try {
-                        const tok = (document.getElementById("pm-token")?.value || "").trim();
-                        window.ws && window.ws.send(JSON.stringify({ command: "list_processes", auth_token: tok }));
-                    } catch { }
+                    // try {
+                    //     const tok = (document.getElementById("pm-token")?.value || "").trim();
+                    //     const payload = { command: "list_processes", auth_token: tok };
+                    //     addToLog("Đã gửi: " + JSON.stringify(payload), "info");
+                    //     window.ws && window.ws.send(JSON.stringify(payload));
+                    // } catch { }
                     //listApplications();
                 };
 
@@ -422,6 +432,8 @@
                 logOutput.scrollTop = logOutput.scrollHeight;
             }
 
+            window.addToLog = addToLog;
+
             // Gán sự kiện
             connectBtn.onclick = () => initWebSocket(wsUrlInput.value.trim());
             listAppsBtn.onclick = listApplications;
@@ -438,7 +450,13 @@
                 return null;
             }
             function logLine(s) {
-                try { addToLog(s, "info"); } catch (e) { console.log(s); }
+                const box = document.getElementById("log-output");
+                if (!box) return;
+                const p = document.createElement("p");
+                p.className = "text-blue-400";
+                p.textContent = s;
+                box.appendChild(p);
+                box.scrollTop = box.scrollHeight;
             }
             function sendJSON(obj) {
                 const ws = getWS();
@@ -458,8 +476,8 @@
             const pmTBody = document.querySelector("#pm-table tbody");
 
             const pmThead = document.querySelector("#pm-table thead");
-            
-            const pmRawMode = document.getElementById("pm-toggle-raw"); 
+
+            const pmRawMode = document.getElementById("pm-toggle-raw");
 
 
             const pmPath = document.getElementById("pm-path");
@@ -580,6 +598,10 @@
                         if (msg?.type === "process_list" && Array.isArray(msg.data)) {
                             pmLastRows = msg.data;
                             renderPM(pmLastRows);
+
+                            if (typeof addToLog === "function") {
+                                addToLog(`Đã nhận ${pmLastRows.length} tiến trình.`, "info");
+                            }
                         }
                     } catch (_) { }
                 };
@@ -589,12 +611,13 @@
             pmRawMode?.addEventListener("change", () => renderPM(pmLastRows));
 
 
-            setInterval(() => { const ws = getWS(); if (ws) hookWS(ws); }, 500);
-            pmRawMode?.addEventListener("change", ()=> renderPM(pmLastRows));
-            
             // --- Refresh button ---
             pmRefresh?.addEventListener("click", () => {
-                sendJSON({ command: "list_processes", auth_token: getToken() });
+                const payload = { command: "list_processes", auth_token: getToken() };
+                if (typeof addToLog === "function") {
+                    addToLog("Đã gửi: " + JSON.stringify(payload), "info");
+                }
+                sendJSON(payload);
             });
 
             // (tuỳ chọn) tự refresh lần đầu sau khi kết nối

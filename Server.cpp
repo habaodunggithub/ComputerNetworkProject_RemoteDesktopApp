@@ -13,8 +13,8 @@
 using json = nlohmann::json;
 
 // Managers
-#include "AppsManager.h"    // giữ nguyên bộ lệnh app-level cũ
-#include "ProcessManager.h" // bộ lệnh process mới
+#include "AppsManager.h"    
+#include "ProcessManager.h" 
 
 static std::string toLowerCopy(std::string s)
 {
@@ -58,13 +58,9 @@ void RemoteServer::run()
         }
     }
 
-#if defined(_WIN32)
-    // Nếu chưa set allow-list, đặt mặc định an toàn cho demo
-    if (m_procAllow.empty())
-    {
-        setAllowedProcs({"notepad.exe", "calc.exe"});
-    }
-#endif
+// #if defined(_WIN32)
+//     setAllowedProcs({}); // rỗng = không giới hạn
+// #endif
 
     const std::string host = "127.0.0.1";
     const uint16_t port = 9002;
