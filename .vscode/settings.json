@@ -85,7 +85,21 @@
         "xstring": "cpp",
         "xtr1common": "cpp",
         "xtree": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "bitset": "cpp",
+        "cwctype": "cpp",
+        "unordered_set": "cpp",
+        "memory_resource": "cpp",
+        "string_view": "cpp",
+        "numbers": "cpp",
+        "ranges": "cpp",
+        "semaphore": "cpp",
+        "shared_mutex": "cpp",
+        "stack": "cpp",
+        "stdfloat": "cpp",
+        "text_encoding": "cpp",
+        "valarray": "cpp",
+        "variant": "cpp"
     },
     "cmake.sourceDirectory": "D:/Năm 2 HK1 ĐH/MMT/ComputerNetworkProject_RemoteDesktopApp/include/websocketpp"
 }

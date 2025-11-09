@@ -10,6 +10,15 @@ struct ProcessInfo {
     std::string   exePath;    // Đường dẫn đầy đủ (UTF-8) nếu lấy được
 };
 
+struct AppSummary {
+    std::string name;
+    int processCount{};
+};
+
+// Ứng dụng = process có top-level window đang hiển thị
+
+
+
 class ProcessManager {
 public:
     // ===== Allow-list theo tên image (lowercase). Rỗng => không giới hạn. =====
@@ -26,6 +35,8 @@ public:
                              unsigned long* outPid = nullptr);
     static bool stopProcessByPid(unsigned long pid, unsigned int exitCode = 1);
     static int  stopProcessesByName(const std::string& imageName);
+
+    static std::vector<AppSummary> listUserApplications();
 
 private:
     static std::string toLower(std::string s);

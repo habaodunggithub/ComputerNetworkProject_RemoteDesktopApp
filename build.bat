@@ -4,4 +4,4 @@ g++ -std=gnu++17 ^
   -I include -I include/asio-1.18.0/include -I include/websocketpp -I include/nlohmann ^
   Server.cpp main_server.cpp AppsManager.cpp ProcessManager.cpp ^
   -o server.exe ^
-  -lws2_32 -lmswsock -lpsapi -pthread
+  -lws2_32 -lmswsock -lpsapi -luser32 -pthread

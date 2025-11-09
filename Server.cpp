@@ -162,24 +162,13 @@ std::string RemoteServer::handleMessage(const std::string &payload)
     // ================= APPS (dùng ProcessManager để thống nhất dữ liệu) =================
     if (C == "list_applications")
     {
-        // Lấy toàn bộ tiến trình và group theo tên image
-        auto procs = ProcessManager::listProcesses();
-        std::unordered_map<std::string, int> cnt;
-        for (auto &p : procs)
+        auto apps = ProcessManager::listUserApplications();
+        nlohmann::json arr = nlohmann::json::array();
+        for (auto &a : apps)
         {
-            if (!p.name.empty())
-                cnt[p.name] += 1;
+            arr.push_back({{"name", a.name}, {"process_count", a.processCount}});
         }
-        std::vector<std::pair<std::string, int>> vec(cnt.begin(), cnt.end());
-        std::sort(vec.begin(), vec.end(), [](auto &a, auto &b)
-                  { return a.first < b.first; });
-
-        json arr = json::array();
-        for (auto &kv : vec)
-        {
-            arr.push_back({{"name", kv.first}, {"process_count", kv.second}});
-        }
-        return json({{"type", "application_list"}, {"data", arr}}).dump();
+        return nlohmann::json({{"type", "application_list"}, {"data", arr}}).dump();
     }
 
     if (C == "start_application")

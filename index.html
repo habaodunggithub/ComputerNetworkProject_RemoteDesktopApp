@@ -168,31 +168,32 @@
                 <p class="text-gray-500">Chưa có hoạt động nào...</p>
             </div>
         </div>
-    </div>
-    <section class="pm-card" id="pm-section" style="margin-top:16px;">
-        <div class="pm-head">
-            <h2>Danh sách Tiến trình đang chạy</h2>
-            <button id="pm-refresh" class="pm-btn">Làm mới</button>
-        </div>
+        <section class="pm-card" id="pm-section" style="margin-top:16px;">
+            <div class="pm-head">
+                <h2>Danh sách Tiến trình đang chạy</h2>
+                <button id="pm-refresh" class="pm-btn">Làm mới</button>
+            </div>
 
-        <div class="pm-wrap">
-            <table class="pm-table" id="pm-table">
-                <thead>
-                    <tr>
-                        <th>Tên tiến trình</th>
-                        <th style="width:140px;">Số tiến trình</th>
-                        <th style="width:120px;">Hành động</th>
-                    </tr>
-                </thead>
-                <tbody><!-- render by JS --></tbody>
-            </table>
-        </div>
+            <div class="pm-wrap">
+                <table class="pm-table" id="pm-table">
+                    <thead>
+                        <tr>
+                            <th>Tên tiến trình</th>
+                            <th style="width:140px;">Số tiến trình</th>
+                            <th style="width:120px;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody><!-- render by JS --></tbody>
+                </table>
+            </div>
 
-        <!-- tùy chọn: token riêng cho PM (nếu bạn bật auth) -->
-        <input id="pm-token" placeholder="auth token (optional)" style="
+            <!-- tùy chọn: token riêng cho PM (nếu bạn bật auth) -->
+            <input id="pm-token" placeholder="auth token (optional)" style="
       margin-top:12px;width:320px;padding:8px 10px;border:1px solid #334155;
       background:#0b1220;color:#e5e7eb;border-radius:8px;">
-    </section>
+        </section>
+    </div>
+
 
     <!-- TOÀN BỘ JAVASCRIPT NẰM TRONG NÀY -->
     <script>
@@ -233,7 +234,11 @@
                     statusText.textContent = "Đã kết nối";
                     addToLog("Kết nối WebSocket thành công!", "success");
                     // Tự động lấy danh sách ứng dụng khi kết nối
-                    listApplications();
+                    try {
+                        const tok = (document.getElementById("pm-token")?.value || "").trim();
+                        window.ws && window.ws.send(JSON.stringify({ command: "list_processes", auth_token: tok }));
+                    } catch { }
+                    //listApplications();
                 };
 
                 ws.onclose = () => {
@@ -404,7 +409,7 @@
                 return null;
             }
             function logLine(s) {
-                try { addToLog(s, "info"); } catch(e) { console.log(s); }
+                try { addToLog(s, "info"); } catch (e) { console.log(s); }
             }
             function sendJSON(obj) {
                 const ws = getWS();
