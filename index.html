@@ -188,8 +188,14 @@
 
 
         <div class="pm-head">
-            <h2>Danh sách Tiến trình đang chạy</h2>
-            <button id="pm-refresh" class="pm-btn">Làm mới</button>
+            <!-- Đặt toggle ở đây, cạnh nút Làm mới -->
+            <div class="flex items-center gap-3">
+                <label class="text-sm text-gray-400 flex items-center gap-2">
+                    <input type="checkbox" id="pm-toggle-raw">
+                    Hiển thị từng PID
+                </label>
+                <button id="pm-refresh" class="pm-btn">Làm mới</button>
+            </div>
         </div>
 
         <div class="pm-wrap">
@@ -451,6 +457,11 @@
             const pmRefresh = document.getElementById("pm-refresh");
             const pmTBody = document.querySelector("#pm-table tbody");
 
+            const pmThead = document.querySelector("#pm-table thead");
+            
+            const pmRawMode = document.getElementById("pm-toggle-raw"); 
+
+
             const pmPath = document.getElementById("pm-path");
             const pmArgs = document.getElementById("pm-args");
             const pmStart = document.getElementById("pm-start");
@@ -511,44 +522,76 @@
                 return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
             }
 
-            // --- Render table like screenshot ---
             function renderPM(rows) {
-                const grouped = groupByName(rows);
                 pmTBody.innerHTML = "";
-                grouped.forEach(([name, count]) => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
+                if (pmRawMode && pmRawMode.checked) {
+                    // --- CHẾ ĐỘ TỪNG PID ---
+                    pmThead.innerHTML = `
+      <tr>
+        <th>PID</th><th>Tên</th><th>RAM</th><th>Exe Path</th><th>Hành động</th>
+      </tr>`;
+                    const sorted = [...rows].sort((a, b) => {
+                        const n = (a.name || "").localeCompare(b.name || "");
+                        return n !== 0 ? n : (a.pid || 0) - (b.pid || 0);
+                    });
+                    sorted.forEach(r => {
+                        const mb = r.workingSet ? Math.round(r.workingSet / 1048576) : 0;
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+        <td>${r.pid ?? ""}</td>
+        <td>${r.name ?? ""}</td>
+        <td>${mb} MB</td>
+        <td style="max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.exePath ?? ""}</td>
+        <td><button class="pm-stop">Dừng</button></td>`;
+                        tr.querySelector(".pm-stop").onclick = () => {
+                            sendJSON({ command: "stop_process_pid", pid: r.pid, auth_token: getToken() });
+                        };
+                        pmTBody.appendChild(tr);
+                    });
+                } else {
+                    // --- CHẾ ĐỘ GỘP THEO TÊN (mặc định như hiện tại) ---
+                    pmThead.innerHTML = `
+      <tr><th>Tên tiến trình</th><th style="width:140px;">Số tiến trình</th><th style="width:120px;">Hành động</th></tr>`;
+                    const grouped = groupByName(rows);
+                    grouped.forEach(([name, count]) => {
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
         <td>${name}</td>
         <td>${count}</td>
-        <td><button class="pm-stop">Dừng</button></td>
-      `;
-                    const btn = tr.querySelector(".pm-stop");
-                    btn.onclick = () => {
-                        if (!confirm(`Dừng mọi tiến trình tên "${name}"?`)) return;
-                        sendJSON({ command: "stop_process_name", name, auth_token: getToken() });
-                    };
-                    pmTBody.appendChild(tr);
-                });
+        <td><button class="pm-stop">Dừng</button></td>`;
+                        tr.querySelector(".pm-stop").onclick = () => {
+                            if (!confirm(`Dừng mọi tiến trình tên "${name}"?`)) return;
+                            sendJSON({ command: "stop_process_name", name, auth_token: getToken() });
+                        };
+                        pmTBody.appendChild(tr);
+                    });
+                }
             }
 
-            // --- Hook vào ws.onmessage (không phá handler cũ) ---
+            // Nếu người dùng đổi chế độ, render lại dữ liệu vừa có (lưu rows cuối cùng)
+            let pmLastRows = [];
             function hookWS(ws) {
                 if (!ws || ws.__pm_hooked) return;
-                const oldOnMsg = ws.onmessage;
-                ws.onmessage = function (evt) {
-                    if (typeof oldOnMsg === "function") { try { oldOnMsg.call(ws, evt); } catch (e) { } }
+                const old = ws.onmessage;
+                ws.onmessage = (evt) => {
+                    if (typeof old === "function") try { old.call(ws, evt); } catch (_) { }
                     try {
-                        logLine("← " + evt.data);
                         const msg = JSON.parse(evt.data);
                         if (msg?.type === "process_list" && Array.isArray(msg.data)) {
-                            renderPM(msg.data);
+                            pmLastRows = msg.data;
+                            renderPM(pmLastRows);
                         }
                     } catch (_) { }
                 };
                 ws.__pm_hooked = true;
             }
-            setInterval(() => { const ws = getWS(); if (ws) hookWS(ws); }, 500);
+            setInterval(() => { const w = getWS(); if (w) hookWS(w); }, 500);
+            pmRawMode?.addEventListener("change", () => renderPM(pmLastRows));
 
+
+            setInterval(() => { const ws = getWS(); if (ws) hookWS(ws); }, 500);
+            pmRawMode?.addEventListener("change", ()=> renderPM(pmLastRows));
+            
             // --- Refresh button ---
             pmRefresh?.addEventListener("click", () => {
                 sendJSON({ command: "list_processes", auth_token: getToken() });
