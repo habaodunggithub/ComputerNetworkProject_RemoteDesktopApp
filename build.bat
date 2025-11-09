@@ -1,2 +1,0 @@
-g++ -std=c++11 -D_WEBSOCKETPP_CPP11_STL_ -D_WEBSOCKETPP_CPP11_THREAD_ -D_WEBSOCKETPP_NO_REGEX_ -I include -I include/asio-1.18.0/include Server.cpp main_server.cpp  -o server -lws2_32 -lmswsock -lpthread
-g++ -std=c++11 -D_WEBSOCKETPP_CPP11_STL_ -D_WEBSOCKETPP_CPP11_THREAD_ -D_WEBSOCKETPP_NO_REGEX_ -I include -I include/asio-1.18.0/include Client.cpp main_client.cpp  -o client -lws2_32 -lmswsock -lpthread
