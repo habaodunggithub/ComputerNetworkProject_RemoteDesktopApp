@@ -7,9 +7,37 @@
 #include <tlhelp32.h>
 #include <psapi.h>
 #include <unordered_set>
+#include <winreg.h> 
+#pragma comment(lib, "Advapi32.lib")
 #include <unordered_map>
 #include <vector>
 #pragma comment(lib, "psapi.lib")
+
+static std::wstring GetPathFromAppPaths(const std::wstring& exeName)
+{
+    std::wstring subKey = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\";
+    subKey += exeName;
+
+    wchar_t pathBuf[MAX_PATH];
+    DWORD pathSize = sizeof(pathBuf); // Kích thước tính bằng byte
+
+    LSTATUS status = RegGetValueW(
+        HKEY_LOCAL_MACHINE,
+        subKey.c_str(),
+        nullptr, // Lấy giá trị (Default)
+        RRF_RT_REG_SZ,
+        nullptr,
+        pathBuf,
+        &pathSize
+    );
+
+    if (status == ERROR_SUCCESS)
+    {
+        // pathSize là kích thước (byte) của chuỗi, đã bao gồm NULL terminator
+        return std::wstring(pathBuf, (pathSize / sizeof(wchar_t)) - 1);
+    }
+    return L""; // Không tìm thấy
+}
 
 static BOOL CALLBACK EnumWindowsCollectPids(HWND hwnd, LPARAM lParam)
 {
@@ -159,8 +187,28 @@ std::vector<ProcessInfo> ProcessManager::findByName(const std::string &imageName
 bool ProcessManager::startProcess(const std::string &path, const std::string &args, unsigned long *outPid)
 {
 #if defined(_WIN32)
-    // Lấy tên image từ path để kiểm allow-list
-    std::string imageName = path;
+    std::string finalPath = path; // Path cuối cùng để thực thi
+
+    // 1. KIỂM TRA REGISTRY 'APP PATHS' (THAY ĐỔI CHÍNH NẰM Ở ĐÂY)
+    // Nếu path là tên đơn giản (không chứa \ hoặc /)
+    if (path.find_first_of("\\/") == std::string::npos)
+    {
+        std::wstring wExeName = Utf8ToWide(path);
+        std::wstring wAppPath = GetPathFromAppPaths(wExeName);
+
+        if (!wAppPath.empty())
+        {
+            // Tìm thấy trong App Paths! Dùng đường dẫn đầy đủ này.
+            finalPath = WideToUtf8(wAppPath);
+        }
+        // Nếu không tìm thấy, chúng ta vẫn tiếp tục với 'path' gốc (ví dụ: notepad.exe)
+        // để CreateProcessW tự tìm trong PATH hệ thống.
+    }
+    // KẾT THÚC THAY ĐỔI
+
+
+    // Lấy tên image từ finalPath để kiểm allow-list
+    std::string imageName = finalPath;
     {
         const auto pos = imageName.find_last_of("\\/");
         if (pos != std::string::npos)
@@ -171,7 +219,7 @@ bool ProcessManager::startProcess(const std::string &path, const std::string &ar
     // Build command line: L"\"C:\path\app.exe\" args"
     std::wstring wcmd;
     {
-        std::wstring wpath = Utf8ToWide(path);
+        std::wstring wpath = Utf8ToWide(finalPath); // Dùng finalPath
         std::wstring wargs = Utf8ToWide(args);
         wcmd.reserve(wpath.size() + wargs.size() + 4);
         wcmd.append(L"\"");
