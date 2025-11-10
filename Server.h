@@ -8,20 +8,23 @@
 
 #include <string>
 #include <unordered_set>
+#include <cstdint>
 
 using WsServer = websocketpp::server<websocketpp::config::asio>;
 
-class RemoteServer {
+class RemoteServer
+{
 public:
     RemoteServer();
+    ~RemoteServer();
 
     // Chạy server: bind 127.0.0.1:9002, đọc REMOTE_DESKTOP_TOKEN nếu có
     void run();
 
     // Tuỳ chọn cấu hình trước khi run()
-    void setAuthToken(const std::string& token) { m_authToken = token; }
+    void setAuthToken(const std::string &token) { m_authToken = token; }
     // Cho phép đặt allow-list process theo tên image (lowercase), vd: {"notepad.exe","calc.exe"}
-    void setAllowedProcs(const std::unordered_set<std::string>& names);
+    void setAllowedProcs(const std::unordered_set<std::string> &names);
 
 private:
     // WS handlers
@@ -30,13 +33,16 @@ private:
     void on_message(websocketpp::connection_hdl hdl, WsServer::message_ptr msg);
 
     // Xử lý JSON 1 request -> JSON string response
-    std::string handleMessage(const std::string& payload);
-    bool checkAuth(const std::string& token) const;
+    std::string handleMessage(const std::string &payload);
+    bool checkAuth(const std::string &token) const;
 
 private:
     WsServer m_endpoint;
-    std::string m_authToken;                 // rỗng => không yêu cầu auth
+    std::string m_authToken;                     // rỗng => không yêu cầu auth
     std::unordered_set<std::string> m_procAllow; // tên process cho phép (lowercase)
+#ifdef _WIN32
+    uintptr_t m_gdiplusToken; // <--- THÊM BIẾN NÀY (dùng uintptr_t cho an toàn)
+#endif
 };
 
 #endif // SERVER_H

@@ -8,13 +8,23 @@
 #include <unordered_map>
 #include <vector>
 
+// --- THÊM CÁC INCLUDE CHO GDI+ ---
+#ifdef _WIN32
+#include <windows.h>
+#include <objidl.h>
+#include <gdiplus.h>
+#pragma comment(lib, "Gdiplus.lib")
+using namespace Gdiplus;
+#endif
+
 // JSON
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-// Managers
-#include "AppsManager.h"    
-#include "ProcessManager.h" 
+// Functional modules
+#include "AppsManager.h"
+#include "ProcessManager.h"
+#include "Capture.h"
 
 static std::string toLowerCopy(std::string s)
 {
@@ -25,7 +35,21 @@ static std::string toLowerCopy(std::string s)
 }
 
 RemoteServer::RemoteServer()
+#ifdef _WIN32
+    : m_gdiplusToken(0) // Khởi tạo token = 0
+#endif
 {
+    // --- KHỞI TẠO GDI+ MỘT LẦN DUY NHẤT ---
+#ifdef _WIN32
+    GdiplusStartupInput gdiplusStartupInput;
+    // Dùng (ULONG_PTR*) để ép kiểu từ uintptr_t*
+    if (GdiplusStartup((ULONG_PTR *)&m_gdiplusToken, &gdiplusStartupInput, nullptr) != Ok)
+    {
+        std::cerr << "!!! LỖI NGHIÊM TRỌNG: Không thể khởi tạo GDI+ !!!\n";
+    }
+#endif
+    // --- KẾT THÚC KHỞI TẠO ---
+
     m_endpoint.init_asio();
     m_endpoint.clear_access_channels(websocketpp::log::alevel::all);
 
@@ -37,6 +61,19 @@ RemoteServer::RemoteServer()
     m_endpoint.set_close_handler(bind(&RemoteServer::on_close, this, _1));
     m_endpoint.set_message_handler(bind(&RemoteServer::on_message, this, _1, _2));
 }
+
+// --- THÊM DESTRUCTOR ---
+RemoteServer::~RemoteServer()
+{
+#ifdef _WIN32
+    // Tắt GDI+ MỘT LẦN DUY NHẤT
+    if (m_gdiplusToken)
+    {
+        GdiplusShutdown(m_gdiplusToken);
+    }
+#endif
+}
+// --- KẾT THÚC THÊM ---
 
 void RemoteServer::setAllowedProcs(const std::unordered_set<std::string> &names)
 {
@@ -58,9 +95,9 @@ void RemoteServer::run()
         }
     }
 
-// #if defined(_WIN32)
-//     setAllowedProcs({}); // rỗng = không giới hạn
-// #endif
+    // #if defined(_WIN32)
+    //     setAllowedProcs({}); // rỗng = không giới hạn
+    // #endif
 
     const std::string host = "127.0.0.1";
     const uint16_t port = 9002;
@@ -234,6 +271,16 @@ std::string RemoteServer::handleMessage(const std::string &payload)
             return json({{"type", "status"}, {"success", false}, {"message", "name required"}}).dump();
         const int stopped = ProcessManager::stopProcessesByName(name);
         return json({{"type", "status"}, {"success", stopped > 0}, {"stopped", stopped}}).dump();
+    }
+
+    if (C == "capture_screen" || C == "screenshot")
+    {
+        std::string imgBase64 = capture_screenshot_base64();
+        if (imgBase64.empty())
+        {
+            return json({{"type", "status"}, {"success", false}, {"message", "Capture failed"}}).dump();
+        }
+        return json({{"type", "screenshot"}, {"success", true}, {"data", imgBase64}}).dump();
     }
 
     // help

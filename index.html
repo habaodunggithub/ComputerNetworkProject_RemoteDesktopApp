@@ -224,6 +224,16 @@
     background:#0b1220;color:#e5e7eb;border-radius:8px;">
         </div>
 
+        <!-- 7. Screenshot -->
+        <div class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+            <h2 class="text-xl font-semibold text-white mb-3">Chụp màn hình Server</h2>
+            <button id="btn-capture" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
+                Chụp màn hình
+            </button>
+            <div class="mt-4" id="screenshot-result"></div>
+        </div>
+
+
     </div>
 
 
@@ -244,6 +254,8 @@
             const procPath = document.getElementById("proc-path");
             const procArgs = document.getElementById("proc-args");
             const procStartBtn = document.getElementById("proc-start-btn");
+            const btnCapture = document.getElementById("btn-capture");
+            btnCapture.onclick = () => sendCommand({ command: "capture_screen" });
 
             let ws = null;
 
@@ -314,7 +326,17 @@
                     if (msg.success) {
                         listApplications();
                     }
-                } else if (msg.type === "error") {
+                }
+                else if (msg.type === "screenshot") {
+                    const img = document.createElement("img");
+                    img.src = "data:image/png;base64," + msg.data;
+                    img.className = "mt-3 border border-gray-700 rounded";
+                    img.style.maxWidth = "100%";
+                    document.getElementById("screenshot-result").innerHTML = "";
+                    document.getElementById("screenshot-result").appendChild(img);
+                    addToLog("Đã nhận ảnh chụp màn hình.", "success");
+                }
+                else if (msg.type === "error") {
                     addToLog(`Lỗi từ Server: ${msg.message}`, "error");
                 }
             }
@@ -462,7 +484,15 @@
                 const ws = getWS();
                 if (!ws) { alert("WebSocket chưa kết nối"); return; }
                 const txt = JSON.stringify(obj);
-                logLine("→ " + txt);
+
+                if (typeof addToLog === "function") {
+                    // Dùng "info" để có màu xanh dương
+                    addToLog("Đã gửi: " + txt, "info");
+                } else {
+                    // Fallback phòng trường hợp addToLog chưa được khởi tạo
+                    logLine("→ " + txt);
+                }
+
                 ws.send(txt);
             }
             function getToken() {
@@ -614,9 +644,6 @@
             // --- Refresh button ---
             pmRefresh?.addEventListener("click", () => {
                 const payload = { command: "list_processes", auth_token: getToken() };
-                if (typeof addToLog === "function") {
-                    addToLog("Đã gửi: " + JSON.stringify(payload), "info");
-                }
                 sendJSON(payload);
             });
 
