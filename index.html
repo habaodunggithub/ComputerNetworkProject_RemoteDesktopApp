@@ -6,656 +6,309 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bảng điều khiển Server C++</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-
-        /* Tùy chỉnh thanh cuộn cho đẹp hơn */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #2d3748;
-        }
-
-        /* gray-800 */
-        ::-webkit-scrollbar-thumb {
-            background: #4a5568;
-            border-radius: 3px;
-        }
-
-        /* gray-600 */
-        ::-webkit-scrollbar-thumb:hover {
-            background: #718096;
-        }
-
-        /* gray-500 */
-        /* ===== Process Manager ===== */
-        .pm-card {
-            background: #0f172a;
-            border: 1px solid #243044;
-            border-radius: 12px;
-            padding: 16px;
-        }
-
-        .pm-card h2 {
-            margin: 0;
-            font-size: 18px;
-            color: #e5e7eb;
-        }
-
-        .pm-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-
-        .pm-btn {
-            padding: 8px 14px;
-            border-radius: 10px;
-            border: 1px solid #4f46e5;
-            background: #6366f1;
-            color: white;
-            cursor: pointer;
-        }
-
-        .pm-btn:hover {
-            filter: brightness(0.95);
-        }
-
-        .pm-stop {
-            padding: 4px 10px;
-            border-radius: 8px;
-            background: #dc2626;
-            color: white;
-            border: 1px solid #b91c1c;
-            cursor: pointer;
-        }
-
-        .pm-stop:hover {
-            filter: brightness(0.95);
-        }
-
-        .pm-wrap {
-            border: 1px solid #243044;
-            border-radius: 10px;
-            overflow: auto;
-            max-height: 450px;
-        }
-
-        .pm-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            font-size: 14px;
-            color: #e5e7eb;
-        }
-
-        .pm-table th,
-        .pm-table td {
-            padding: 12px 14px;
-            border-bottom: 1px solid #1f2a3d;
-        }
-
-        .pm-table thead th {
-            position: sticky;
-            top: 0;
-            background: #0b1220;
-            text-align: left;
-        }
-    </style>
-
 </head>
 
 <body class="h-full text-gray-200 p-4 md:p-8">
     <div class="max-w-4xl mx-auto space-y-6">
         <h1 class="text-3xl font-bold text-white mb-6">Bảng điều khiển Server C++</h1>
 
-        <!-- 1. Trạng thái kết nối -->
+        <!-- TRẠNG THÁI KẾT NỐI -->
         <div class="mb-6 bg-gray-800 p-4 rounded-lg shadow-lg">
             <h2 class="text-xl font-semibold mb-2 text-white">Trạng thái kết nối</h2>
+
             <div class="flex items-center space-x-2">
                 <div id="status-indicator" class="w-4 h-4 rounded-full bg-red-500 animate-pulse"></div>
                 <span id="status-text" class="text-gray-400">Chưa kết nối</span>
             </div>
+
             <input type="text" id="ws-url"
-                class="w-full p-2 mt-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400"
-                value="ws://127.0.0.1:9002">
+                   class="w-full p-2 mt-3 bg-gray-700 border border-gray-600 rounded-md text-white"
+                   value="ws://127.0.0.1:9002">
             <button id="connect-btn"
-                class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
+                    class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">
                 Kết nối
             </button>
         </div>
 
-        <!-- 2. Bảng ghi (Log) -->
-        <div id="log-card" class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+        <!-- LOG -->
+        <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
             <h2 class="text-xl font-semibold mb-3 text-white">Log (Nhật ký)</h2>
             <div id="log-output"
-                class="h-32 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700 text-sm font-mono">
+                 class="h-32 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700 text-sm font-mono">
                 <p class="text-gray-500">Chưa có hoạt động nào...</p>
             </div>
         </div>
 
-        <!-- 3. Quản lý Ứng dụng (Khởi động) -->
-        <div class="mt-6 mb-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+        <!-- KHỞI ĐỘNG ỨNG DỤNG -->
+        <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
             <h2 class="text-xl font-semibold mb-3 text-white">Khởi động Ứng dụng</h2>
             <div class="flex flex-col sm:flex-row sm:space-x-2">
                 <input type="text" id="app-name"
-                    class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 mb-2 sm:mb-0"
-                    placeholder="Tên ứng dụng (ví dụ: notepad.exe hoặc /usr/bin/gedit)">
+                       class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                       placeholder="notepad.exe">
                 <button id="start-app-btn"
-                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 whitespace-nowrap">
+                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
                     Bắt đầu Ứng dụng
                 </button>
             </div>
         </div>
 
-        <!-- 4. Danh sách Ứng dụng đang chạy -->
+        <!-- DANH SÁCH ỨNG DỤNG -->
         <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-xl font-semibold text-white">Danh sách Ứng dụng đang chạy</h2>
+
                 <button id="list-apps-btn"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
-                    Làm mới Danh sách
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
+                    Làm mới
                 </button>
             </div>
 
-            <!-- Danh sách -->
-            <div id="app-list" class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
-                <p class="text-gray-500 text-center">Nhấn "Làm mới Danh sách" để xem các ứng dụng.</p>
+            <div id="app-list"
+                 class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
+                <p class="text-gray-500 text-center">Nhấn "Làm mới" để xem danh sách.</p>
             </div>
         </div>
 
-
-
-        <!-- 5. Khởi động Tiến trình -->
-        <div id="proc-start-card" class="mt-10 mb-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+        <!-- KHỞI ĐỘNG TIẾN TRÌNH -->
+        <div class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
             <h2 class="text-xl font-semibold mb-3 text-white">Khởi động Tiến trình</h2>
             <div class="flex flex-col sm:flex-row sm:space-x-2">
                 <input type="text" id="proc-path"
-                    class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 mb-2 sm:mb-0"
-                    placeholder="Full path tới .exe (bắt buộc) — ví dụ: C:\Windows\System32\notepad.exe">
+                       class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                       placeholder="C:\\Windows\\System32\\notepad.exe">
                 <input type="text" id="proc-args"
-                    class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 mb-2 sm:mb-0"
-                    placeholder="args (tuỳ chọn)">
+                       class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                       placeholder="args (optional)">
                 <button id="proc-start-btn"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 whitespace-nowrap">
-                    Bắt đầu tiến trình
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
+                    Bắt đầu Tiến trình
                 </button>
             </div>
         </div>
 
-
-        <!-- 6. Danh sách Tiến trình đang chạy -->
-        <div id="proc-list-card" class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+        <!-- DANH SÁCH TIẾN TRÌNH -->
+        <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
             <div class="flex justify-between items-center mb-3">
-                <h2 class="text-xl font-semibold text-white">Danh sách Tiến trình đang chạy</h2>
-                <div class="flex items-center gap-4">
-                    <label class="text-sm text-gray-400 flex items-center gap-2">
-                        <input type="checkbox" id="pm-toggle-raw">
-                        Hiển thị từng PID
-                    </label>
-                    <button id="pm-refresh"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
-                        Làm mới
-                    </button>
-                </div>
+                <h2 class="text-xl font-semibold text-white">Danh sách Tiến trình</h2>
+
+                <button id="pm-refresh"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
+                    Làm mới
+                </button>
             </div>
 
-            <div id="pm-list" class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
+            <div id="pm-list"
+                 class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
                 <table class="w-full text-left table-auto" id="pm-table">
-                    <thead>
-                        <tr>
-                            <th>Tên tiến trình</th>
-                            <th style="width:140px;">Số tiến trình</th>
-                            <th style="width:120px;">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody><!-- render by JS --></tbody>
+                    <thead></thead>
+                    <tbody>
+                        <tr><td class="text-gray-500 text-center p-4">Nhấn "Làm mới".</td></tr>
+                    </tbody>
                 </table>
             </div>
-
-            <!-- token (nếu bật auth) -->
-            <input id="pm-token" placeholder="auth token (optional)" style="
-    margin-top:12px;width:320px;padding:8px 10px;border:1px solid #334155;
-    background:#0b1220;color:#e5e7eb;border-radius:8px;">
         </div>
 
-        <!-- 7. Screenshot -->
+        <!-- SCREENSHOT -->
         <div class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
             <h2 class="text-xl font-semibold text-white mb-3">Chụp màn hình Server</h2>
-            <button id="btn-capture" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
+            <button id="btn-capture"
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
                 Chụp màn hình
             </button>
-            <div class="mt-4" id="screenshot-result"></div>
+            <div id="screenshot-result" class="mt-4"></div>
         </div>
-
-
     </div>
 
-
-    <!-- TOÀN BỘ JAVASCRIPT NẰM TRONG NÀY -->
+    <!-- ========================== JAVASCRIPT =========================== -->
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const wsUrlInput = document.getElementById("ws-url");
-            const connectBtn = document.getElementById("connect-btn");
-            const statusIndicator = document.getElementById("status-indicator");
-            const statusText = document.getElementById("status-text");
-            const startAppBtn = document.getElementById("start-app-btn");
-            const appNameInput = document.getElementById("app-name");
-            const listAppsBtn = document.getElementById("list-apps-btn");
-            const appListDiv = document.getElementById("app-list");
-            const logOutput = document.getElementById("log-output");
+        let ws = null;
+        let processes = [];
 
-            // --- START PROCESS (card riêng) ---
-            const procPath = document.getElementById("proc-path");
-            const procArgs = document.getElementById("proc-args");
-            const procStartBtn = document.getElementById("proc-start-btn");
-            const btnCapture = document.getElementById("btn-capture");
-            btnCapture.onclick = () => sendCommand({ command: "capture_screen" });
+        const ui = {
+            url: document.getElementById("ws-url"),
+            connect: document.getElementById("connect-btn"),
+            status: document.getElementById("status-text"),
+            indicator: document.getElementById("status-indicator"),
+            log: document.getElementById("log-output"),
 
-            let ws = null;
+            appName: document.getElementById("app-name"),
+            startApp: document.getElementById("start-app-btn"),
+            listApps: document.getElementById("list-apps-btn"),
+            appList: document.getElementById("app-list"),
 
-            function initWebSocket(url) {
-                if (ws && ws.readyState !== WebSocket.CLOSED) {
-                    ws.close();
-                }
+            procPath: document.getElementById("proc-path"),
+            procArgs: document.getElementById("proc-args"),
+            startProc: document.getElementById("proc-start-btn"),
 
-                addToLog("Đang cố gắng kết nối đến " + url, "info");
-                statusText.textContent = "Đang kết nối...";
-                statusIndicator.className = "w-4 h-4 rounded-full bg-yellow-500 animate-pulse";
+            pmRefresh: document.getElementById("pm-refresh"),
+            pmTable: document.getElementById("pm-table"),
 
-                try {
-                    ws = new WebSocket(url);
-                    window.ws = ws;
-                } catch (error) {
-                    addToLog("Lỗi khởi tạo WebSocket: " + error.message, "error");
-                    statusIndicator.className = "w-4 h-4 rounded-full bg-red-500";
-                    statusText.textContent = "Lỗi khởi tạo";
-                    return;
-                }
+            capture: document.getElementById("btn-capture"),
+            screenshot: document.getElementById("screenshot-result")
+        };
 
-                ws.onopen = () => {
-                    statusIndicator.className = "w-4 h-4 rounded-full bg-green-500";
-                    statusText.textContent = "Đã kết nối";
-                    addToLog("Kết nối WebSocket thành công!", "success");
-                    // Tự động lấy danh sách ứng dụng khi kết nối
-                    // try {
-                    //     const tok = (document.getElementById("pm-token")?.value || "").trim();
-                    //     const payload = { command: "list_processes", auth_token: tok };
-                    //     addToLog("Đã gửi: " + JSON.stringify(payload), "info");
-                    //     window.ws && window.ws.send(JSON.stringify(payload));
-                    // } catch { }
-                    //listApplications();
-                };
+        function log(msg, type = "info") {
+            const p = document.createElement("p");
+            const t = new Date().toLocaleTimeString();
 
-                ws.onclose = () => {
-                    statusIndicator.className = "w-4 h-4 rounded-full bg-red-500";
-                    statusText.textContent = "Đã ngắt kết nối";
-                    addToLog("Kết nối WebSocket đã bị đóng.", "error");
-                    ws = null;
-                };
+            p.className =
+                type === "error" ? "text-red-400" :
+                type === "success" ? "text-green-400" :
+                "text-blue-400";
 
-                ws.onerror = (error) => {
-                    statusIndicator.className = "w-4 h-4 rounded-full bg-red-500";
-                    statusText.textContent = "Lỗi kết nối";
-                    addToLog("Lỗi WebSocket. Hãy kiểm tra console.", "error");
-                };
+            p.textContent = `[${t}] ${msg}`;
+            ui.log.appendChild(p);
+            ui.log.scrollTop = ui.log.scrollHeight;
+        }
 
-                ws.onmessage = (event) => {
-                    console.log("Đã nhận tin nhắn:", event.data);
-                    try {
-                        const msg = JSON.parse(event.data);
-                        handleServerMessage(msg);
-                    } catch (e) {
-                        addToLog("Nhận được dữ liệu không phải JSON: " + event.data, "error");
-                    }
-                };
+        function connectWS() {
+            const url = ui.url.value.trim();
+            if (!url) return;
+
+            log(`Đang kết nối đến ${url}...`);
+            ui.status.textContent = "Đang kết nối...";
+            ui.indicator.className = "w-4 h-4 rounded-full bg-yellow-500 animate-pulse";
+
+            ws = new WebSocket(url);
+
+            ws.onopen = () => {
+                ui.indicator.className = "w-4 h-4 rounded-full bg-green-500";
+                ui.status.textContent = "Đã kết nối";
+                log("Kết nối WebSocket thành công!", "success");
+            };
+
+            ws.onclose = () => {
+                ui.indicator.className = "w-4 h-4 rounded-full bg-red-500";
+                ui.status.textContent = "Đã ngắt kết nối";
+                log("Kết nối WebSocket đã bị đóng.", "error");
+            };
+
+            ws.onerror = () => {
+                ui.indicator.className = "w-4 h-4 rounded-full bg-red-500";
+                ui.status.textContent = "Lỗi kết nối";
+                log("Lỗi WebSocket.", "error");
+            };
+
+            ws.onmessage = handleMessage;
+        }
+
+        function send(cmd) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log("Không thể gửi: Chưa kết nối WebSocket.", "error");
+                return;
+            }
+            ws.send(JSON.stringify(cmd));
+            log("Đã gửi: " + JSON.stringify(cmd), "info");
+        }
+
+        function handleMessage(event) {
+            let msg;
+            try { msg = JSON.parse(event.data); }
+            catch { return log("Dữ liệu không phải JSON", "error"); }
+
+            switch (msg.type) {
+                case "application_list":
+                    renderAppList(msg.data);
+                    break;
+
+                case "process_list":
+                    processes = msg.data;
+                    renderProcessTable();
+                    break;
+
+                case "screenshot":
+                    ui.screenshot.innerHTML =
+                        `<img src="data:image/png;base64,${msg.data}" class="max-w-full rounded border border-gray-700">`;
+                    break;
+
+                case "status":
+                    log(msg.message || (msg.success ?
+                        "Thành công" : "Thất bại"), msg.success ? "success" : "error");
+                    break;
+
+                case "error":
+                    log("Server lỗi: " + msg.message, "error");
+                    break;
+            }
+        }
+
+        function renderAppList(data) {
+            if (!data || data.length === 0) {
+                ui.appList.innerHTML = `<p class="text-gray-500 text-center">Không có ứng dụng nào.</p>`;
+                return;
             }
 
-            function handleServerMessage(msg) {
-                if (msg.type === "application_list") {
-                    displayApplications(msg.data);
-                    addToLog(`Đã nhận ${msg.data.length} ứng dụng.`, "info");
-                } else if (msg.type === "status") {
-                    addToLog(`Trạng thái: ${msg.message}`, msg.success ? "success" : "error");
-                    // Tự động làm mới danh sách sau khi có thay đổi
-                    if (msg.success) {
-                        listApplications();
-                    }
-                }
-                else if (msg.type === "screenshot") {
-                    const img = document.createElement("img");
-                    img.src = "data:image/png;base64," + msg.data;
-                    img.className = "mt-3 border border-gray-700 rounded";
-                    img.style.maxWidth = "100%";
-                    document.getElementById("screenshot-result").innerHTML = "";
-                    document.getElementById("screenshot-result").appendChild(img);
-                    addToLog("Đã nhận ảnh chụp màn hình.", "success");
-                }
-                else if (msg.type === "error") {
-                    addToLog(`Lỗi từ Server: ${msg.message}`, "error");
-                }
+            let html = `<table class="w-full text-left">
+                <thead>
+                    <tr class="border-b border-gray-600">
+                        <th class="p-2">Tên</th>
+                        <th class="p-2">Số tiến trình</th>
+                        <th class="p-2">Hành động</th>
+                    </tr>
+                </thead><tbody>`;
+
+            for (const app of data) {
+                html += `
+                    <tr class="border-b border-gray-800">
+                        <td class="p-2">${app.name}</td>
+                        <td class="p-2">${app.process_count}</td>
+                        <td class="p-2">
+                            <button class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
+                                    onclick='send({command:"stop_application",app_name:"${app.name}"})'>
+                                Dừng
+                            </button>
+                        </td>
+                    </tr>`;
             }
 
-            function displayApplications(apps) {
-                appListDiv.innerHTML = ""; // Xóa nội dung cũ
+            html += "</tbody></table>";
+            ui.appList.innerHTML = html;
+        }
 
-                if (!apps || apps.length === 0) {
-                    appListDiv.innerHTML = '<p class="text-gray-500 text-center">Không có ứng dụng nào đang chạy.</p>';
-                    return;
-                }
-
-                // Sắp xếp danh sách theo tên
-                apps.sort((a, b) => a.name.localeCompare(b.name));
-
-                const table = document.createElement("table");
-                table.className = "w-full text-left table-auto";
-                table.innerHTML = `
-                    <thead>
-                        <tr class="border-b border-gray-600">
-                            <th class="p-2">Tên Ứng dụng</th>
-                            <th class="p-2 text-center">Số tiến trình</th>
-                            <th class="p-2">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                `;
-
-                const tbody = table.querySelector("tbody");
-                apps.forEach(app => {
-                    const tr = document.createElement("tr");
-                    tr.className = "border-b border-gray-700 hover:bg-gray-700";
-
-                    const nameTd = document.createElement("td");
-                    nameTd.className = "p-2";
-                    nameTd.textContent = app.name;
-
-                    const countTd = document.createElement("td");
-                    countTd.className = "p-2 font-mono text-center";
-                    countTd.textContent = app.process_count;
-
-                    const actionTd = document.createElement("td");
-                    actionTd.className = "p-2";
-
-                    const stopBtn = document.createElement("button");
-                    stopBtn.textContent = "Dừng";
-                    stopBtn.className = "bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition duration-200";
-                    stopBtn.onclick = () => stopApplication(app.name);
-
-                    actionTd.appendChild(stopBtn);
-                    tr.appendChild(nameTd);
-                    tr.appendChild(countTd);
-                    tr.appendChild(actionTd);
-                    tbody.appendChild(tr);
-                });
-
-                appListDiv.appendChild(table);
+        function renderProcessTable() {
+            if (!processes || processes.length === 0) {
+                ui.pmTable.innerHTML = `<tbody><tr><td class="text-gray-500 p-4 text-center">Không có tiến trình nào.</td></tr></tbody>`;
+                return;
             }
 
-            function sendCommand(cmdObject) {
-                if (!ws || ws.readyState !== WebSocket.OPEN) {
-                    addToLog("Không thể gửi lệnh: Chưa kết nối WebSocket.", "error");
-                    return;
-                }
-                const cmdString = JSON.stringify(cmdObject);
-                ws.send(cmdString);
-                // ĐÃ SỬA LỖI Ở ĐÂY (bỏ dấu "V" thừa)
-                addToLog("Đã gửi: " + cmdString, "info");
+            let html = `
+                <thead>
+                    <tr>
+                        <th>PID</th>
+                        <th>Tên</th>
+                        <th>RAM</th>
+                        <th>Action</th>
+                    </tr>
+                </thead><tbody>`;
+
+            for (const p of processes) {
+                html += `
+                    <tr class="border-b border-gray-800">
+                        <td class="p-2">${p.pid}</td>
+                        <td class="p-2">${p.name}</td>
+                        <td class="p-2">${Math.round(p.workingSet / 1024 / 1024)} MB</td>
+                        <td class="p-2">
+                            <button class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
+                                    onclick='send({command:"stop_process_pid",pid:${p.pid}})'>
+                                Dừng
+                            </button>
+                        </td>
+                    </tr>`;
             }
 
-            function listApplications() {
-                sendCommand({ command: "list_applications" });
-            }
+            html += "</tbody>";
+            ui.pmTable.innerHTML = html;
+        }
 
-            function startApp() {
-                const appName = appNameInput.value.trim();
-                if (!appName) {
-                    addToLog("Tên ứng dụng không được để trống.", "error");
-                    return;
-                }
-                sendCommand({ command: "start_app", app_name: appName });
-                appNameInput.value = ""; // Xóa input sau khi gửi
-            }
-
-            function stopApplication(appName) {
-                // Tạm thời vô hiệu hóa confirm() vì nó có thể không hoạt động tốt trong mọi môi trường
-                // if (confirm(`Bạn có chắc muốn dừng TẤT CẢ tiến trình của ứng dụng "${appName}" không?`)) {
-                //     sendCommand({ command: "stop_application", app_name: appName });
-                // }
-
-                // Gửi lệnh trực tiếp
-                sendCommand({ command: "stop_application", app_name: appName });
-            }
-
-            function addToLog(message, type = "info") {
-                const placeholder = logOutput.querySelector("p.text-gray-500");
-                if (placeholder) {
-                    placeholder.remove();
-                }
-
-                const p = document.createElement("p");
-                const timestamp = new Date().toLocaleTimeString();
-
-                let colorClass = "text-gray-400";
-                if (type === "success") colorClass = "text-green-400";
-                else if (type === "error") colorClass = "text-red-400";
-                else if (type === "info") colorClass = "text-blue-400";
-
-                p.className = colorClass;
-                p.textContent = `[${timestamp}] ${message}`;
-
-                logOutput.appendChild(p);
-                // Tự động cuộn xuống dòng mới nhất
-                logOutput.scrollTop = logOutput.scrollHeight;
-            }
-
-            window.addToLog = addToLog;
-
-            // Gán sự kiện
-            connectBtn.onclick = () => initWebSocket(wsUrlInput.value.trim());
-            listAppsBtn.onclick = listApplications;
-            startAppBtn.onclick = startApp;
-
-            // Tự động kết nối khi tải trang (có thể bật nếu muốn)
-            // initWebSocket(wsUrlInput.value.trim());
-        });
-        (function () {
-            // --- lấy WebSocket đang dùng ở trang ---
-            function getWS() {
-                if (window.ws && window.ws.readyState === WebSocket.OPEN) return window.ws;
-                if (window.appWs && window.appWs.readyState === WebSocket.OPEN) return window.appWs;
-                return null;
-            }
-            function logLine(s) {
-                const box = document.getElementById("log-output");
-                if (!box) return;
-                const p = document.createElement("p");
-                p.className = "text-blue-400";
-                p.textContent = s;
-                box.appendChild(p);
-                box.scrollTop = box.scrollHeight;
-            }
-            function sendJSON(obj) {
-                const ws = getWS();
-                if (!ws) { alert("WebSocket chưa kết nối"); return; }
-                const txt = JSON.stringify(obj);
-
-                if (typeof addToLog === "function") {
-                    // Dùng "info" để có màu xanh dương
-                    addToLog("Đã gửi: " + txt, "info");
-                } else {
-                    // Fallback phòng trường hợp addToLog chưa được khởi tạo
-                    logLine("→ " + txt);
-                }
-
-                ws.send(txt);
-            }
-            function getToken() {
-                const t1 = document.getElementById("pm-token")?.value || "";
-                const t2 = document.getElementById("global-token")?.value || "";
-                return t1 || t2 || "";
-            }
-
-            // --- UI refs ---
-            const pmRefresh = document.getElementById("pm-refresh");
-            const pmTBody = document.querySelector("#pm-table tbody");
-
-            const pmThead = document.querySelector("#pm-table thead");
-
-            const pmRawMode = document.getElementById("pm-toggle-raw");
-
-
-            const pmPath = document.getElementById("pm-path");
-            const pmArgs = document.getElementById("pm-args");
-            const pmStart = document.getElementById("pm-start");
-
-            // --- START PROCESS (card riêng) ---
-            const procPath = document.getElementById("proc-path");
-            const procArgs = document.getElementById("proc-args");
-            const procStartBtn = document.getElementById("proc-start-btn");
-
-            function startProcessFromCard() {
-                const path = (procPath?.value || "").trim();
-                const args = (procArgs?.value || "").trim();
-                if (!path) { addToLog("Bạn phải nhập full path tới file .exe", "error"); return; }
-                // lấy token dùng chung (nếu bạn bật auth)
-                const token = (document.getElementById("pm-token")?.value ||
-                    document.getElementById("global-token")?.value || "").trim();
-
-                // dùng webSocket đã gán global
-                if (!window.ws || window.ws.readyState !== WebSocket.OPEN) {
-                    addToLog("Không thể gửi lệnh: Chưa kết nối WebSocket.", "error"); return;
-                }
-                const cmd = { command: "start_process", path, args, auth_token: token };
-                window.ws.send(JSON.stringify(cmd));
-                addToLog("Đã gửi: " + JSON.stringify(cmd), "info");
-
-                // refresh bảng Tiến trình sau một chút
-                setTimeout(() => {
-                    window.ws && window.ws.send(JSON.stringify({ command: "list_processes", auth_token: token }));
-                }, 350);
-            }
-
-            procStartBtn?.addEventListener("click", startProcessFromCard);
-
-
-            function pmStartProcess() {
-                const path = (pmPath?.value || "").trim();
-                const args = (pmArgs?.value || "").trim();
-                if (!path) {
-                    alert("Bạn phải nhập full path tới file .exe");
-                    return;
-                }
-                sendJSON({ command: "start_process", path, args, auth_token: getToken() });
-                // làm mới danh sách sau chút xíu
-                setTimeout(() => sendJSON({ command: "list_processes", auth_token: getToken() }), 350);
-            }
-
-            pmStart?.addEventListener("click", pmStartProcess);
-
-            // --- Group rows by process name: {name: count} ---
-            function groupByName(rows) {
-                const map = new Map();
-                (rows || []).forEach(r => {
-                    const name = (r.name || "").toString();
-                    if (!name) return;
-                    map.set(name, (map.get(name) || 0) + 1);
-                });
-                // sort by name asc
-                return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-            }
-
-            function renderPM(rows) {
-                pmTBody.innerHTML = "";
-                if (pmRawMode && pmRawMode.checked) {
-                    // --- CHẾ ĐỘ TỪNG PID ---
-                    pmThead.innerHTML = `
-      <tr>
-        <th>PID</th><th>Tên</th><th>RAM</th><th>Exe Path</th><th>Hành động</th>
-      </tr>`;
-                    const sorted = [...rows].sort((a, b) => {
-                        const n = (a.name || "").localeCompare(b.name || "");
-                        return n !== 0 ? n : (a.pid || 0) - (b.pid || 0);
-                    });
-                    sorted.forEach(r => {
-                        const mb = r.workingSet ? Math.round(r.workingSet / 1048576) : 0;
-                        const tr = document.createElement("tr");
-                        tr.innerHTML = `
-        <td>${r.pid ?? ""}</td>
-        <td>${r.name ?? ""}</td>
-        <td>${mb} MB</td>
-        <td style="max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.exePath ?? ""}</td>
-        <td><button class="pm-stop">Dừng</button></td>`;
-                        tr.querySelector(".pm-stop").onclick = () => {
-                            sendJSON({ command: "stop_process_pid", pid: r.pid, auth_token: getToken() });
-                        };
-                        pmTBody.appendChild(tr);
-                    });
-                } else {
-                    // --- CHẾ ĐỘ GỘP THEO TÊN (mặc định như hiện tại) ---
-                    pmThead.innerHTML = `
-      <tr><th>Tên tiến trình</th><th style="width:140px;">Số tiến trình</th><th style="width:120px;">Hành động</th></tr>`;
-                    const grouped = groupByName(rows);
-                    grouped.forEach(([name, count]) => {
-                        const tr = document.createElement("tr");
-                        tr.innerHTML = `
-        <td>${name}</td>
-        <td>${count}</td>
-        <td><button class="pm-stop">Dừng</button></td>`;
-                        tr.querySelector(".pm-stop").onclick = () => {
-                            if (!confirm(`Dừng mọi tiến trình tên "${name}"?`)) return;
-                            sendJSON({ command: "stop_process_name", name, auth_token: getToken() });
-                        };
-                        pmTBody.appendChild(tr);
-                    });
-                }
-            }
-
-            // Nếu người dùng đổi chế độ, render lại dữ liệu vừa có (lưu rows cuối cùng)
-            let pmLastRows = [];
-            function hookWS(ws) {
-                if (!ws || ws.__pm_hooked) return;
-                const old = ws.onmessage;
-                ws.onmessage = (evt) => {
-                    if (typeof old === "function") try { old.call(ws, evt); } catch (_) { }
-                    try {
-                        const msg = JSON.parse(evt.data);
-                        if (msg?.type === "process_list" && Array.isArray(msg.data)) {
-                            pmLastRows = msg.data;
-                            renderPM(pmLastRows);
-
-                            if (typeof addToLog === "function") {
-                                addToLog(`Đã nhận ${pmLastRows.length} tiến trình.`, "info");
-                            }
-                        }
-                    } catch (_) { }
-                };
-                ws.__pm_hooked = true;
-            }
-            setInterval(() => { const w = getWS(); if (w) hookWS(w); }, 500);
-            pmRawMode?.addEventListener("change", () => renderPM(pmLastRows));
-
-
-            // --- Refresh button ---
-            pmRefresh?.addEventListener("click", () => {
-                const payload = { command: "list_processes", auth_token: getToken() };
-                sendJSON(payload);
-            });
-
-            // (tuỳ chọn) tự refresh lần đầu sau khi kết nối
-            document.addEventListener("visibilitychange", () => {
-                if (!document.hidden && getWS()) {
-                    sendJSON({ command: "list_processes", auth_token: getToken() });
-                }
-            });
-        })();
+        // Gán sự kiện
+        ui.connect.onclick = connectWS;
+        ui.startApp.onclick = () => send({ command: "start_application", app_name: ui.appName.value.trim() });
+        ui.listApps.onclick = () => send({ command: "list_applications" });
+        ui.startProc.onclick = () => send({ command: "start_process", path: ui.procPath.value.trim(), args: ui.procArgs.value });
+        ui.pmRefresh.onclick = () => send({ command: "list_processes" });
+        ui.capture.onclick = () => send({ command: "capture_screen" });
     </script>
 
 </body>
-
 </html>

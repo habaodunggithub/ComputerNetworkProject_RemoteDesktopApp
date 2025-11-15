@@ -22,15 +22,30 @@ using namespace Gdiplus;
 // Hàm chuyển file ảnh sang base64
 static std::string file_to_base64(const std::string &path)
 {
-    std::ifstream ifs(path, std::ios::binary);
+    // Mở file ở chế độ binary
+    std::ifstream ifs(path, std::ios::binary | std::ios::ate);
     if (!ifs.is_open())
         return "";
-    std::vector<unsigned char> bytes((std::istreambuf_iterator<char>(ifs)), {});
+    
+    // Lấy kích thước file và resize buffer
+    std::streamsize size = ifs.tellg();
+    ifs.seekg(0, std::ios::beg);
+    std::vector<char> buffer(size);
+    
+    // Đọc file vào buffer
+    if (!ifs.read(buffer.data(), size))
+        return "";
+
+    // Bảng mã Base64
     static const char *base64_chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    
     std::string encoded;
-    int val = 0, valb = -6;
-    for (unsigned char c : bytes)
+    encoded.reserve(((size + 2) / 3) * 4); // Ước lượng kích thước
+    
+    int val = 0;
+    int valb = -6;
+    for (unsigned char c : buffer)
     {
         val = (val << 8) + c;
         valb += 8;
@@ -42,33 +57,35 @@ static std::string file_to_base64(const std::string &path)
     }
     if (valb > -6)
         encoded.push_back(base64_chars[((val << 8) >> (valb + 8)) & 0x3F]);
+    
+    // Thêm padding '='
     while (encoded.size() % 4)
         encoded.push_back('=');
+        
     return encoded;
 }
 
 #ifdef _WIN32
 bool capture_screenshot(const std::string &output_path)
 {
-    ULONG_PTR gdiplusToken;
-    GdiplusStartupInput gdiplusStartupInput;
-    if (GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr) != Ok)
-    {
-        std::cerr << "Lỗi khởi tạo GDI+.\n";
-        return false;
-    }
-
+    // --- ĐÃ XÓA GDIPlusStartup ---
+    // GDI+ được giả định là đã khởi tạo bởi RemoteServer
+    
     HDC hScreen = GetDC(nullptr);
     if (!hScreen)
+    {
+        std::cerr << "Lỗi: GetDC(nullptr) thất bại.\n";
         return false;
+    }
 
     int width = GetSystemMetrics(SM_CXSCREEN);
     int height = GetSystemMetrics(SM_CYSCREEN);
 
     HDC hDC = CreateCompatibleDC(hScreen);
     if (!hDC)
-    { // Thêm kiểm tra
+    {
         ReleaseDC(nullptr, hScreen);
+        std::cerr << "Lỗi: CreateCompatibleDC thất bại.\n";
         return false;
     }
 
@@ -82,8 +99,9 @@ bool capture_screenshot(const std::string &output_path)
     }
 
     HGDIOBJ old = SelectObject(hDC, hBitmap);
+    // Thực hiện copy từ màn hình vào hDC
     BitBlt(hDC, 0, 0, width, height, hScreen, 0, 0, SRCCOPY);
-    SelectObject(hDC, old);
+    SelectObject(hDC, old); // Phục hồi object cũ
 
     CLSID clsid;
     CLSIDFromString(L"{557CF406-1A04-11D3-9A73-0000F81EF32E}", &clsid); // PNG encoder
@@ -92,9 +110,12 @@ bool capture_screenshot(const std::string &output_path)
     std::wstring wpath(output_path.begin(), output_path.end());
     Status status = bmp.Save(wpath.c_str(), &clsid, nullptr);
 
+    // Dọn dẹp
     DeleteObject(hBitmap);
     DeleteDC(hDC);
     ReleaseDC(nullptr, hScreen);
+
+    // --- ĐÃ XÓA GDIPlusShutdown ---
 
     return status == Ok;
 }
@@ -102,6 +123,8 @@ bool capture_screenshot(const std::string &output_path)
 bool capture_screenshot(const std::string &output_path)
 {
     // Linux/macOS: cần cài đặt tool như scrot / import
+    // "import" là một phần của ImageMagick
+    // std::string cmd = "import -window root " + output_path;
     std::string cmd = "scrot " + output_path;
     int ret = system(cmd.c_str());
     return ret == 0;
@@ -110,8 +133,18 @@ bool capture_screenshot(const std::string &output_path)
 
 std::string capture_screenshot_base64()
 {
-    const std::string path = "screenshot.png";
+    // Dùng tên file tạm thời
+    const std::string path = "temp_screenshot.png";
     if (!capture_screenshot(path))
+    {
+        std::cerr << "Capture screenshot thất bại.\n";
         return "";
-    return file_to_base64(path);
+    }
+    
+    std::string b64 = file_to_base64(path);
+    
+    // (Tùy chọn) Xóa file tạm
+    // std::remove(path.c_str()); 
+    
+    return b64;
 }

@@ -1,15 +1,16 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-// WebSocket++ (Asio standalone)
-
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
 
-#include <string>
+#include <unordered_map>
 #include <unordered_set>
-#include <cstdint>
+#include <string>
+#include <functional>
+#include <nlohmann/json.hpp>
 
+using json = nlohmann::json;
 using WsServer = websocketpp::server<websocketpp::config::asio>;
 
 class RemoteServer
@@ -18,30 +19,47 @@ public:
     RemoteServer();
     ~RemoteServer();
 
-    // Chạy server: bind 127.0.0.1:9002, đọc REMOTE_DESKTOP_TOKEN nếu có
     void run();
-
-    // Tuỳ chọn cấu hình trước khi run()
     void setAuthToken(const std::string &token) { m_authToken = token; }
-    // Cho phép đặt allow-list process theo tên image (lowercase), vd: {"notepad.exe","calc.exe"}
     void setAllowedProcs(const std::unordered_set<std::string> &names);
 
 private:
-    // WS handlers
+    // --- WebSocket handlers ---
     void on_open(websocketpp::connection_hdl hdl);
     void on_close(websocketpp::connection_hdl hdl);
     void on_message(websocketpp::connection_hdl hdl, WsServer::message_ptr msg);
 
-    // Xử lý JSON 1 request -> JSON string response
-    std::string handleMessage(const std::string &payload);
+    // Parse + dispatch JSON request
+    json handleRequest(const json &req);
     bool checkAuth(const std::string &token) const;
+
+    // --- Command dispatcher ---
+    using CommandHandler = std::function<json(const json&)>;
+    std::unordered_map<std::string, CommandHandler> m_commandHandlers;
+    void registerCommandHandlers();
+
+    // --- Commands ---
+    json handleListApplications(const json &req);
+    json handleStartApplication(const json &req);
+    json handleStopApplication(const json &req);
+    json handleListProcesses(const json &req);
+    json handleStartProcess(const json &req);
+    json handleStopProcessPid(const json &req);
+    json handleStopProcessName(const json &req);
+    json handleCaptureScreen(const json &req);
+    json handleHelp(const json &req);
+    json handleUnknown(const json &req);
+
+    // --- Utilities ---
+    std::string getLocalLanIp();
 
 private:
     WsServer m_endpoint;
-    std::string m_authToken;                     // rỗng => không yêu cầu auth
-    std::unordered_set<std::string> m_procAllow; // tên process cho phép (lowercase)
+    std::string m_authToken;
+    std::unordered_set<std::string> m_procAllow;
+
 #ifdef _WIN32
-    uintptr_t m_gdiplusToken; // <--- THÊM BIẾN NÀY (dùng uintptr_t cho an toàn)
+    uintptr_t m_gdiplusToken;
 #endif
 };
 
