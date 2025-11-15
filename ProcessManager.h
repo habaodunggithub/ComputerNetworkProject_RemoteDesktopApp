@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <algorithm>
 
 struct ProcessInfo {
     unsigned long pid;        // DWORD trên Windows
@@ -15,22 +16,16 @@ struct AppSummary {
     int processCount{};
 };
 
-// Ứng dụng = process có top-level window đang hiển thị
-
+// APP = PROCESS có top-level window đang hiển thị
 
 
 class ProcessManager {
 public:
-    // ===== Allow-list theo tên image (lowercase). Rỗng => không giới hạn. =====
-    static void setAllowList(const std::vector<std::string>& names);
-    static const std::vector<std::string>& getAllowList();
-    static bool isAllowed(const std::string& imageName);
-
-    // ===== Liệt kê / Tìm =====
+    // Liệt kê / Tìm
     static std::vector<ProcessInfo> listProcesses();
     static std::vector<ProcessInfo> findByName(const std::string& imageNameLowerCase);
 
-    // ===== Start / Stop =====
+    // Start / Stop
     static bool startProcess(const std::string& path, const std::string& args,
                              unsigned long* outPid = nullptr);
     static bool stopProcessByPid(unsigned long pid, unsigned int exitCode = 1);

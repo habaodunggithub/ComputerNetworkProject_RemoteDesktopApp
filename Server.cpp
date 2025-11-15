@@ -107,7 +107,7 @@ void RemoteServer::run()
         HttpServer http(lan, httpPort, "index.html");
         http.start();
 
-        std::cout << "[HTTP] Web UI:  http://" << lan << ":" << httpPort << "\n";
+        std::cout << "[HTTP] Web:  http://" << lan << ":" << httpPort << "\n";
 
         // Run WebSocket loop
         m_endpoint.run();

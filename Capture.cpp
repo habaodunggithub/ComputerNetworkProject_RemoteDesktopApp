@@ -1,22 +1,56 @@
 #include "Capture.h"
-#include <string>
-#include <vector>
-#include <fstream>
-#include <iostream>
 
 #ifdef _WIN32
-#include <windows.h>
+bool capture_screenshot(const std::string &output_path)
+{
+    // GDI+ được giả định là đã khởi tạo bởi RemoteServer
+    
+    HDC hScreen = GetDC(nullptr);
+    if (!hScreen)
+    {
+        std::cerr << "Lỗi: GetDC(nullptr) thất bại.\n";
+        return false;
+    }
 
-#include <objidl.h>  // định nghĩa PROPID
-#include <objbase.h> // khai báo CLSIDFromString
-#include <gdiplus.h>
+    int width = GetSystemMetrics(SM_CXSCREEN);
+    int height = GetSystemMetrics(SM_CYSCREEN);
 
-#pragma comment(lib, "Gdiplus.lib")
-#pragma comment(lib, "Ole32.lib")
-#pragma comment(lib, "Gdi32.lib")
-#pragma comment(lib, "User32.lib")
+    HDC hDC = CreateCompatibleDC(hScreen);
+    if (!hDC)
+    {
+        ReleaseDC(nullptr, hScreen);
+        std::cerr << "Lỗi: CreateCompatibleDC thất bại.\n";
+        return false;
+    }
 
-using namespace Gdiplus;
+    HBITMAP hBitmap = CreateCompatibleBitmap(hScreen, width, height);
+    if (!hBitmap)
+    {
+        DeleteDC(hDC);
+        ReleaseDC(nullptr, hScreen);
+        std::cerr << "Lỗi: CreateCompatibleBitmap thất bại.\n";
+        return false;
+    }
+
+    HGDIOBJ old = SelectObject(hDC, hBitmap);
+    // Thực hiện copy từ màn hình vào hDC
+    BitBlt(hDC, 0, 0, width, height, hScreen, 0, 0, SRCCOPY);
+    SelectObject(hDC, old); // Phục hồi object cũ
+
+    CLSID clsid;
+    CLSIDFromString(L"{557CF406-1A04-11D3-9A73-0000F81EF32E}", &clsid); // PNG encoder
+
+    Bitmap bmp(hBitmap, nullptr);
+    std::wstring wpath(output_path.begin(), output_path.end());
+    Status status = bmp.Save(wpath.c_str(), &clsid, nullptr);
+
+    // Dọn dẹp
+    DeleteObject(hBitmap);
+    DeleteDC(hDC);
+    ReleaseDC(nullptr, hScreen);
+
+    return status == Ok;
+}
 #endif
 
 // Hàm chuyển file ảnh sang base64
@@ -65,72 +99,6 @@ static std::string file_to_base64(const std::string &path)
     return encoded;
 }
 
-#ifdef _WIN32
-bool capture_screenshot(const std::string &output_path)
-{
-    // --- ĐÃ XÓA GDIPlusStartup ---
-    // GDI+ được giả định là đã khởi tạo bởi RemoteServer
-    
-    HDC hScreen = GetDC(nullptr);
-    if (!hScreen)
-    {
-        std::cerr << "Lỗi: GetDC(nullptr) thất bại.\n";
-        return false;
-    }
-
-    int width = GetSystemMetrics(SM_CXSCREEN);
-    int height = GetSystemMetrics(SM_CYSCREEN);
-
-    HDC hDC = CreateCompatibleDC(hScreen);
-    if (!hDC)
-    {
-        ReleaseDC(nullptr, hScreen);
-        std::cerr << "Lỗi: CreateCompatibleDC thất bại.\n";
-        return false;
-    }
-
-    HBITMAP hBitmap = CreateCompatibleBitmap(hScreen, width, height);
-    if (!hBitmap)
-    {
-        DeleteDC(hDC);
-        ReleaseDC(nullptr, hScreen);
-        std::cerr << "Lỗi: CreateCompatibleBitmap thất bại.\n";
-        return false;
-    }
-
-    HGDIOBJ old = SelectObject(hDC, hBitmap);
-    // Thực hiện copy từ màn hình vào hDC
-    BitBlt(hDC, 0, 0, width, height, hScreen, 0, 0, SRCCOPY);
-    SelectObject(hDC, old); // Phục hồi object cũ
-
-    CLSID clsid;
-    CLSIDFromString(L"{557CF406-1A04-11D3-9A73-0000F81EF32E}", &clsid); // PNG encoder
-
-    Bitmap bmp(hBitmap, nullptr);
-    std::wstring wpath(output_path.begin(), output_path.end());
-    Status status = bmp.Save(wpath.c_str(), &clsid, nullptr);
-
-    // Dọn dẹp
-    DeleteObject(hBitmap);
-    DeleteDC(hDC);
-    ReleaseDC(nullptr, hScreen);
-
-    // --- ĐÃ XÓA GDIPlusShutdown ---
-
-    return status == Ok;
-}
-#else
-bool capture_screenshot(const std::string &output_path)
-{
-    // Linux/macOS: cần cài đặt tool như scrot / import
-    // "import" là một phần của ImageMagick
-    // std::string cmd = "import -window root " + output_path;
-    std::string cmd = "scrot " + output_path;
-    int ret = system(cmd.c_str());
-    return ret == 0;
-}
-#endif
-
 std::string capture_screenshot_base64()
 {
     // Dùng tên file tạm thời
@@ -142,9 +110,6 @@ std::string capture_screenshot_base64()
     }
     
     std::string b64 = file_to_base64(path);
-    
-    // (Tùy chọn) Xóa file tạm
-    // std::remove(path.c_str()); 
     
     return b64;
 }

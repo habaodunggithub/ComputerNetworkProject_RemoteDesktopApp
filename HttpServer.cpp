@@ -1,7 +1,4 @@
 #include "HttpServer.h"
-#include <asio.hpp>
-#include <fstream>
-#include <iostream>
 
 HttpServer::HttpServer(const std::string& ip, int port, const std::string& filePath)
     : m_ip(ip), m_port(port), m_file(filePath) {}
@@ -16,8 +13,6 @@ void HttpServer::run() {
         asio::io_context io;
         asio::ip::tcp::acceptor acceptor(
             io, asio::ip::tcp::endpoint(asio::ip::make_address(m_ip), m_port));
-
-        std::cout << "[HTTP] Serving " << m_file << " on http://" << m_ip << ":" << m_port << "\n";
 
         while (true) {
             asio::ip::tcp::socket socket(io);

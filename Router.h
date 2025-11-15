@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <functional>
 #include <nlohmann/json.hpp>
+#include "ProcessHandlers.h"
 
 using json = nlohmann::json;
 

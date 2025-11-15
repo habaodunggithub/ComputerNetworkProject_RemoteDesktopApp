@@ -1,15 +1,30 @@
 #pragma once
+
 #include <string>
+#include <vector>
+#include <fstream>
+#include <iostream>
 
-/**
- * @brief Chụp ảnh màn hình hiện tại của server và lưu tạm vào file.
- * @param output_path Đường dẫn file ảnh (VD: "screenshot.png").
- * @return true nếu chụp thành công, false nếu có lỗi.
- */
-bool capture_screenshot(const std::string& output_path);
+#ifdef _WIN32
+#include <windows.h>
 
-/**
- * @brief Chụp ảnh màn hình và trả về chuỗi base64 của ảnh PNG.
- * @return std::string chứa dữ liệu base64, hoặc rỗng nếu lỗi.
- */
+#include <objidl.h>  // định nghĩa PROPID
+#include <objbase.h> // khai báo CLSIDFromString
+#include <gdiplus.h>
+
+#pragma comment(lib, "Gdiplus.lib")
+#pragma comment(lib, "Ole32.lib")
+#pragma comment(lib, "Gdi32.lib")
+#pragma comment(lib, "User32.lib")
+
+using namespace Gdiplus;
+#endif
+
+
+#ifdef _WIN32
+bool capture_screenshot(const std::string &output_path);
+#endif
+
+static std::string file_to_base64(const std::string &path);
+
 std::string capture_screenshot_base64();

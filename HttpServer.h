@@ -1,6 +1,9 @@
 #pragma once
 #include <string>
 #include <thread>
+#include <asio.hpp>
+#include <fstream>
+#include <iostream>
 
 class HttpServer {
 public:

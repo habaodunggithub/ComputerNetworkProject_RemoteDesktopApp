@@ -1,5 +1,4 @@
 #include "Router.h"
-#include "ProcessHandlers.h"
 
 json Router::dispatch(const std::unordered_map<std::string, Handler>& map, const json& req) {
     std::string cmd = req.value("command", "");

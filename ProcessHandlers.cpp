@@ -1,7 +1,6 @@
 #include "ProcessHandlers.h"
-#include "ProcessManager.h"
-#include "Capture.h"
 
+// Processes
 json ProcessHandlers::listProcesses(const json&) {
     auto list = ProcessManager::listProcesses();
     json arr = json::array();
@@ -36,8 +35,7 @@ json ProcessHandlers::stopProcessPid(const json& req) {
     return { {"type","status"},{"success",ok} };
 }
 
-// -------------------- APPLICATIONS --------------------
-
+// Apps
 json ProcessHandlers::listApps(const json&) {
     auto apps = ProcessManager::listUserApplications();
     json arr = json::array();
@@ -64,8 +62,7 @@ json ProcessHandlers::stopApp(const json& req) {
     return { {"type","status"}, {"success", stop>0}, {"stopped", stop} };
 }
 
-// -------------------- SCREENSHOT --------------------
-
+// ScreenShot
 json ProcessHandlers::captureScreen(const json&) {
     std::string b64 = capture_screenshot_base64();
     if (b64.empty())
@@ -74,8 +71,7 @@ json ProcessHandlers::captureScreen(const json&) {
     return {{"type","screenshot"},{"success",true},{"data",b64}};
 }
 
-// -------------------- HELP --------------------
-
+// Trả về danh sách tất cả command mà server hỗ trợ.
 json ProcessHandlers::help(const json&) {
     return {
         {"type","help"},

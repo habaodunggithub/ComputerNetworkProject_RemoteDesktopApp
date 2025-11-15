@@ -1,4 +1,8 @@
 #pragma once
+
+#include "ProcessManager.h"
+#include "Capture.h"
+
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
