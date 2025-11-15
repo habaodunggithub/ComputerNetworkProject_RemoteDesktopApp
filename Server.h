@@ -1,66 +1,38 @@
-#ifndef SERVER_H
-#define SERVER_H
+#pragma once
 
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
-
 #include <unordered_map>
-#include <unordered_set>
-#include <string>
-#include <functional>
 #include <nlohmann/json.hpp>
+#include "Router.h"
+#include "HttpServer.h"
+#include "ProcessHandlers.h"
+#include <asio.hpp>
+#include <iostream>
+#include <algorithm>
 
-using json = nlohmann::json;
 using WsServer = websocketpp::server<websocketpp::config::asio>;
+using json = nlohmann::json;
 
-class RemoteServer
-{
+class RemoteServer {
 public:
     RemoteServer();
     ~RemoteServer();
 
     void run();
-    void setAuthToken(const std::string &token) { m_authToken = token; }
-    void setAllowedProcs(const std::unordered_set<std::string> &names);
 
 private:
-    // --- WebSocket handlers ---
-    void on_open(websocketpp::connection_hdl hdl);
-    void on_close(websocketpp::connection_hdl hdl);
-    void on_message(websocketpp::connection_hdl hdl, WsServer::message_ptr msg);
+    void onOpen(websocketpp::connection_hdl);
+    void onClose(websocketpp::connection_hdl);
+    void onMessage(websocketpp::connection_hdl, WsServer::message_ptr msg);
 
-    // Parse + dispatch JSON request
-    json handleRequest(const json &req);
-    bool checkAuth(const std::string &token) const;
-
-    // --- Command dispatcher ---
-    using CommandHandler = std::function<json(const json&)>;
-    std::unordered_map<std::string, CommandHandler> m_commandHandlers;
-    void registerCommandHandlers();
-
-    // --- Commands ---
-    json handleListApplications(const json &req);
-    json handleStartApplication(const json &req);
-    json handleStopApplication(const json &req);
-    json handleListProcesses(const json &req);
-    json handleStartProcess(const json &req);
-    json handleStopProcessPid(const json &req);
-    json handleStopProcessName(const json &req);
-    json handleCaptureScreen(const json &req);
-    json handleHelp(const json &req);
-    json handleUnknown(const json &req);
-
-    // --- Utilities ---
-    std::string getLocalLanIp();
+    std::string getLocalIP();
 
 private:
     WsServer m_endpoint;
-    std::string m_authToken;
-    std::unordered_set<std::string> m_procAllow;
+    std::unordered_map<std::string, Router::Handler> m_router;
 
 #ifdef _WIN32
-    uintptr_t m_gdiplusToken;
+    uintptr_t m_gdiplusToken = 0;
 #endif
 };
-
-#endif // SERVER_H

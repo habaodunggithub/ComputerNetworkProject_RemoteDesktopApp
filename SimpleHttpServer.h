@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 #include <thread>
 #include <fstream>
@@ -13,7 +14,7 @@ public:
 
     void start() {
         m_thread = std::thread([this]() { this->run(); });
-        m_thread.detach();
+        m_thread.detach(); // Tạo 1 luông mới, chạy độc lập với luồng chính
     }
 
 private:
