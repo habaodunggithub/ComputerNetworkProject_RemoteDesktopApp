@@ -22,10 +22,11 @@
             </div>
 
             <input type="text" id="ws-url"
-                   class="w-full p-2 mt-3 bg-gray-700 border border-gray-600 rounded-md text-white"
-                   value="ws://127.0.0.1:9002">
+                class="w-full p-2 mt-3 bg-gray-700 border border-gray-600 rounded-md text-white"
+                value="ws://127.0.0.1:9002">
+
             <button id="connect-btn"
-                    class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">
+                class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">
                 Kết nối
             </button>
         </div>
@@ -34,7 +35,7 @@
         <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
             <h2 class="text-xl font-semibold mb-3 text-white">Log (Nhật ký)</h2>
             <div id="log-output"
-                 class="h-32 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700 text-sm font-mono">
+                class="h-32 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700 text-sm font-mono">
                 <p class="text-gray-500">Chưa có hoạt động nào...</p>
             </div>
         </div>
@@ -44,10 +45,10 @@
             <h2 class="text-xl font-semibold mb-3 text-white">Khởi động Ứng dụng</h2>
             <div class="flex flex-col sm:flex-row sm:space-x-2">
                 <input type="text" id="app-name"
-                       class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
-                       placeholder="notepad.exe">
+                    class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                    placeholder="notepad.exe">
                 <button id="start-app-btn"
-                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
                     Bắt đầu Ứng dụng
                 </button>
             </div>
@@ -59,13 +60,13 @@
                 <h2 class="text-xl font-semibold text-white">Danh sách Ứng dụng đang chạy</h2>
 
                 <button id="list-apps-btn"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
                     Làm mới
                 </button>
             </div>
 
             <div id="app-list"
-                 class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
+                class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
                 <p class="text-gray-500 text-center">Nhấn "Làm mới" để xem danh sách.</p>
             </div>
         </div>
@@ -75,13 +76,13 @@
             <h2 class="text-xl font-semibold mb-3 text-white">Khởi động Tiến trình</h2>
             <div class="flex flex-col sm:flex-row sm:space-x-2">
                 <input type="text" id="proc-path"
-                       class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
-                       placeholder="C:\\Windows\\System32\\notepad.exe">
+                    class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                    placeholder="C:\\Windows\\System32\\notepad.exe">
                 <input type="text" id="proc-args"
-                       class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
-                       placeholder="args (optional)">
+                    class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                    placeholder="args (optional)">
                 <button id="proc-start-btn"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
                     Bắt đầu Tiến trình
                 </button>
             </div>
@@ -93,13 +94,13 @@
                 <h2 class="text-xl font-semibold text-white">Danh sách Tiến trình</h2>
 
                 <button id="pm-refresh"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
                     Làm mới
                 </button>
             </div>
 
             <div id="pm-list"
-                 class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
+                class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
                 <table class="w-full text-left table-auto" id="pm-table">
                     <thead></thead>
                     <tbody>
@@ -113,15 +114,23 @@
         <div class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
             <h2 class="text-xl font-semibold text-white mb-3">Chụp màn hình Server</h2>
             <button id="btn-capture"
-                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
+                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
                 Chụp màn hình
             </button>
+
             <div id="screenshot-result" class="mt-4"></div>
         </div>
     </div>
 
     <!-- ========================== JAVASCRIPT =========================== -->
     <script>
+
+        // ⭐⭐⭐ Đây là dòng auto-detect WebSocket IP (QUAN TRỌNG) ⭐⭐⭐
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("ws-url").value =
+                "ws://" + window.location.hostname + ":9002";
+        });
+
         let ws = null;
         let processes = [];
 
@@ -255,7 +264,7 @@
                         <td class="p-2">${app.process_count}</td>
                         <td class="p-2">
                             <button class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
-                                    onclick='send({command:"stop_application",app_name:"${app.name}"})'>
+                                onclick='send({command:"stop_application",app_name:"${app.name}"})'>
                                 Dừng
                             </button>
                         </td>
@@ -290,7 +299,7 @@
                         <td class="p-2">${Math.round(p.workingSet / 1024 / 1024)} MB</td>
                         <td class="p-2">
                             <button class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
-                                    onclick='send({command:"stop_process_pid",pid:${p.pid}})'>
+                                onclick='send({command:"stop_process_pid",pid:${p.pid}})'>
                                 Dừng
                             </button>
                         </td>
@@ -308,6 +317,7 @@
         ui.startProc.onclick = () => send({ command: "start_process", path: ui.procPath.value.trim(), args: ui.procArgs.value });
         ui.pmRefresh.onclick = () => send({ command: "list_processes" });
         ui.capture.onclick = () => send({ command: "capture_screen" });
+
     </script>
 
 </body>
