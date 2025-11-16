@@ -13,26 +13,24 @@
 using namespace Gdiplus;
 #endif
 
-static RemoteServer* g_instance = nullptr;
-
-// Utility: lowercase string copy
-static std::string toLower(std::string s)
-{
-    std::transform(s.begin(), s.end(), s.begin(), ::tolower);
-    return s;
-}
+static RemoteServer *g_instance = nullptr;
 
 // Constructor
 RemoteServer::RemoteServer()
 {
 #ifdef _WIN32
     GdiplusStartupInput gi;
+
     if (GdiplusStartup((ULONG_PTR *)&m_gdiplusToken, &gi, nullptr) != Ok)
         std::cerr << "[GDI+] Startup failed\n";
 #endif
+
     g_instance = this;
 
     m_endpoint.init_asio();
+
+    m_endpoint.set_max_message_size(10 * 1024 * 1024);
+
     m_endpoint.clear_access_channels(websocketpp::log::alevel::all);
 
     using websocketpp::lib::bind;
@@ -78,8 +76,10 @@ std::string RemoteServer::getLocalIP()
         {
             auto *sa = (sockaddr_in *)u->Address.lpSockaddr;
             char ip[INET_ADDRSTRLEN];
+
             inet_ntop(AF_INET, &sa->sin_addr, ip, sizeof(ip));
             free(addrs);
+
             return ip;
         }
     }
@@ -155,16 +155,18 @@ void RemoteServer::onMessage(websocketpp::connection_hdl hdl, WsServer::message_
     }
 }
 
-RemoteServer& RemoteServer::instance() {
+RemoteServer &RemoteServer::instance()
+{
     return *g_instance;
 }
 
-void RemoteServer::sendToClient(websocketpp::connection_hdl hdl, const std::string& text)
+void RemoteServer::sendToClient(websocketpp::connection_hdl hdl, const std::string &text)
 {
-    try {
+    try
+    {
         m_endpoint.send(hdl, text, websocketpp::frame::opcode::text);
     }
-    catch (...) {
-        // ignore errors
+    catch (...)
+    {
     }
 }

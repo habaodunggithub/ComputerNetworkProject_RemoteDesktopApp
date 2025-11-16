@@ -1,444 +1,193 @@
 <!DOCTYPE html>
-<html lang="vi" class="h-full bg-gray-900">
-
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bảng điều khiển Server C++</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Remote Control</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="app.js" defer></script>
 </head>
+<body>
+    
+    <div id="desktop-background"></div>
 
-<body class="h-full text-gray-200 p-4 md:p-8">
-    <div class="max-w-4xl mx-auto space-y-6">
-        <h1 class="text-3xl font-bold text-white mb-6">Bảng điều khiển Server C++</h1>
-
-        <!-- TRẠNG THÁI KẾT NỐI -->
-        <div class="mb-6 bg-gray-800 p-4 rounded-lg shadow-lg">
-            <h2 class="text-xl font-semibold mb-2 text-white">Trạng thái kết nối</h2>
-
-            <div class="flex items-center space-x-2">
-                <div id="status-indicator" class="w-4 h-4 rounded-full bg-red-500 animate-pulse"></div>
-                <span id="status-text" class="text-gray-400">Chưa kết nối</span>
+    <main id="app-window">
+        <header class="title-bar">
+            <div class="traffic-lights">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
             </div>
+            <span class="title-text">Remote Control</span>
+        </header>
 
-            <input type="text" id="ws-url"
-                class="w-full p-2 mt-3 bg-gray-700 border border-gray-600 rounded-md text-white"
-                value="ws://127.0.0.1:9002">
+        <div class="app-body">
+            <nav id="sidebar">
+                <ul class="nav-list-main">
+                    <li class="nav-item active" data-view="applications">
+                        <i data-feather="grid"></i>
+                        <span>Applications</span>
+                    </li>
+                    <li class="nav-item" data-view="processes">
+                        <i data-feather="cpu"></i>
+                        <span>Processes</span>
+                    </li>
+                    <li class="nav-item" data-view="keylogger">
+                        <i data-feather="edit-3"></i>
+                        <span>Keylogger</span>
+                    </li>
+                    <li class="nav-item" data-view="capture">
+                        <i data-feather="camera"></i>
+                        <span>Screen Capture</span>
+                    </li>
+                </ul>
+                
+                <ul class="nav-list-bottom">
+                    <li class="nav-item" data-view="help">
+                        <i data-feather="help-circle"></i>
+                        <span>Help</span>
+                    </li>
+                </ul>
+            </nav>
 
-            <button id="connect-btn"
-                class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">
-                Kết nối
-            </button>
+            <section id="main-content">
+                <div class="content-view" id="view-processes">
+                    <div class="content-toolbar">
+                        <h2>Processes</h2>
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="btn-start-process"><i data-feather="plus"></i> Start Process</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="processes-table">
+                            <thead>
+                                <tr>
+                                    <th>PID</th>
+                                    <th>Name</th>
+                                    <th>Memory (Working Set)</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="content-view active" id="view-applications">
+                    <div class="content-toolbar">
+                        <h2>Applications</h2>
+                        <div class="button-group">
+                             <button class="btn btn-primary" id="btn-start-app"><i data-feather="plus"></i> Start Application</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="apps-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Process Count</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="content-view" id="view-keylogger">
+                    <div class="content-toolbar">
+                        <h2>Keylogger</h2>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="keylog-toggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <p class="warning-text">
+                        <i data-feather="alert-triangle" class="warning-icon"></i>
+                        Keylogger only works correctly with English (ENG) input method.
+                    </p>
+                    
+                    <pre id="keylog-output">Waiting for key events...</pre>
+                </div>
+                
+                <div class="content-view" id="view-capture">
+                    <div class="content-toolbar">
+                        <h2>Screen Capture</h2>
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="btn-take-screenshot">
+                                <i data-feather="camera"></i> Take Screenshot
+                            </button>
+                        </div>
+                    </div>
+                    <div id="capture-display-area">
+                        <div id="capture-spinner" class="spinner hidden"></div>
+                        <img id="capture-img" src="" alt="Screen Capture" class="hidden">
+                        <p id="capture-placeholder">Click "Take Screenshot" to capture the screen.</p>
+                    </div>
+                </div>
+                
+                <div class="content-view" id="view-help">
+                    <div class="content-toolbar">
+                        <h2>Available Commands</h2>
+                    </div>
+                    <pre id="help-content"></pre>
+                </div>
+                
+            </section>
         </div>
 
-        <!-- LOG -->
-        <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
-            <h2 class="text-xl font-semibold mb-3 text-white">Log (Nhật ký)</h2>
-            <div id="log-output"
-                class="h-32 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700 text-sm font-mono">
-                <p class="text-gray-500">Chưa có hoạt động nào...</p>
+        <footer class="status-bar">
+            <div class="connection-controls">
+                <span id="status-indicator" class="dot red"></span>
+                <input type="text" id="ws-url-input" value=""> <button class="btn btn-sm" id="btn-connect">Connect</button>
+                <button class="btn btn-sm btn-danger hidden" id="btn-disconnect">Disconnect</button>
             </div>
+            
+            <div class="theme-switcher">
+                <i data-feather="moon" class="theme-icon"></i>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider"></span>
+                </label>
+                <i data-feather="sun" class="theme-icon"></i>
+            </div>
+        </footer>
+    </main>
+
+    <div id="modal-backdrop" class="hidden"></div>
+
+    <div id="modal-start-process" class="modal hidden">
+        <h2>Start New Process</h2>
+        <p>Enter the full path and optional arguments.</p>
+        <div class="form-group">
+            <label for="input-proc-path">Path (e.g., C:\Windows\notepad.exe)</label>
+            <input type="text" id="input-proc-path" placeholder="C:\Windows\System32\notepad.exe">
         </div>
-
-        <!-- KHỞI ĐỘNG ỨNG DỤNG -->
-        <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
-            <h2 class="text-xl font-semibold mb-3 text-white">Khởi động Ứng dụng</h2>
-            <div class="flex flex-col sm:flex-row sm:space-x-2">
-                <input type="text" id="app-name"
-                    class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
-                    placeholder="notepad.exe">
-                <button id="start-app-btn"
-                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
-                    Bắt đầu Ứng dụng
-                </button>
-            </div>
+        <div class="form-group">
+            <label for="input-proc-args">Arguments (Optional)</label>
+            <input type="text" id="input-proc-args" placeholder="example.txt">
         </div>
-
-        <!-- DANH SÁCH ỨNG DỤNG -->
-        <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
-            <div class="flex justify-between items-center mb-3">
-                <h2 class="text-xl font-semibold text-white">Danh sách Ứng dụng đang chạy</h2>
-
-                <button id="list-apps-btn"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
-                    Làm mới
-                </button>
-            </div>
-
-            <div id="app-list" class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
-                <p class="text-gray-500 text-center">Nhấn "Làm mới" để xem danh sách.</p>
-            </div>
+        <div class="modal-actions">
+            <button class="btn" data-action="cancel">Cancel</button>
+            <button class="btn btn-primary" data-action="confirm">Start</button>
         </div>
-
-        <!-- KHỞI ĐỘNG TIẾN TRÌNH -->
-        <div class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
-            <h2 class="text-xl font-semibold mb-3 text-white">Khởi động Tiến trình</h2>
-            <div class="flex flex-col sm:flex-row sm:space-x-2">
-                <input type="text" id="proc-path"
-                    class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
-                    placeholder="C:\\Windows\\System32\\notepad.exe">
-                <input type="text" id="proc-args"
-                    class="flex-grow p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
-                    placeholder="args (optional)">
-                <button id="proc-start-btn"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
-                    Bắt đầu Tiến trình
-                </button>
-            </div>
+    </div>
+    
+    <div id="modal-start-app" class="modal hidden">
+        <h2>Start Application</h2>
+        <p>Enter the application name (e.g., notepad.exe, chrome.exe).</p>
+        <div class="form-group">
+            <label for="input-app-name">App Name</label>
+            <input type="text" id="input-app-name" placeholder="notepad.exe">
         </div>
-
-        <!-- DANH SÁCH TIẾN TRÌNH -->
-        <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
-            <div class="flex justify-between items-center mb-3">
-                <h2 class="text-xl font-semibold text-white">Danh sách Tiến trình</h2>
-
-                <button id="pm-refresh"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
-                    Làm mới
-                </button>
-            </div>
-
-            <div id="pm-list" class="h-96 overflow-y-auto bg-gray-900 p-3 rounded-md border border-gray-700">
-                <table class="w-full text-left table-auto" id="pm-table">
-                    <thead></thead>
-                    <tbody>
-                        <tr>
-                            <td class="text-gray-500 text-center p-4">Nhấn "Làm mới".</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- SCREENSHOT -->
-        <div class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
-            <h2 class="text-xl font-semibold text-white mb-3">Chụp màn hình Server</h2>
-            <button id="btn-capture" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
-                Chụp màn hình
-            </button>
-
-            <div id="screenshot-result" class="mt-4"></div>
-        </div>
-
-        <!-- KEYLOGGER -->
-        <div class="mt-6 bg-gray-800 p-4 rounded-lg shadow-lg">
-            <h2 class="text-xl font-semibold text-white mb-3">Keylogger</h2>
-            <p class="text-sm text-gray-400 mb-3">
-                Bắt đầu hoặc dừng dịch vụ keylogger trên server. (Log sẽ được ghi vào file 'keylog.txt' trên server).
-            </p>
-            <div class="flex space-x-2">
-                <button id="start-keylog-btn"
-                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
-                    Bắt đầu Keylogger
-                </button>
-                <button id="stop-keylog-btn"
-                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">
-                    Dừng Keylogger
-                </button>
-            </div>
-            <div id="keylog-box"
-                class="h-40 overflow-y-auto bg-black/40 p-2 border border-gray-700 rounded text-green-400 text-sm font-mono mb-3">
-                <div class="opacity-50">Chưa có phím nào...</div>
-            </div>
+        <div class="modal-actions">
+            <button class="btn" data-action="cancel">Cancel</button>
+            <button class="btn btn-primary" data-action="confirm">Start</button>
         </div>
     </div>
 
-    <!-- ========================== JAVASCRIPT =========================== -->
-    <script>
-
-        // ⭐⭐⭐ Đây là dòng auto-detect WebSocket IP (QUAN TRỌNG) ⭐⭐⭐
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("ws-url").value =
-                "ws://" + window.location.hostname + ":9002";
-        });
-
-        let ws = null;
-        let processes = [];
-
-        const ui = {
-            url: document.getElementById("ws-url"),
-            connect: document.getElementById("connect-btn"),
-            status: document.getElementById("status-text"),
-            indicator: document.getElementById("status-indicator"),
-            log: document.getElementById("log-output"),
-
-            appName: document.getElementById("app-name"),
-            startApp: document.getElementById("start-app-btn"),
-            listApps: document.getElementById("list-apps-btn"),
-            appList: document.getElementById("app-list"),
-
-            procPath: document.getElementById("proc-path"),
-            procArgs: document.getElementById("proc-args"),
-            startProc: document.getElementById("proc-start-btn"),
-
-            pmRefresh: document.getElementById("pm-refresh"),
-            pmTable: document.getElementById("pm-table"),
-
-            capture: document.getElementById("btn-capture"),
-            screenshot: document.getElementById("screenshot-result"),
-
-            startKeylog: document.getElementById("start-keylog-btn"),
-            stopKeylog: document.getElementById("stop-keylog-btn")
-        };
-
-        function log(msg, type = "info") {
-            const p = document.createElement("p");
-            const t = new Date().toLocaleTimeString();
-
-            p.className =
-                type === "error" ? "text-red-400" :
-                    type === "success" ? "text-green-400" :
-                        "text-blue-400";
-
-            p.textContent = `[${t}] ${msg}`;
-            ui.log.appendChild(p);
-            ui.log.scrollTop = ui.log.scrollHeight;
-        }
-
-        function keylog(text) {
-            const box = document.getElementById("keylog-box");
-            if (!box) return;
-
-            // Xóa dòng "Chưa có phím nào..." nếu còn
-            if (box.children.length === 1 && box.children[0].classList.contains("opacity-50")) {
-                box.innerHTML = "";
-            }
-
-            const line = document.createElement("div");
-            line.textContent = text;
-            box.appendChild(line);
-
-            // Scroll xuống cuối
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function connectWS() {
-            const url = ui.url.value.trim();
-            if (!url) return;
-
-            log(`Đang kết nối đến ${url}...`);
-            ui.status.textContent = "Đang kết nối...";
-            ui.indicator.className = "w-4 h-4 rounded-full bg-yellow-500 animate-pulse";
-
-            ws = new WebSocket(url);
-
-            ws.onopen = () => {
-                ui.indicator.className = "w-4 h-4 rounded-full bg-green-500";
-                ui.status.textContent = "Đã kết nối";
-                log("Kết nối WebSocket thành công!", "success");
-            };
-
-            ws.onclose = () => {
-                ui.indicator.className = "w-4 h-4 rounded-full bg-red-500";
-                ui.status.textContent = "Đã ngắt kết nối";
-                log("Kết nối WebSocket đã bị đóng.", "error");
-            };
-
-            ws.onerror = () => {
-                ui.indicator.className = "w-4 h-4 rounded-full bg-red-500";
-                ui.status.textContent = "Lỗi kết nối";
-                log("Lỗi WebSocket.", "error");
-            };
-
-            ws.onmessage = handleMessage;
-        }
-
-        function send(cmd) {
-            if (!ws || ws.readyState !== WebSocket.OPEN) {
-                log("Không thể gửi: Chưa kết nối WebSocket.", "error");
-                return;
-            }
-            ws.send(JSON.stringify(cmd));
-            log("Đã gửi: " + JSON.stringify(cmd), "info");
-        }
-
-        function handleMessage(event) {
-            let msg;
-            try { msg = JSON.parse(event.data); }
-            catch { return log("Dữ liệu không phải JSON", "error"); }
-
-            switch (msg.type) {
-                case "application_list":
-                    renderAppList(msg.data);
-                    break;
-
-                case "process_list":
-                    processes = msg.data;
-                    renderProcessTable();
-                    break;
-
-                case "screenshot":
-                    ui.screenshot.innerHTML =
-                        `<img src="data:image/png;base64,${msg.data}" class="max-w-full rounded border border-gray-700">`;
-                    break;
-
-                case "status":
-                    log(msg.message || (msg.success ?
-                        "Thành công" : "Thất bại"), msg.success ? "success" : "error");
-                    break;
-
-                case "error":
-                    log("Server lỗi: " + msg.message, "error");
-                    break;
-                case "key_event":
-                    let code = msg.key_code;
-                    let keyView = "";
-
-                    // ===== CHỮ A–Z =====
-                    if (code >= 65 && code <= 90) {
-                        keyView = String.fromCharCode(code);
-                    }
-                    // ===== SỐ 0–9 (hàng phím chính) =====
-                    else if (code >= 48 && code <= 57) {
-                        keyView = String.fromCharCode(code);
-                    }
-                    // ===== NUMPAD 0–9 =====
-                    else if (code >= 96 && code <= 105) {
-                        keyView = (code - 96).toString();
-                    }
-                    // ===== SPACE =====
-                    else if (code === 32) {
-                        keyView = "SPACE (␣)";
-                    }
-                    // ===== ENTER =====
-                    else if (code === 13) {
-                        keyView = "ENTER";
-                    }
-                    // ===== TAB =====
-                    else if (code === 9) {
-                        keyView = "TAB";
-                    }
-
-                    // ===== PHÍM ĐẶC BIỆT / MODIFIER =====
-                    else if (code === 16 || code === 160 || code === 161) {
-                        keyView = "SHIFT";
-                    }
-                    else if (code === 17 || code === 162 || code === 163) {
-                        keyView = "CTRL";
-                    }
-                    else if (code === 18 || code === 164 || code === 165) {
-                        keyView = "ALT";
-                    }
-                    else if (code === 27) {
-                        keyView = "ESC";
-                    }
-                    else if (code === 20) {
-                        keyView = "CAPS LOCK";
-                    }
-
-                    // ===== ARROWS =====
-                    else if (code === 37) keyView = "LEFT";
-                    else if (code === 38) keyView = "UP";
-                    else if (code === 39) keyView = "RIGHT";
-                    else if (code === 40) keyView = "DOWN";
-
-                    // ===== INSERT / DELETE / HOME / END / PAGEUP / PAGEDOWN =====
-                    else if (code === 45) keyView = "INSERT";
-                    else if (code === 46) keyView = "DELETE";
-                    else if (code === 36) keyView = "HOME";
-                    else if (code === 35) keyView = "END";
-                    else if (code === 33) keyView = "PAGE UP";
-                    else if (code === 34) keyView = "PAGE DOWN";
-
-                    // ===== PRINT SCREEN / PAUSE =====
-                    else if (code === 44) keyView = "PRINT SCREEN";
-                    else if (code === 19) keyView = "PAUSE";
-
-                    // ===== F1 – F12 =====
-                    else if (code >= 112 && code <= 123) {
-                        keyView = "F" + (code - 111); // F1=112 → 1
-                    }
-
-                    // ===== PHÍM CÒN LẠI =====
-                    else {
-                        keyView = "[VK " + code + "]";
-                    }
-
-                    keylog(keyView);
-                    break;
-            }
-        }
-
-        function renderAppList(data) {
-            if (!data || data.length === 0) {
-                ui.appList.innerHTML = `<p class="text-gray-500 text-center">Không có ứng dụng nào.</p>`;
-                return;
-            }
-
-            let html = `<table class="w-full text-left">
-                <thead>
-                    <tr class="border-b border-gray-600">
-                        <th class="p-2">Tên</th>
-                        <th class="p-2">Số tiến trình</th>
-                        <th class="p-2">Hành động</th>
-                    </tr>
-                </thead><tbody>`;
-
-            for (const app of data) {
-                html += `
-                    <tr class="border-b border-gray-800">
-                        <td class="p-2">${app.name}</td>
-                        <td class="p-2">${app.process_count}</td>
-                        <td class="p-2">
-                            <button class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
-                                onclick='send({command:"stop_application",app_name:"${app.name}"})'>
-                                Dừng
-                            </button>
-                        </td>
-                    </tr>`;
-            }
-
-            html += "</tbody></table>";
-            ui.appList.innerHTML = html;
-        }
-
-        function renderProcessTable() {
-            if (!processes || processes.length === 0) {
-                ui.pmTable.innerHTML = `<tbody><tr><td class="text-gray-500 p-4 text-center">Không có tiến trình nào.</td></tr></tbody>`;
-                return;
-            }
-
-            let html = `
-                <thead>
-                    <tr>
-                        <th>PID</th>
-                        <th>Tên</th>
-                        <th>RAM</th>
-                        <th>Action</th>
-                    </tr>
-                </thead><tbody>`;
-
-            for (const p of processes) {
-                html += `
-                    <tr class="border-b border-gray-800">
-                        <td class="p-2">${p.pid}</td>
-                        <td class="p-2">${p.name}</td>
-                        <td class="p-2">${Math.round(p.workingSet / 1024 / 1024)} MB</td>
-                        <td class="p-2">
-                            <button class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
-                                onclick='send({command:"stop_process_pid",pid:${p.pid}})'>
-                                Dừng
-                            </button>
-                        </td>
-                    </tr>`;
-            }
-
-            html += "</tbody>";
-            ui.pmTable.innerHTML = html;
-        }
-
-        // Gán sự kiện
-        ui.connect.onclick = connectWS;
-        ui.startApp.onclick = () => send({ command: "start_application", app_name: ui.appName.value.trim() });
-        ui.listApps.onclick = () => send({ command: "list_applications" });
-        ui.startProc.onclick = () => send({ command: "start_process", path: ui.procPath.value.trim(), args: ui.procArgs.value });
-        ui.pmRefresh.onclick = () => send({ command: "list_processes" });
-        ui.capture.onclick = () => send({ command: "capture_screen" });
-        ui.startKeylog.onclick = () => send({ command: "start_keylog" });
-        ui.stopKeylog.onclick = () => send({ command: "stop_keylog" });
-
-    </script>
-
 </body>
-
 </html>

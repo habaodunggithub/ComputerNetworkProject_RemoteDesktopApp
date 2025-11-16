@@ -14,14 +14,15 @@
 using WsServer = websocketpp::server<websocketpp::config::asio>;
 using json = nlohmann::json;
 
-class RemoteServer {
+class RemoteServer
+{
 public:
     RemoteServer();
     ~RemoteServer();
 
     void run();
-    static RemoteServer& instance();
-    void sendToClient(websocketpp::connection_hdl hdl, const std::string& text);
+    static RemoteServer &instance();
+    void sendToClient(websocketpp::connection_hdl hdl, const std::string &text);
 
 private:
     void onOpen(websocketpp::connection_hdl);
