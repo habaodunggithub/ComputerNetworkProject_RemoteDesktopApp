@@ -20,6 +20,8 @@ public:
     ~RemoteServer();
 
     void run();
+    static RemoteServer& instance();
+    void sendToClient(websocketpp::connection_hdl hdl, const std::string& text);
 
 private:
     void onOpen(websocketpp::connection_hdl);

