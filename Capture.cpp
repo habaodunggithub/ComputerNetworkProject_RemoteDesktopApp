@@ -4,7 +4,7 @@
 bool capture_screenshot(const std::string &output_path)
 {
     // GDI+ được giả định là đã khởi tạo bởi RemoteServer
-    
+
     HDC hScreen = GetDC(nullptr);
     if (!hScreen)
     {
@@ -60,12 +60,12 @@ static std::string file_to_base64(const std::string &path)
     std::ifstream ifs(path, std::ios::binary | std::ios::ate);
     if (!ifs.is_open())
         return "";
-    
+
     // Lấy kích thước file và resize buffer
     std::streamsize size = ifs.tellg();
     ifs.seekg(0, std::ios::beg);
     std::vector<char> buffer(size);
-    
+
     // Đọc file vào buffer
     if (!ifs.read(buffer.data(), size))
         return "";
@@ -73,10 +73,10 @@ static std::string file_to_base64(const std::string &path)
     // Bảng mã Base64
     static const char *base64_chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    
+
     std::string encoded;
     encoded.reserve(((size + 2) / 3) * 4); // Ước lượng kích thước
-    
+
     int val = 0;
     int valb = -6;
     for (unsigned char c : buffer)
@@ -91,11 +91,11 @@ static std::string file_to_base64(const std::string &path)
     }
     if (valb > -6)
         encoded.push_back(base64_chars[((val << 8) >> (valb + 8)) & 0x3F]);
-    
+
     // Thêm padding '='
     while (encoded.size() % 4)
         encoded.push_back('=');
-        
+
     return encoded;
 }
 
@@ -108,8 +108,8 @@ std::string capture_screenshot_base64()
         std::cerr << "Capture screenshot thất bại.\n";
         return "";
     }
-    
+
     std::string b64 = file_to_base64(path);
-    
+
     return b64;
 }
