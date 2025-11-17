@@ -69,7 +69,7 @@
 
 ## 2. Cách chạy
   
- - Mở terminal 1: ở folder gatewat: chạy `node gateway.js` (yêu cầu đã tải `Node.js`)
+ - Mở terminal 1: ở folder gateway: chạy `node gateway.js` (yêu cầu đã tải `Node.js`)
  - Trên terminal của gateway hiện: 
     ```txt
         [Gateway] gateway.js started (TCP server for agent, WS+HTTP for web)
