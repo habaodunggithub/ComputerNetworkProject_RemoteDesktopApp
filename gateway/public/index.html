@@ -52,7 +52,20 @@
             </nav>
 
             <section id="main-content">
+
                 <div class="content-view" id="view-processes">
+                    <div class="content-toolbar">
+                        <h2>Processes</h2>
+                    </div>
+                    <ul class="action-list">
+                        <li data-action="show-view" data-target="processes-table">
+                            <i data-feather="list"></i>
+                            <span>List All Processes</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="content-view" id="view-processes-table" data-parent-view="processes">
                     <div class="content-toolbar">
                         <h2>Processes</h2>
                         <div class="button-group">
@@ -76,6 +89,18 @@
                 </div>
 
                 <div class="content-view active" id="view-applications">
+                    <div class="content-toolbar">
+                        <h2>Applications</h2>
+                    </div>
+                    <ul class="action-list">
+                        <li data-action="show-view" data-target="applications-table">
+                            <i data-feather="list"></i>
+                            <span>List Running Applications</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="content-view" id="view-applications-table" data-parent-view="applications">
                     <div class="content-toolbar">
                         <h2>Applications</h2>
                         <div class="button-group">
@@ -119,6 +144,9 @@
                         <div class="button-group">
                             <button class="btn btn-primary" id="btn-take-screenshot">
                                 <i data-feather="camera"></i> Take Screenshot
+                            </button>
+                            <button class="btn hidden" id="btn-copy-screenshot">
+                                <i data-feather="copy"></i> Copy
                             </button>
                         </div>
                     </div>
