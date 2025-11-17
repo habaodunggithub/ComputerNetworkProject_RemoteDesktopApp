@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Control</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="app.js" defer></script>
+</head>
+<body>
+    
+    <div id="desktop-background"></div>
+
+    <main id="app-window">
+        <header class="title-bar">
+            <div class="traffic-lights">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+            </div>
+            <span class="title-text">Remote Control</span>
+        </header>
+
+        <div class="app-body">
+            <nav id="sidebar">
+                <ul class="nav-list-main">
+                    <li class="nav-item active" data-view="applications">
+                        <i data-feather="grid"></i>
+                        <span>Applications</span>
+                    </li>
+                    <li class="nav-item" data-view="processes">
+                        <i data-feather="cpu"></i>
+                        <span>Processes</span>
+                    </li>
+                    <li class="nav-item" data-view="keylogger">
+                        <i data-feather="edit-3"></i>
+                        <span>Keylogger</span>
+                    </li>
+                    <li class="nav-item" data-view="capture">
+                        <i data-feather="camera"></i>
+                        <span>Screen Capture</span>
+                    </li>
+                </ul>
+                
+                <ul class="nav-list-bottom">
+                    <li class="nav-item" data-view="help">
+                        <i data-feather="help-circle"></i>
+                        <span>Help</span>
+                    </li>
+                </ul>
+            </nav>
+
+            <section id="main-content">
+                <div class="content-view" id="view-processes">
+                    <div class="content-toolbar">
+                        <h2>Processes</h2>
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="btn-start-process"><i data-feather="plus"></i> Start Process</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="processes-table">
+                            <thead>
+                                <tr>
+                                    <th>PID</th>
+                                    <th>Name</th>
+                                    <th>Memory (Working Set)</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="content-view active" id="view-applications">
+                    <div class="content-toolbar">
+                        <h2>Applications</h2>
+                        <div class="button-group">
+                             <button class="btn btn-primary" id="btn-start-app"><i data-feather="plus"></i> Start Application</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="apps-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Process Count</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="content-view" id="view-keylogger">
+                    <div class="content-toolbar">
+                        <h2>Keylogger</h2>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="keylog-toggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <p class="warning-text">
+                        <i data-feather="alert-triangle" class="warning-icon"></i>
+                        Keylogger only works correctly with English (ENG) input method.
+                    </p>
+                    
+                    <pre id="keylog-output">Waiting for key events...</pre>
+                </div>
+                
+                <div class="content-view" id="view-capture">
+                    <div class="content-toolbar">
+                        <h2>Screen Capture</h2>
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="btn-take-screenshot">
+                                <i data-feather="camera"></i> Take Screenshot
+                            </button>
+                        </div>
+                    </div>
+                    <div id="capture-display-area">
+                        <div id="capture-spinner" class="spinner hidden"></div>
+                        <img id="capture-img" src="" alt="Screen Capture" class="hidden">
+                        <p id="capture-placeholder">Click "Take Screenshot" to capture the screen.</p>
+                    </div>
+                </div>
+                
+                <div class="content-view" id="view-help">
+                    <div class="content-toolbar">
+                        <h2>Available Commands</h2>
+                    </div>
+                    <pre id="help-content"></pre>
+                </div>
+                
+            </section>
+        </div>
+
+        <footer class="status-bar">
+            <div class="connection-controls">
+                <span id="status-indicator" class="dot red"></span>
+                <input type="text" id="ws-url-input" value=""> <button class="btn btn-sm" id="btn-connect">Connect</button>
+                <button class="btn btn-sm btn-danger hidden" id="btn-disconnect">Disconnect</button>
+            </div>
+            
+            <div class="theme-switcher">
+                <i data-feather="moon" class="theme-icon"></i>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider"></span>
+                </label>
+                <i data-feather="sun" class="theme-icon"></i>
+            </div>
+        </footer>
+    </main>
+
+    <div id="modal-backdrop" class="hidden"></div>
+
+    <div id="modal-start-process" class="modal hidden">
+        <h2>Start New Process</h2>
+        <p>Enter the full path and optional arguments.</p>
+        <div class="form-group">
+            <label for="input-proc-path">Path (e.g., C:\Windows\notepad.exe)</label>
+            <input type="text" id="input-proc-path" placeholder="C:\Windows\System32\notepad.exe">
+        </div>
+        <div class="form-group">
+            <label for="input-proc-args">Arguments (Optional)</label>
+            <input type="text" id="input-proc-args" placeholder="example.txt">
+        </div>
+        <div class="modal-actions">
+            <button class="btn" data-action="cancel">Cancel</button>
+            <button class="btn btn-primary" data-action="confirm">Start</button>
+        </div>
+    </div>
+    
+    <div id="modal-start-app" class="modal hidden">
+        <h2>Start Application</h2>
+        <p>Enter the application name (e.g., notepad.exe, chrome.exe).</p>
+        <div class="form-group">
+            <label for="input-app-name">App Name</label>
+            <input type="text" id="input-app-name" placeholder="notepad.exe">
+        </div>
+        <div class="modal-actions">
+            <button class="btn" data-action="cancel">Cancel</button>
+            <button class="btn btn-primary" data-action="confirm">Start</button>
+        </div>
+    </div>
+
+</body>
+</html>

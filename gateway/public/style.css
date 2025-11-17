@@ -1,0 +1,549 @@
+/* Biến toàn cục (CSS Variables) */
+:root {
+    /* --- Light Theme (Default) --- */
+    --font-system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --radius-lg: 16px;
+    --radius-md: 10px;
+    --radius-sm: 6px;
+    
+    --color-blue: #007aff;
+    --color-gray-light: #f2f2f7;
+    --color-gray-medium: #e5e5ea;
+    --color-gray-dark: #8e8e93;
+    --color-text-primary: #333;
+    --color-text-secondary: #555;
+    --color-text-inverted: #fff;
+    --color-bg-primary: #fff;
+    --color-bg-secondary: #f0f0f0;
+
+    --glass-bg: rgba(255, 255, 255, 0.65);
+    --glass-border: rgba(200, 200, 200, 0.5);
+    --sidebar-bg: rgba(240, 240, 240, 0.7);
+    --table-header-bg: rgba(255, 255, 255, 0.5);
+    --modal-bg: rgba(255, 255, 255, 0.75);
+
+    --blur-val: 20px;
+    --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* --- Dark Theme --- */
+body.dark-theme {
+    --color-gray-light: #2c2c2e;
+    --color-gray-medium: #3a3a3c;
+    --color-gray-dark: #8e8e93;
+    --color-text-primary: #eee;
+    --color-text-secondary: #aaa;
+    --color-text-inverted: #000;
+    --color-bg-primary: #1c1c1e;
+    --color-bg-secondary: #2c2c2e;
+
+    --glass-bg: rgba(40, 40, 40, 0.7);
+    --glass-border: rgba(80, 80, 80, 0.5);
+    --sidebar-bg: rgba(45, 45, 45, 0.75);
+    --table-header-bg: rgba(50, 50, 50, 0.5);
+    --modal-bg: rgba(50, 50, 50, 0.8);
+
+    --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* Reset cơ bản */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-system);
+    font-size: 14px;
+    background-color: #eee;
+    color: var(--color-text-primary);
+    overflow: hidden;
+    transition: background-color 0.3s ease;
+}
+
+/* Màu nền dự phòng khi bật Dark Mode */
+body.dark-theme {
+    background-color: #3a3a3c;
+}
+
+
+/* 1. Nền Desktop */
+#desktop-background {
+    position: fixed;
+    inset: 0;
+    background-image: url('https://source.unsplash.com/random/1920x1080/?nature,abstract,gradient');
+    background-size: cover;
+    background-position: center;
+    filter: blur(8px) brightness(1); 
+    transform: scale(1.1);
+    transition: filter 0.3s ease; 
+}
+
+body.dark-theme #desktop-background {
+    filter: blur(8px) brightness(0.6);
+}
+
+
+/* 2. Cửa sổ ứng dụng chính */
+#app-window {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 1200px;
+    height: 85vh;
+    
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--blur-val)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--blur-val)) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Thanh tiêu đề */
+.title-bar {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    -webkit-user-select: none;
+    user-select: none;
+    transition: border-color 0.3s ease;
+}
+.traffic-lights { display: flex; }
+.dot {
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+.dot.red { background-color: #ff5f56; }
+.dot.yellow { background-color: #ffbd2e; }
+.dot.green { background-color: #27c93f; }
+.title-text {
+    margin-left: 8px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    transition: color 0.3s ease;
+}
+
+/* Thân ứng dụng (Sidebar + Content) */
+.app-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* 3. Sidebar */
+#sidebar {
+    flex-basis: 220px;
+    flex-shrink: 0;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--glass-border);
+    padding: 16px 12px;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    
+    display: flex;
+    flex-direction: column;
+}
+.nav-list-main, .nav-list-bottom {
+    list-style: none;
+}
+.nav-list-bottom {
+    margin-top: auto;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+.nav-item:hover {
+    background-color: rgba(128, 128, 128, 0.15);
+}
+.nav-item.active {
+    background-color: rgba(128, 128, 128, 0.3);
+    color: var(--color-text-primary);
+}
+.nav-item i {
+    width: 20px;
+    height: 20px;
+    color: var(--color-text-secondary);
+    transition: color 0.3s ease;
+}
+.nav-item.active i {
+    color: var(--color-text-primary);
+}
+
+/* 4. Nội dung chính */
+#main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.content-view {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+}
+.content-view.active {
+    display: flex;
+}
+
+/* Thanh công cụ nội dung */
+.content-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+    transition: border-color 0.3s ease;
+}
+.content-toolbar h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    transition: color 0.3s ease;
+}
+.button-group {
+    display: flex;
+    gap: 12px;
+}
+
+/* 5. Components (Nút, Bảng, ...) */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-system);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--color-gray-medium);
+    color: var(--color-text-primary);
+}
+.btn:hover {
+    filter: brightness(0.95);
+}
+body.dark-theme .btn:hover {
+    filter: brightness(1.1);
+}
+.btn.btn-primary {
+    background-color: var(--color-blue);
+    color: white;
+}
+.btn.btn-danger {
+    background-color: #ff3b30;
+    color: white;
+}
+.btn.btn-sm {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: var(--radius-sm);
+}
+
+/* Bảng (Table) */
+.table-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 24px 24px 24px;
+    
+    /* Ẩn thanh cuộn */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE và Edge */
+}
+.table-container::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+th, td {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--glass-border);
+    color: var(--color-text-secondary);
+    transition: border-color 0.3s ease, color 0.3s ease;
+}
+td {
+    color: var(--color-text-primary);
+}
+th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--color-gray-dark);
+    background: var(--table-header-bg);
+    position: sticky;
+    top: 0;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+tr:hover {
+    background-color: rgba(128, 128, 128, 0.1);
+}
+
+/* Keylogger */
+#keylog-output {
+    font-family: 'SF Mono', 'Menlo', 'Courier New', monospace;
+    font-size: 13px;
+    flex: 1;
+    padding: 20px 24px;
+    background: var(--color-gray-light);
+    color: var(--color-text-primary);
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Style cho cảnh báo */
+.warning-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 24px 10px 24px;
+    font-size: 12px;
+    color: var(--color-gray-dark);
+    font-style: italic;
+    flex-shrink: 0; /* Ngăn nó co lại */
+    transition: color 0.3s ease;
+}
+.warning-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+
+/* View Screen Capture */
+#capture-display-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    background: var(--color-gray-light);
+    transition: background-color 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#capture-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+#capture-placeholder {
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+}
+.toggle-switch input { display: none; }
+.slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: var(--color-gray-medium);
+    border-radius: 34px;
+    transition: .4s;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    border-radius: 50%;
+    transition: .4s;
+}
+input:checked + .slider {
+    background-color: #34c759; /* Green */
+}
+input:checked + .slider:before {
+    transform: translateX(22px);
+}
+
+/* 6. Modals (Cửa sổ bật lên) */
+.hidden { display: none !important; }
+
+#modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 10;
+}
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 500px;
+    
+    background: var(--modal-bg);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    
+    padding: 24px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.modal h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    transition: color 0.3s ease;
+}
+.modal p {
+    color: var(--color-text-secondary);
+    transition: color 0.3s ease;
+}
+
+/* Form trong Modal */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.form-group label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-gray-dark);
+    transition: color 0.3s ease;
+}
+.form-group input[type="text"] {
+    font-family: var(--font-system);
+    font-size: 14px;
+    padding: 10px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+/* Spinner */
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--color-gray-medium);
+    border-top-color: var(--color-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 7. Thanh trạng thái */
+.status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--glass-border);
+    background: var(--sidebar-bg); /* Dùng chung màu với sidebar */
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Vùng điều khiển kết nối */
+.connection-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.connection-controls #status-indicator {
+    flex-shrink: 0;
+}
+
+/* Input URL */
+#ws-url-input {
+    width: 250px;
+    min-width: 150px;
+    font-family: var(--font-system);
+    font-size: 12px;
+    padding: 4px 8px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Bộ chuyển theme */
+.theme-switcher {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.theme-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--color-gray-dark);
+}
+
+/* Style cho view Help (dùng chung với keylog) */
+#help-content {
+    font-family: 'SF Mono', 'Menlo', 'Courier New', monospace;
+    font-size: 13px;
+    flex: 1;
+    padding: 20px 24px;
+    background: var(--color-gray-light);
+    color: var(--color-text-primary);
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
