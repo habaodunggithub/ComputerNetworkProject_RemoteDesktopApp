@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- BIẾN TOÀN CỤC ---
     let ws;
-    let currentView = 'applications'; // View mặc định
+    let currentView = 'applications';
     let lastLoggedKeyCode = null;
 
     // --- BỘ CHỌN DOM (DOM Selectors) ---
@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const captureSpinner = $('#capture-spinner');
     const captureImg = $('#capture-img');
     const capturePlaceholder = $('#capture-placeholder');
+    const btnCopyScreenshot = $('#btn-copy-screenshot');
 
     // Help View
     const helpContent = $('#help-content');
@@ -101,6 +102,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset Keylogger
         keylogOutput.textContent = 'Disconnected. Waiting to connect...';
         keylogToggle.checked = false;
+
+        // Ẩn nút copy khi mất kết nối
+        btnCopyScreenshot.classList.add('hidden');
     }
 
     function onWsError(err) {
@@ -128,6 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 captureImg.src = `data:image/png;base64,${msg.data}`;
                 captureImg.classList.remove('hidden');
                 capturePlaceholder.classList.add('hidden');
+                btnCopyScreenshot.classList.remove('hidden');
                 break;
             case 'key_event':
                 handleKeyEvent(msg.key_code);
@@ -141,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     captureSpinner.classList.add('hidden');
                     captureImg.classList.add('hidden');
                     capturePlaceholder.classList.remove('hidden');
+                    btnCopyScreenshot.classList.add('hidden');
                 }
                 break;
             case 'error':
@@ -364,40 +370,165 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`Status: ${msg.success ? 'Success' : 'Failed'}\nMessage: ${msg.message || 'N/A'}`);
         }
 
+        // Cập nhật lại view BẢNG nếu hành động thành công
         if (msg.success && (command === 'stop_process_pid' || command === 'start_process')) {
-            if (currentView === 'processes') loadDataForView('processes');
+            if (currentView === 'processes-table') loadDataForView('processes-table');
         }
         if (msg.success && (command === 'stop_application' || command === 'start_application')) {
-            if (currentView === 'applications') loadDataForView('applications');
+            if (currentView === 'applications-table') loadDataForView('applications-table');
         }
     }
 
+    // --- HÀM COPY ẢNH (VỚI 2 LỚP FALLBACK) ---
+    /**
+     * Cố gắng copy ảnh bằng API nâng cao.
+     * Nếu thất bại (do http), chuyển sang copy text Base64.
+     * Nếu thất bại nữa (do http), dùng execCommand cũ.
+     */
+    async function copyScreenshotToClipboard() {
+        if (!captureImg.src || captureImg.classList.contains('hidden')) {
+            alert('Không có ảnh để copy.');
+            return;
+        }
+
+        // --- CÁCH 1: API NÂNG CAO (Copy ảnh thật) ---
+        // Sẽ thất bại trên http://<IP>
+        if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem === 'function') {
+            try {
+                const response = await fetch(captureImg.src);
+                const blob = await response.blob();
+                const item = new ClipboardItem({ [blob.type]: blob });
+                await navigator.clipboard.write([item]);
+
+                // Báo thành công
+                showCopySuccess('Đã copy ảnh!');
+                return; // Xong
+            } catch (err) {
+                console.warn('Lỗi API copy nâng cao (thử fallback 1):', err);
+                // Thử cách 2...
+            }
+        }
+
+        // --- CÁCH 2: API Fallback (Copy text) ---
+        // Cũng sẽ thất bại trên http://<IP>
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            try {
+                const base64Data = captureImg.src.split(',')[1];
+                await navigator.clipboard.writeText(base64Data);
+                
+                showCopySuccess('Đã copy (Base64)!');
+                return; // Xong
+            } catch (err) {
+                console.warn('Lỗi API copy text (thử fallback 2):', err);
+                // Thử cách 3...
+            }
+        }
+
+        // --- CÁCH 3: Fallback cuối cùng (dùng execCommand) ---
+        // Dùng cho các bối cảnh http không an toàn
+        console.log("Dùng fallback cuối cùng: execCommand.");
+        try {
+            const base64Data = captureImg.src.split(',')[1];
+            const textArea = document.createElement('textarea');
+            textArea.value = base64Data;
+            
+            // Ngăn cuộn trang khi focus
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            const successful = document.execCommand('copy');
+            
+            document.body.removeChild(textArea);
+
+            if (successful) {
+                showCopySuccess('Đã copy (Base64)!');
+            } else {
+                throw new Error('document.execCommand không thành công');
+            }
+        } catch (err) {
+            console.error('Lỗi khi copy text (Fallback cuối):', err);
+            alert('Tất cả các phương thức copy đều thất bại. Vui lòng copy thủ công.');
+        }
+    }
+
+    /**
+     * Hàm helper để hiển thị thông báo copy thành công
+     */
+    function showCopySuccess(message) {
+        const originalText = btnCopyScreenshot.innerHTML;
+        btnCopyScreenshot.innerHTML = `<i data-feather="check"></i> ${message}`;
+        feather.replace();
+        setTimeout(() => {
+            btnCopyScreenshot.innerHTML = originalText;
+            feather.replace();
+        }, 2000);
+    }
+
+
     // --- LOGIC GIAO DIỆN (UI Logic) ---
 
+    /**
+     * Hiển thị view nội dung và xử lý trạng thái active của sidebar.
+     * @param {string} viewId ID của view (ví dụ: 'processes', 'processes-table', 'keylogger')
+     */
     function showView(viewId) {
         currentView = viewId;
         contentViews.forEach(view => view.classList.remove('active'));
-        $(`#view-${viewId}`).classList.add('active');
+        
+        const newViewEl = $(`#view-${viewId}`); // ví dụ: #view-processes-table
+        if (newViewEl) {
+            newViewEl.classList.add('active');
+        } else {
+            console.error(`View "#view-${viewId}" not found!`);
+            return;
+        }
 
         $$('#sidebar .nav-item').forEach(item => item.classList.remove('active'));
-        $(`#sidebar .nav-item[data-view="${viewId}"]`).classList.add('active');
+        
+        // Kiểm tra xem view này có "cha" trong sidebar không (ví dụ: data-parent-view="processes")
+        const parentView = newViewEl.dataset.parentView; // ví dụ: "processes"
+        
+        let activeSidebarItem;
+        if (parentView) {
+            // Đây là view con, kích hoạt "cha" của nó trong sidebar
+            activeSidebarItem = $(`#sidebar .nav-item[data-view="${parentView}"]`);
+        } else {
+            // Đây là view chính (như keylogger, help)
+            activeSidebarItem = $(`#sidebar .nav-item[data-view="${viewId}"]`);
+        }
+        
+        if (activeSidebarItem) {
+            activeSidebarItem.classList.add('active');
+        }
 
         // Chỉ tải dữ liệu nếu đã kết nối
         if (ws && ws.readyState === WebSocket.OPEN) {
             loadDataForView(viewId);
         }
+
+        lastLoggedKeyCode = null;
     }
 
+    /**
+     * Tải dữ liệu cho view dựa trên viewId.
+     * Chỉ tải khi view là view BẢNG.
+     */
     function loadDataForView(viewId) {
-        if (viewId === 'processes') {
+        if (viewId === 'processes-table') {
+            // Chỉ tải khi view là BẢNG processes
             sendWsMessage({ command: 'list_processes' });
-        } else if (viewId === 'applications') {
+        } else if (viewId === 'applications-table') {
+            // Chỉ tải khi view là BẢNG applications
             sendWsMessage({ command: 'list_applications' });
         } else if (viewId === 'help') {
             sendWsMessage({ command: 'help' });
         }
-
-        lastLoggedKeyCode = null;
+        // Các view 'processes' và 'applications' (menu) sẽ không làm gì cả
     }
 
     function showModal(modalId) {
@@ -465,8 +596,12 @@ document.addEventListener('DOMContentLoaded', () => {
             captureSpinner.classList.remove('hidden');
             captureImg.classList.add('hidden');
             capturePlaceholder.classList.add('hidden');
+            btnCopyScreenshot.classList.add('hidden');
             sendWsMessage({ command: 'capture_screen' });
         });
+
+        // Thêm sự kiện click cho nút copy
+        btnCopyScreenshot.addEventListener('click', copyScreenshotToClipboard);
 
         // Keylogger toggle
         keylogToggle.addEventListener('change', (e) => {
@@ -496,7 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const path = $('#input-proc-path').value;
             const args = $('#input-proc-args').value;
             if (path) {
-                sendWsMessage({ command: 'start_process', path: path, args: args });
+                sendWsMessage({ command: 'start_process', path: path, args: args, 'command': 'start_process' });
                 hideAllModals();
                 $('#input-proc-path').value = '';
                 $('#input-proc-args').value = '';
@@ -509,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
         $('#modal-start-app [data-action="confirm"]').addEventListener('click', () => {
             const name = $('#input-app-name').value;
             if (name) {
-                sendWsMessage({ command: 'start_application', app_name: name });
+                sendWsMessage({ command: 'start_application', app_name: name, 'command': 'start_application' });
                 hideAllModals();
                 $('#input-app-name').value = '';
             } else {
@@ -517,9 +652,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Nút Stop (trong bảng)
+        // Nút Stop (trong bảng) VÀ Lựa chọn Menu
         $('#main-content').addEventListener('click', (e) => {
             const target = e.target;
+            
+            // Xử lý bấm vào item trong .action-list
+            const actionListItem = target.closest('[data-action="show-view"]');
+            if (actionListItem) {
+                const targetViewId = actionListItem.dataset.target; // ví dụ: "processes-table"
+                showView(targetViewId);
+                return; // Dừng lại
+            }
+
+            // Xử lý nút stop
             const action = target.dataset.action;
 
             if (action === 'stop-proc') {
@@ -542,6 +687,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initEventListeners();
 
-    showView(currentView);
+    showView(currentView); // Hiển thị view mặc định (menu 'applications')
     feather.replace(); // Kích hoạt icon
 });
