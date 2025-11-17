@@ -1,9 +1,10 @@
 # Remote Desktop App
 
-## Cách chạy
-    1. Mở terminal 1: ở folder agent: chạy `build.bat`, sau đó chạy file `agent.exe`
-    2. Mở terminal 2: ở folder gatewat: chạy `node gateway.js`
-    3. Trên termical của gateway hiện: 
+## 1. Cách chạy
+  
+ - Mở terminal 1: ở folder agent: chạy `build.bat`, sau đó chạy file `agent.exe`
+ - Mở terminal 2: ở folder gatewat: chạy `node gateway.js` (yêu cầu đã tải `Node.js`)
+ - Trên terminal của gateway hiện: 
     ```txt
         [Gateway] gateway.js started
         [Gateway] Connecting to agent 127.0.0.1:9100 ...
@@ -11,9 +12,11 @@
         [Gateway] WebSocket path   ws://192.168.0.102:8080/ws
         [Gateway] Connected to agent
     ```
-    4. Vào web client bằng đường link HTTP, nhập websocket path (nếu chưa có sẵn)
+ - Vào web client bằng đường link HTTP, nhập websocket path (nếu chưa có sẵn)
 
-+--------------+         TCP (JSON)        +-------------------+        WS + HTTP        +--------------+
-|   Agent      |  <-------------------->   |     Node Gateway  |  <------------------->  |   Web Client |
-| (C++/agent.exe)                          | (Node.js/gateway) |                         | (Browser)    |
-+--------------+                           +-------------------+                         +--------------+
+## 2. Cấu trúc dự án
+```text
++--------------+     TCP (JSON)     +-------------------+     WS + HTTP     +-------------+
+|    Agent     | <----------------> |    Node Gateway   | <---------------> | Web Client  |
+| (agent.exe)  |                    | (Node.js/gateway) |                   | (Browser)   |
++--------------+                    +-------------------+                   +-------------+
