@@ -12,3 +12,8 @@
         [Gateway] Connected to agent
     ```
     4. Vào web client bằng đường link HTTP, nhập websocket path (nếu chưa có sẵn)
+
++--------------+         TCP (JSON)        +-------------------+        WS + HTTP        +--------------+
+|   Agent      |  <-------------------->   |     Node Gateway  |  <------------------->  |   Web Client |
+| (C++/agent.exe)                          | (Node.js/gateway) |                         | (Browser)    |
++--------------+                           +-------------------+                         +--------------+

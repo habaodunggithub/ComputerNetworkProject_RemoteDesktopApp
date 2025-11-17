@@ -83,14 +83,10 @@ void AgentTcpServer::sendJson(const json& j) {
     if (!m_socket.is_open())
         return;
 
-    std::string data = j.dump() + "\n";
-    asio::async_write(
-        m_socket,
-        asio::buffer(data),
-        [](std::error_code ec, std::size_t) {
-            if (ec) {
-                std::cerr << "[Agent] sendJson error: "
-                          << ec.message() << "\n";
-            }
-        });
+    try {
+        std::string data = j.dump() + "\n";
+        asio::write(m_socket, asio::buffer(data));
+    } catch (const std::exception& e) {
+        std::cerr << "[Agent] sendJson exception: " << e.what() << "\n";
+    }
 }

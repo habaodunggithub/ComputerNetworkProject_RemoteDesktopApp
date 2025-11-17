@@ -137,6 +137,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'status':
                 handleStatus(msg);
+                if (msg.message === 'capture failed') {
+                    captureSpinner.classList.add('hidden');
+                    captureImg.classList.add('hidden');
+                    capturePlaceholder.classList.remove('hidden');
+                }
                 break;
             case 'error':
                 alert(`Server Error: ${msg.message}`);
