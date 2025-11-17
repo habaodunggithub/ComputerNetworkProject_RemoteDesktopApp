@@ -63,7 +63,7 @@ const agentServer = net.createServer((socket) => {
 // Bắt đầu lắng nghe TCP cho agent
 agentServer.listen(AGENT_PORT, "0.0.0.0", () => {
     console.log(
-        `[Gateway] TCP listening for agents at 0.0.0.0:${AGENT_PORT} (agent.exe sẽ connect vào cổng này)`
+        `[Gateway] TCP listening for agents at 0.0.0.0:${AGENT_PORT}`
     );
 });
 
