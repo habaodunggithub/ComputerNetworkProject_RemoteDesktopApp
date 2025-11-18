@@ -587,3 +587,31 @@ body.dark-theme .action-list li {
 body.dark-theme .action-list li:hover {
     background-color: var(--color-gray-dark);
 }
+
+.keylogger-like-output {
+    font-family: 'SF Mono', 'Menlo', 'Courier New', monospace;
+    font-size: 13px;
+    flex: 1;
+    padding: 20px 24px;
+    background: var(--color-gray-light);
+    color: var(--color-text-primary);
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    
+    display: flex; /* Dùng flex để căn giữa placeholder */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#webcam-video-output {
+    max-width: 100%;
+    max-height: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    /* Giữ nguyên kích thước và đặt nó ở giữa */
+    flex-shrink: 0;
+}

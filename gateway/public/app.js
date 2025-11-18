@@ -11,6 +11,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const $ = (selector) => document.querySelector(selector);
     const $$ = (selector) => document.querySelectorAll(selector);
 
+    // Webcam view
+    const btnStartRecord = $('#btn-start-record');
+    const btnStopRecord = $('#btn-stop-record');
+    const webcamSpinner = $('#webcam-spinner');
+    const webcamPlaceholder = $('#webcam-placeholder');
+    const webcamVideoOutput = $('#webcam-video-output');
+    const webcamStatus = $('#webcam-status');
+    const modalWebcamDevice = $('#modal-webcam-device');
+
+    // Webcam Modal Inputs
+    const inputWebcamDuration = $('#input-webcam-duration'); // THÊM DÒNG NÀY
+    const inputWebcamDeviceName = $('#input-webcam-device-name'); // Đã có, chỉ làm rõ
+
     // Trạng thái & Điều khiển kết nối
     const statusIndicator = $('#status-indicator');
     const wsUrlInput = $('#ws-url-input');
@@ -134,6 +147,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 capturePlaceholder.classList.add('hidden');
                 btnCopyScreenshot.classList.remove('hidden');
                 break;
+            case 'webcam_recording_status':
+                handleWebcamStatus(msg);
+                break;
+
+            case 'webcam_video':
+                handleWebcamVideo(msg.data);
+                break;
             case 'key_event':
                 handleKeyEvent(msg.key_code);
                 break;
@@ -152,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'error':
                 alert(`Server Error: ${msg.message}`);
                 break;
+            
         }
     }
 
@@ -377,6 +398,55 @@ document.addEventListener('DOMContentLoaded', () => {
         if (msg.success && (command === 'stop_application' || command === 'start_application')) {
             if (currentView === 'applications-table') loadDataForView('applications-table');
         }
+    }
+
+    function handleWebcamStatus(msg) {
+        // Cập nhật trạng thái hiển thị
+        webcamStatus.textContent = `Status: ${msg.message}`;
+        webcamStatus.classList.remove('hidden');
+
+        if (msg.message.includes('started')) {
+            // Bắt đầu
+            btnStartRecord.classList.add('hidden');
+            btnStopRecord.classList.remove('hidden'); // Vẫn cho phép hủy khẩn cấp
+            webcamPlaceholder.classList.add('hidden');
+            webcamSpinner.classList.remove('hidden');
+            webcamVideoOutput.classList.add('hidden');
+        } else if (msg.message.includes('error') || msg.message.includes('cancelled')) {
+            // Lỗi hoặc Hủy bỏ: Reset ngay lập tức
+            btnStartRecord.classList.remove('hidden');
+            btnStopRecord.classList.add('hidden'); // Ẩn nút Stop sau khi hoàn tất
+            webcamSpinner.classList.add('hidden');
+            
+            if (msg.message.includes('cancelled')) {
+                 webcamPlaceholder.textContent = 'Recording was cancelled.';
+            } else {
+                 webcamPlaceholder.textContent = `Recording failed: ${msg.message}`;
+            }
+            webcamPlaceholder.classList.remove('hidden');
+            
+        } else if (msg.message.includes('completed')) {
+            // Hoàn thành: Chỉ cập nhật trạng thái chờ, KHÔNG reset nút
+            webcamSpinner.classList.add('hidden');
+            webcamPlaceholder.textContent = 'Recording complete. Waiting for file transfer...';
+            webcamPlaceholder.classList.remove('hidden');
+        }
+    }
+    
+    function handleWebcamVideo(base64Data) {
+        // 1. Hiển thị video
+        webcamSpinner.classList.add('hidden');
+        webcamPlaceholder.classList.add('hidden');
+        webcamVideoOutput.src = `data:video/mp4;base64,${base64Data}`;
+        webcamVideoOutput.classList.remove('hidden');
+        webcamStatus.textContent = 'Status: Video received and ready to play.';
+        
+        // 2. Reset nút bấm (QUAN TRỌNG: Quá trình đã hoàn tất)
+        btnStartRecord.classList.remove('hidden');
+        btnStopRecord.classList.add('hidden');
+
+        // Tự động phát (có thể thất bại do chính sách trình duyệt)
+        webcamVideoOutput.play().catch(e => console.log('Autoplay failed:', e));
     }
 
     // --- HÀM COPY ẢNH (VỚI 2 LỚP FALLBACK) ---
@@ -680,6 +750,52 @@ document.addEventListener('DOMContentLoaded', () => {
                     sendWsMessage({ command: 'stop_application', app_name: name, 'command': 'stop_application' });
                 }
             }
+        });
+
+        // Nút Start/Stop Record
+        btnStartRecord.addEventListener('click', () => {
+            // Luôn hiển thị Modal để người dùng có thể nhập tên thiết bị
+            showModal('modal-webcam-device');
+            webcamVideoOutput.classList.add('hidden');
+        });
+        
+        btnStopRecord.addEventListener('click', () => {
+            sendWsMessage({ command: 'stop_webcam_record' });
+            // Cập nhật giao diện ngay lập tức
+            btnStopRecord.classList.add('hidden');
+            btnStartRecord.classList.remove('hidden');
+            webcamSpinner.classList.add('hidden');
+            webcamStatus.textContent = 'Status: Stopping recording...';
+        });
+
+        // Nút Start Recording (trong Modal)
+        $('#modal-webcam-device [data-action="confirm"]').addEventListener('click', () => {
+            const deviceName = inputWebcamDeviceName.value.trim();
+            const duration = parseInt(inputWebcamDuration.value, 10);
+            
+            if (isNaN(duration) || duration <= 0) {
+                alert('Duration must be a positive number in seconds.');
+                return;
+            }
+
+            // Gửi lệnh Start kèm theo thời gian và tên thiết bị
+            sendWsMessage({ 
+                command: 'start_webcam_record', 
+                device_name: deviceName,
+                time: duration // TRƯỜNG "time" ĐƯỢC GỬI Ở ĐÂY
+            });
+            
+            hideAllModals();
+            
+            // Thiết lập trạng thái chờ
+            btnStartRecord.classList.add('hidden');
+            btnStopRecord.classList.remove('hidden'); // Hiển thị nút Cancel/Emergency Stop
+            webcamSpinner.classList.remove('hidden');
+
+            webcamStatus.textContent = `Status: Starting record for ${duration} seconds... (Device: ${deviceName || 'Default'})`;
+            webcamStatus.classList.remove('hidden');
+            webcamPlaceholder.classList.add('hidden');
+            webcamVideoOutput.classList.add('hidden');
         });
     }
 
