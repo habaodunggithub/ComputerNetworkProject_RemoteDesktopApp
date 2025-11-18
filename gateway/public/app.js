@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputWebcamDuration = $('#input-webcam-duration'); // THÊM DÒNG NÀY
     const inputWebcamDeviceName = $('#input-webcam-device-name'); // Đã có, chỉ làm rõ
 
+
     // Trạng thái & Điều khiển kết nối
     const statusIndicator = $('#status-indicator');
     const wsUrlInput = $('#ws-url-input');
@@ -57,8 +58,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Help View
     const helpContent = $('#help-content');
 
+    // System Control View
+    const viewSystemControl = $('#view-system-control');
+
     // Nút bấm
     const btnStartApp = $('#btn-start-app');
+
+    // THÊM 2 BỘ CHỌN NÀY
+    const btnSystemShutdown = $('#btn-system-shutdown');
+    const btnSystemRestart = $('#btn-system-restart');
 
     // Theme
     const themeToggle = $('#theme-toggle');
@@ -797,6 +805,24 @@ document.addEventListener('DOMContentLoaded', () => {
             webcamPlaceholder.classList.add('hidden');
             webcamVideoOutput.classList.add('hidden');
         });
+
+        // === LOGIC CHO VIEW SYSTEM CONTROL ===
+        if (viewSystemControl) {
+            viewSystemControl.addEventListener('click', (e) => {
+                const target = e.target.closest('li');
+                if (!target) return;
+                
+                if (target.id === 'btn-system-shutdown') {
+                    if (confirm('CẢNH BÁO: Bạn có chắc chắn muốn TẮT máy chủ từ xa không?')) {
+                        sendWsMessage({ command: 'system_shutdown', 'command': 'system_shutdown' });
+                    }
+                } else if (target.id === 'btn-system-restart') {
+                    if (confirm('CẢNH BẢO: Bạn có chắc chắn muốn KHỞI ĐỘNG LẠI máy chủ từ xa không?')) {
+                        sendWsMessage({ command: 'system_restart', 'command': 'system_restart' });
+                    }
+                }
+            });
+        }
     }
 
     // --- KHỞI ĐỘNG ---

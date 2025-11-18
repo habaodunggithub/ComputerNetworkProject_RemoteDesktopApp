@@ -48,6 +48,11 @@
                 </ul>
                 
                 <ul class="nav-list-bottom">
+                    <li class="nav-item" data-view="system-control">
+                        <i data-feather="zap"></i>
+                        <span>System Control</span>
+                    </li>
+
                     <li class="nav-item" data-view="help">
                         <i data-feather="help-circle"></i>
                         <span>Help</span>
@@ -159,6 +164,26 @@
                         <img id="capture-img" src="" alt="Screen Capture" class="hidden">
                         <p id="capture-placeholder">Click "Take Screenshot" to capture the screen.</p>
                     </div>
+                </div>
+
+                <div class="content-view" id="view-system-control">
+                    <div class="content-toolbar">
+                        <h2>System Control</h2>
+                    </div>
+                    <div class="action-list">
+                        <li id="btn-system-restart">
+                            <i data-feather="rotate-cw"></i>
+                            <span>Restart Server</span>
+                        </li>
+                        <li id="btn-system-shutdown">
+                            <i data-feather="power"></i>
+                            <span>Shutdown Server</span>
+                        </li>
+                    </div>
+                    <p class="warning-text" style="padding-top: 24px;">
+                        <i data-feather="alert-triangle" class="warning-icon"></i>
+                        These commands will immediately shut down or restart the remote machine. Use with caution.
+                    </p>
                 </div>
                 
                 <div class="content-view" id="view-help">
