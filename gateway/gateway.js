@@ -1,8 +1,9 @@
-// Node Gateway: HTTP + WebSocket cho Web client, TCP server cho Agent (C++)
+// Node Gateway: HTTPS + WebSocket Secure (WSS) cho Web client, TCP server cho Agent (C++)
 
 // IMPORT MODULE 
 const path = require("path");
-const http = require("http");
+const https = require("https"); // Dùng https thay vì http
+const fs = require("fs");       // Cần fs để đọc file cert/key
 const express = require("express");
 const WebSocket = require("ws");
 const net = require("net");
@@ -12,15 +13,32 @@ const os = require("os");
 const HTTP_PORT = parseInt(process.env.HTTP_PORT || "8080", 10);
 const AGENT_PORT = parseInt(process.env.AGENT_PORT || "9100", 10);
 
+// CẤU HÌNH SSL/TLS
+// Đọc 2 file cert.pem và key.pem từ cùng thư mục với gateway.js
+let sslOptions = {};
+try {
+    sslOptions = {
+        key: fs.readFileSync(path.join(__dirname, 'key.pem')),
+        cert: fs.readFileSync(path.join(__dirname, 'cert.pem'))
+    };
+    console.log("[Gateway] Đã tải chứng chỉ SSL thành công.");
+} catch (err) {
+    console.error("[Gateway] LỖI: Không tìm thấy file key.pem hoặc cert.pem!");
+    console.error("Vui lòng tạo chứng chỉ SSL trước khi chạy HTTPS.");
+    process.exit(1);
+}
+
 // HTTP SERVER (SERVE UI) 
 const app = express();
 
 // Static folder: public/index.html, public/app.js, public/style.css
 app.use(express.static(path.join(__dirname, "public")));
 
-const server = http.createServer(app);
+// Tạo HTTPS Server với sslOptions
+const server = https.createServer(sslOptions, app);
 
-// WEBSOCKET SERVER (CHO WEB CLIENT)
+// WEBSOCKET SERVER (WSS - WebSocket Secure)
+// WebSocket sẽ tự động bám vào server HTTPS để trở thành WSS
 const wss = new WebSocket.Server({ server, path: "/ws" });
 
 // Giả sử chỉ cho 1 web client điều khiển tại 1 thời điểm 
@@ -119,7 +137,7 @@ wss.on("connection", (ws) => {
     }
 
     currentClient = ws;
-    console.log("[Gateway] Web client connected");
+    console.log("[Gateway] Web client connected (Secure WSS)");
 
     ws.on("message", (data) => {
         let msg;
@@ -142,7 +160,7 @@ wss.on("connection", (ws) => {
     });
 });
 
-// HTTP + WS LISTEN 
+// HTTPS + WSS LISTEN 
 function getLanIPv4() {
     const nets = os.networkInterfaces();
     for (const name of Object.keys(nets)) {
@@ -157,8 +175,11 @@ function getLanIPv4() {
 
 server.listen(HTTP_PORT, "0.0.0.0", () => {
     const ip = getLanIPv4();
-    console.log(`[Gateway] HTTP listening at  http://${ip}:${HTTP_PORT}`);
-    console.log(`[Gateway] WebSocket path    ws://${ip}:${HTTP_PORT}/ws`);
+    console.log("-------------------------------------------------------");
+    console.log(`[Gateway] HTTPS Server đang chạy!`);
+    console.log(`[Gateway] Truy cập web tại: https://${ip}:${HTTP_PORT}`);
+    console.log(`[Gateway] WebSocket Secure: wss://${ip}:${HTTP_PORT}/ws`);
+    console.log("-------------------------------------------------------");
 });
 
-console.log("[Gateway] gateway.js started (TCP server for agent, WS+HTTP for web)");
+console.log("[Gateway] Khởi động thành công (TCP for Agent, HTTPS+WSS for Web)");
