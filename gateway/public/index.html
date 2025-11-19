@@ -220,19 +220,24 @@
                     <div class="content-toolbar">
                         <h2>Webcam Recorder</h2>
                         <div class="button-group">
-                            <button class="btn btn-primary" id="btn-start-record"><i data-feather="video"></i> Record</button>
-                            <button class="btn btn-danger hidden" id="btn-stop-record"><i data-feather="square"></i> Stop</button>
+                            
+                            <button class="btn btn-primary" id="btn-start-record"><i data-feather="video"></i> Record Clip</button>
+                            <button class="btn btn-danger hidden" id="btn-stop-record"><i data-feather="square"></i> Stop Record</button>
+
+                            <button class="btn btn-primary" id="btn-start-webcam-stream"><i data-feather="play"></i> Stream</button>
+                            <button class="btn btn-danger hidden" id="btn-stop-webcam-stream"><i data-feather="square"></i> Stop Stream</button>
+
                             <button class="btn btn-outline hidden" id="btn-save-video"><i data-feather="download"></i> Save</button>
                         </div>
                     </div>
                     <div id="webcam-display-area">
                         <div class="empty-state">
                             <div class="empty-icon"><i data-feather="film"></i></div>
-                            <p id="webcam-placeholder">Ready to record webcam</p>
+                            <p id="webcam-placeholder">Ready to record or stream webcam</p>
                             <p id="webcam-status" class="status-text hidden">Idle</p>
                             <div id="webcam-spinner" class="spinner hidden"></div>
                         </div>
-                        <video id="webcam-video-output" controls class="hidden shadow-lg"></video>
+                        <img id="webcam-stream-img" class="hidden shadow-lg" alt="Webcam Stream"> <video id="webcam-video-output" controls class="hidden shadow-lg"></video>
                     </div>
                 </div>
 

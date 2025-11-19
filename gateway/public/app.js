@@ -48,6 +48,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const keylogOutput = $('#keylog-output');
     const btnClearKeylog = $('#btn-clear-keylog');
 
+    const btnStartWebcamStream = $('#btn-start-webcam-stream');
+    const btnStopWebcamStream = $('#btn-stop-webcam-stream');
+    const webcamStreamImg = $('#webcam-stream-img');
+
     // System & Navigation
     const sidebar = $('#sidebar');
     const viewSystemControl = $('#view-system-control');
@@ -168,6 +172,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'webcam_video':
                 handleWebcamVideo(msg.data);
+                break;
+
+            case 'webcam_frame':
+                const webcamDisplayArea = $('#webcam-display-area .empty-state');
+                
+                webcamDisplayArea.classList.add('hidden'); 
+                webcamVideoOutput.classList.add('hidden');
+                webcamStreamImg.classList.remove('hidden');
+                webcamStreamImg.src = "data:image/jpeg;base64," + msg.data;
                 break;
 
             case 'key_event':
@@ -362,20 +375,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleWebcamStatus(msg) {
         webcamStatus.textContent = msg.message;
         webcamStatus.classList.remove('hidden');
+        
         if (msg.message.includes('started')) {
             btnStartRecord.classList.add('hidden');
             btnStopRecord.classList.remove('hidden');
+            btnStartWebcamStream.classList.add('hidden');
+            btnStopWebcamStream.classList.add('hidden');
             btnSaveVideo.classList.add('hidden');
             webcamPlaceholder.parentElement.classList.add('hidden');
             webcamSpinner.classList.remove('hidden');
             webcamVideoOutput.classList.add('hidden');
         } else if (msg.message.includes('completed')) {
+            btnStartWebcamStream.classList.remove('hidden');
             webcamSpinner.classList.add('hidden');
             webcamPlaceholder.parentElement.classList.remove('hidden');
             webcamPlaceholder.textContent = 'Processing video...';
         } else if (msg.message.includes('error') || msg.message.includes('cancelled')) {
             btnStartRecord.classList.remove('hidden');
             btnStopRecord.classList.add('hidden');
+            btnStartWebcamStream.classList.remove('hidden');
             webcamSpinner.classList.add('hidden');
             webcamPlaceholder.parentElement.classList.remove('hidden');
         }
@@ -515,6 +533,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 a.download = `webcam-${Date.now()}.mp4`;
                 a.click();
             }
+        };
+
+        // Webcam Stream
+        btnStartWebcamStream.onclick = () => {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return alert('Connect first');
+
+            // Reset UI
+            webcamVideoOutput.classList.add('hidden');
+            webcamStreamImg.classList.remove('hidden');
+            webcamPlaceholder.parentElement.classList.add('hidden');
+            btnSaveVideo.classList.add('hidden');
+
+            // Ẩn các nút Record
+            btnStartRecord.classList.add('hidden'); 
+            btnStopRecord.classList.add('hidden');
+
+            // Gửi lệnh Start Stream
+            sendWsMessage({ command: 'start_webcam_stream', fps: 10 });
+
+            btnStartWebcamStream.classList.add('hidden');
+            btnStopWebcamStream.classList.remove('hidden');
+
+            $('#webcam-display-area .empty-state').classList.add('hidden'); // THÊM DÒNG NÀY
+            webcamVideoOutput.classList.add('hidden');
+            webcamStreamImg.classList.remove('hidden');
+        };
+
+        btnStopWebcamStream.onclick = () => {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return alert('Connect first');
+
+            sendWsMessage({ command: 'stop_webcam_stream' });
+
+            // Reset UI về trạng thái ban đầu
+            webcamStreamImg.classList.add('hidden');
+            webcamPlaceholder.parentElement.classList.remove('hidden');
+            webcamPlaceholder.textContent = "Ready to record or stream webcam";
+
+            // Hiển thị lại nút Record và Stream
+            btnStartWebcamStream.classList.remove('hidden');
+            btnStopWebcamStream.classList.add('hidden');
+            btnStartRecord.classList.remove('hidden'); 
         };
 
         // Nút Clear Keylog
