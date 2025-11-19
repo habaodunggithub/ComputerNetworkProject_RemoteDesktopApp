@@ -62,10 +62,7 @@
                         <li class="nav-item" data-view="system-control">
                             <i data-feather="power"></i> <span>Power & System</span>
                         </li>
-                        <li class="nav-item" data-view="help">
-                            <i data-feather="help-circle"></i> <span>Help</span>
-                        </li>
-                    </ul>
+                        </ul>
                 </div>
             </nav>
 
@@ -159,19 +156,17 @@
                 <div class="content-view" id="view-keylogger">
                     <div class="content-toolbar">
                         <h2>Keylogger Monitor</h2>
-
                         <div class="toolbar-actions">
                             <button class="btn btn-sm btn-outline" id="btn-clear-keylog" title="Clear logs">
                                 <i data-feather="trash-2"></i> <span>Clear</span>
                             </button>
-
-                            <div class="divider-vertical"></div> <label class="toggle-switch">
+                            <div class="divider-vertical"></div>
+                            <label class="toggle-switch">
                                 <input type="checkbox" id="keylog-toggle">
                                 <span class="slider"></span>
                             </label>
                         </div>
                     </div>
-
                     <div class="terminal-window">
                         <div class="terminal-header">
                             <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
@@ -186,6 +181,10 @@
                         <div class="button-group">
                             <button class="btn btn-primary" id="btn-take-screenshot">
                                 <i data-feather="camera"></i> Capture
+                            </button>
+                            
+                            <button class="btn btn-outline" id="btn-reload-screen" title="Reset View">
+                                <i data-feather="refresh-cw"></i>
                             </button>
 
                             <button class="btn btn-primary" id="btn-start-stream">
@@ -223,6 +222,10 @@
                             
                             <button class="btn btn-primary" id="btn-start-record"><i data-feather="video"></i> Record Clip</button>
                             <button class="btn btn-danger hidden" id="btn-stop-record"><i data-feather="square"></i> Stop Record</button>
+
+                            <button class="btn btn-outline" id="btn-reload-webcam" title="Reset View">
+                                <i data-feather="refresh-cw"></i>
+                            </button>
 
                             <button class="btn btn-primary" id="btn-start-webcam-stream"><i data-feather="play"></i> Stream</button>
                             <button class="btn btn-danger hidden" id="btn-stop-webcam-stream"><i data-feather="square"></i> Stop Stream</button>
@@ -262,15 +265,7 @@
                     </div>
                 </div>
 
-                <div class="content-view" id="view-help">
-                    <div class="content-toolbar">
-                        <h2>Commands Reference</h2>
-                    </div>
-                    <div class="terminal-window">
-                        <pre id="help-content"></pre>
-                    </div>
-                </div>
-            </section>
+                </section>
         </div>
 
         <footer class="status-bar">
@@ -379,5 +374,4 @@
     </div>
 
 </body>
-
 </html>
