@@ -172,28 +172,42 @@ document.addEventListener('DOMContentLoaded', () => {
             
             case 'screenshot':
                 captureSpinner.classList.add('hidden');
+                
+                streamImg.classList.add('hidden');
+                streamImg.src = "";
+                capturePlaceholder.parentElement.classList.add('hidden');
+
                 captureImg.src = `data:image/png;base64,${msg.data}`;
                 captureImg.classList.remove('hidden');
-                capturePlaceholder.parentElement.classList.add('hidden');
+                
                 btnCopyScreenshot.classList.remove('hidden');
                 btnSaveScreenshot.classList.remove('hidden');
                 break;
             
             case 'screen_frame':
-                capturePlaceholder.parentElement.classList.add('hidden');
-                captureImg.classList.add('hidden');
-                streamImg.classList.remove('hidden');
-                streamImg.src = "data:image/jpeg;base64," + msg.data;
+                if (btnStartStream.classList.contains('hidden')) {
+                    const captureEmptyState = $('#capture-display-area .empty-state');
+                    captureEmptyState.classList.add('hidden'); 
+                    
+                    captureImg.classList.add('hidden');
+                    
+                    streamImg.classList.remove('hidden');
+                    streamImg.src = "data:image/jpeg;base64," + msg.data;
+                }
                 break;
             
             case 'webcam_recording_status': handleWebcamStatus(msg); break;
             case 'webcam_video': handleWebcamVideo(msg.data); break;
             case 'webcam_frame': 
-                 $('#webcam-display-area .empty-state').classList.add('hidden');
-                 webcamVideoOutput.classList.add('hidden');
-                 webcamStreamImg.classList.remove('hidden');
-                 webcamStreamImg.src = "data:image/jpeg;base64," + msg.data;
-                 break;
+                if (btnStartWebcamStream.classList.contains('hidden')) {
+                    $('#webcam-display-area .empty-state').classList.add('hidden');
+                    
+                    webcamVideoOutput.classList.add('hidden');
+                    
+                    webcamStreamImg.classList.remove('hidden');
+                    webcamStreamImg.src = "data:image/jpeg;base64," + msg.data;
+                }
+                break;
             
             case 'key_event': handleKeyEvent(msg.key_code); break;
             
@@ -443,30 +457,65 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleWebcamStatus(msg) {
         webcamStatus.textContent = msg.message;
         webcamStatus.classList.remove('hidden');
+
         if (msg.message.includes('Recording started')) {
-            btnStartRecord.classList.add('hidden'); btnStopRecord.classList.remove('hidden'); 
-            btnStartWebcamStream.classList.add('hidden'); btnStopWebcamStream.classList.add('hidden');
+            btnStartRecord.classList.add('hidden'); 
+            btnStopRecord.classList.remove('hidden'); 
+            
+            btnStartWebcamStream.classList.add('hidden'); 
+            btnStopWebcamStream.classList.add('hidden');
+            
             btnSaveVideo.classList.add('hidden');
-            webcamPlaceholder.parentElement.classList.add('hidden'); webcamSpinner.classList.remove('hidden'); webcamVideoOutput.classList.add('hidden');
-        } else if (msg.message.includes('completed')) {
-             btnStartWebcamStream.classList.remove('hidden');
-             webcamSpinner.classList.add('hidden'); webcamPlaceholder.parentElement.classList.remove('hidden'); webcamPlaceholder.textContent = 'Processing...';
-        } else if (msg.message.includes('error') || msg.message.includes('cancelled')) {
-            btnStartRecord.classList.remove('hidden'); btnStopRecord.classList.add('hidden');
+            
+            webcamPlaceholder.parentElement.classList.add('hidden'); 
+            webcamSpinner.classList.remove('hidden'); 
+            webcamVideoOutput.classList.add('hidden');
+        } 
+        else if (msg.message.includes('completed')) {
             btnStartWebcamStream.classList.remove('hidden');
-            webcamSpinner.classList.add('hidden'); webcamPlaceholder.parentElement.classList.remove('hidden');
+            webcamSpinner.classList.add('hidden'); 
+            webcamPlaceholder.parentElement.classList.remove('hidden'); 
+            webcamPlaceholder.textContent = 'Processing...';
+        } 
+        else if (msg.message.includes('error') || msg.message.includes('cancelled') || msg.message.includes('stopped')) {
+            
+            webcamSpinner.classList.add('hidden'); 
+            
+            webcamPlaceholder.parentElement.classList.remove('hidden');
+            webcamPlaceholder.textContent = "Ready to record or stream webcam";
+
+            btnStartRecord.classList.remove('hidden'); 
+            btnStopRecord.classList.add('hidden');
+            
+            btnStartWebcamStream.classList.remove('hidden');
+            btnStopWebcamStream.classList.add('hidden');
+
+            setTimeout(() => { webcamStatus.classList.add('hidden'); }, 3000);
         }
     }
 
     function handleWebcamVideo(b64) {
-        webcamSpinner.classList.add('hidden'); webcamPlaceholder.parentElement.classList.add('hidden');
+        webcamSpinner.classList.add('hidden'); 
+        webcamPlaceholder.parentElement.classList.add('hidden');
+
+        webcamStreamImg.classList.add('hidden'); 
+        webcamStreamImg.src = ""; 
+
         try {
             const chars = atob(b64), bytes = new Uint8Array(chars.length);
             for(let i=0; i<chars.length; i++) bytes[i] = chars.charCodeAt(i);
+            
+            if (currentVideoBlob) URL.revokeObjectURL(currentVideoBlob.src);
             currentVideoBlob = new Blob([bytes], { type: 'video/mp4' });
+            
             webcamVideoOutput.src = URL.createObjectURL(currentVideoBlob);
             webcamVideoOutput.classList.remove('hidden');
-            btnStartRecord.classList.remove('hidden'); btnStopRecord.classList.add('hidden'); btnSaveVideo.classList.remove('hidden');
+
+            btnStartRecord.classList.remove('hidden');
+            btnStopRecord.classList.add('hidden');
+            btnSaveVideo.classList.remove('hidden');
+            btnStartWebcamStream.classList.remove('hidden'); 
+
         } catch(e) { console.error(e); alert("Video error"); }
     }
 
@@ -540,11 +589,57 @@ document.addEventListener('DOMContentLoaded', () => {
         // Screen Capture
         btnTakeScreenshot.onclick = () => {
             if (ws && ws.readyState === WebSocket.OPEN) {
+                sendWsMessage({ command: 'stop_screen_stream' });
+
+                streamImg.src = "";
+                streamImg.classList.add('hidden');
+                
+                captureImg.src = "";
+                captureImg.classList.add('hidden');
+                
                 sendWsMessage({ command: 'capture_screen' });
-                captureSpinner.classList.remove('hidden'); captureImg.classList.add('hidden'); capturePlaceholder.parentElement.classList.add('hidden');
-                btnSaveScreenshot.classList.add('hidden'); btnCopyScreenshot.classList.add('hidden');
+                
+                captureSpinner.classList.remove('hidden'); 
+                capturePlaceholder.parentElement.classList.add('hidden');
+                btnSaveScreenshot.classList.add('hidden'); 
+                btnCopyScreenshot.classList.add('hidden');
+                
+                btnStartStream.classList.remove('hidden');
+                btnStopStream.classList.add('hidden');
+                
             } else alert('Connect first');
         };
+
+        if (btnReloadScreen) {
+            btnReloadScreen.onclick = () => {
+                if(ws && ws.readyState === WebSocket.OPEN) {
+                    sendWsMessage({ command: 'stop_screen_stream' });
+                }
+
+                captureImg.classList.add('hidden'); 
+                captureImg.src = "";
+                
+                streamImg.classList.add('hidden'); 
+                streamImg.src = "";
+
+                const emptyState = $('#capture-display-area .empty-state');
+                emptyState.classList.remove('hidden');
+                
+                const emptyIcon = emptyState.querySelector('.empty-icon');
+                if(emptyIcon) emptyIcon.classList.remove('hidden');
+
+                capturePlaceholder.textContent = "Ready to capture/stream screen"; 
+                capturePlaceholder.parentElement.classList.remove('hidden');
+                captureSpinner.classList.add('hidden'); 
+
+                btnSaveScreenshot.classList.add('hidden'); 
+                btnCopyScreenshot.classList.add('hidden');
+                
+                btnStartStream.classList.remove('hidden'); 
+                btnStopStream.classList.add('hidden');
+            };
+        }
+
         btnSaveScreenshot.onclick = () => { const a = document.createElement('a'); a.href = captureImg.src; a.download = `screen-${Date.now()}.png`; a.click(); };
         btnCopyScreenshot.onclick = async () => {
             try {
@@ -553,22 +648,68 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) { await navigator.clipboard.writeText(captureImg.src.split(',')[1]); alert('Copied Base64'); }
         };
         
-        if (btnReloadScreen) {
-            btnReloadScreen.onclick = () => {
-                if(ws && ws.readyState === WebSocket.OPEN) sendWsMessage({ command: 'stop_screen_stream' });
-                captureImg.classList.add('hidden'); streamImg.classList.add('hidden');
-                capturePlaceholder.parentElement.classList.remove('hidden');
-                captureSpinner.classList.add('hidden'); btnSaveScreenshot.classList.add('hidden'); btnCopyScreenshot.classList.add('hidden');
-                btnStartStream.classList.remove('hidden'); btnStopStream.classList.add('hidden');
+        if (btnReloadWebcam) {
+            btnReloadWebcam.onclick = () => {
+                if(ws && ws.readyState === WebSocket.OPEN) {
+                    sendWsMessage({ command: 'stop_webcam_stream' });
+                    sendWsMessage({ command: 'stop_webcam_record' });
+                }
+
+                webcamStreamImg.classList.add('hidden');
+                webcamStreamImg.src = ""; 
+
+                webcamVideoOutput.classList.add('hidden');
+                webcamVideoOutput.src = "";
+                if (currentVideoBlob) {
+                    URL.revokeObjectURL(currentVideoBlob);
+                    currentVideoBlob = null;
+                }
+
+                const emptyState = $('#webcam-display-area .empty-state');
+                emptyState.classList.remove('hidden');
+                
+                webcamSpinner.classList.add('hidden');
+                webcamStatus.classList.add('hidden');
+
+                const emptyIcon = emptyState.querySelector('.empty-icon');
+                if(emptyIcon) emptyIcon.classList.remove('hidden');
+                
+                webcamPlaceholder.textContent = "Ready to record or stream webcam";
+                webcamPlaceholder.parentElement.classList.remove('hidden');
+
+                btnStartWebcamStream.classList.remove('hidden'); 
+                btnStopWebcamStream.classList.add('hidden');
+                
+                btnStartRecord.classList.remove('hidden'); 
+                btnStopRecord.classList.add('hidden'); 
+                
+                btnSaveVideo.classList.add('hidden');
             };
         }
 
         btnStartStream.onclick = () => {
-             if (ws && ws.readyState === WebSocket.OPEN) {
-                 sendWsMessage({ command: 'start_screen_stream', fps: 10 });
-                 captureImg.classList.add('hidden'); streamImg.classList.remove('hidden'); capturePlaceholder.parentElement.classList.add('hidden');
-                 btnStartStream.classList.add('hidden'); btnStopStream.classList.remove('hidden');
-             } else alert('Connect first');
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                streamImg.src = "";
+                streamImg.classList.add('hidden');
+                captureImg.classList.add('hidden');
+
+                btnSaveScreenshot.classList.add('hidden'); 
+                btnCopyScreenshot.classList.add('hidden');
+
+                const emptyState = $('#capture-display-area .empty-state');
+                emptyState.classList.remove('hidden'); 
+                
+                const emptyIcon = emptyState.querySelector('.empty-icon');
+                if(emptyIcon) emptyIcon.classList.add('hidden'); 
+
+                capturePlaceholder.textContent = "Initializing Screen Stream..."; 
+                captureSpinner.classList.remove('hidden'); 
+
+                sendWsMessage({ command: 'start_screen_stream', fps: 30 });
+
+                btnStartStream.classList.add('hidden'); 
+                btnStopStream.classList.remove('hidden');
+            } else alert('Connect first');
         };
         btnStopStream.onclick = () => {
              sendWsMessage({ command: 'stop_screen_stream' });
@@ -579,32 +720,78 @@ document.addEventListener('DOMContentLoaded', () => {
         // Webcam
         btnStartRecord.onclick = () => showModal('modal-webcam-device');
         $('#modal-webcam-device [data-action="confirm"]').onclick = () => {
-             sendWsMessage({command: 'start_webcam_record', time: parseInt(inputWebcamDuration.value)||10, device_name: inputWebcamDeviceName.value});
-             hideAllModals();
+             webcamVideoOutput.src = "";
+            currentVideoBlob = null;
+            webcamVideoOutput.classList.add('hidden'); 
+            
+            sendWsMessage({
+                command: 'start_webcam_record', 
+                time: parseInt(inputWebcamDuration.value)||10, 
+                device_name: inputWebcamDeviceName.value
+            });
+            hideAllModals();
         };
         btnStopRecord.onclick = () => sendWsMessage({command: 'stop_webcam_record'});
         btnSaveVideo.onclick = () => { if(currentVideoBlob) { const a = document.createElement('a'); a.href = URL.createObjectURL(currentVideoBlob); a.download = `webcam-${Date.now()}.mp4`; a.click(); }};
 
         if (btnReloadWebcam) {
             btnReloadWebcam.onclick = () => {
-                 if(ws && ws.readyState === WebSocket.OPEN) {
-                     sendWsMessage({ command: 'stop_webcam_stream' });
-                     sendWsMessage({ command: 'stop_webcam_record' });
-                 }
-                 webcamStreamImg.classList.add('hidden'); webcamVideoOutput.classList.add('hidden'); webcamSpinner.classList.add('hidden');
-                 webcamPlaceholder.parentElement.classList.remove('hidden'); webcamStatus.classList.add('hidden');
-                 btnStartWebcamStream.classList.remove('hidden'); btnStopWebcamStream.classList.add('hidden');
-                 btnStartRecord.classList.remove('hidden'); btnStopRecord.classList.add('hidden'); btnSaveVideo.classList.add('hidden');
+                if(ws && ws.readyState === WebSocket.OPEN) {
+                    sendWsMessage({ command: 'stop_webcam_stream' });
+                    sendWsMessage({ command: 'stop_webcam_record' });
+                }
+
+                webcamStreamImg.classList.add('hidden');
+                webcamStreamImg.src = ""; 
+
+                webcamVideoOutput.classList.add('hidden');
+                webcamVideoOutput.src = "";
+                if (currentVideoBlob) {
+                    URL.revokeObjectURL(currentVideoBlob);
+                    currentVideoBlob = null;
+                }
+
+                const emptyState = $('#webcam-display-area .empty-state');
+                emptyState.classList.remove('hidden');
+                
+                webcamSpinner.classList.add('hidden');
+                webcamStatus.classList.add('hidden');
+
+                const emptyIcon = emptyState.querySelector('.empty-icon');
+                if(emptyIcon) emptyIcon.classList.remove('hidden');
+                
+                webcamPlaceholder.textContent = "Ready to record or stream webcam";
+                webcamPlaceholder.parentElement.classList.remove('hidden');
+
+                btnStartWebcamStream.classList.remove('hidden'); 
+                btnStopWebcamStream.classList.add('hidden');
+                
+                btnStartRecord.classList.remove('hidden'); 
+                btnStopRecord.classList.add('hidden'); 
+                
+                btnSaveVideo.classList.add('hidden');
             };
         }
 
         btnStartWebcamStream.onclick = () => {
             if (ws && ws.readyState === WebSocket.OPEN) {
-                sendWsMessage({ command: 'start_webcam_stream', fps: 15 });
-                webcamVideoOutput.classList.add('hidden'); webcamStreamImg.classList.remove('hidden'); webcamPlaceholder.parentElement.classList.add('hidden'); btnSaveVideo.classList.add('hidden');
-                btnStartRecord.classList.add('hidden'); btnStopRecord.classList.add('hidden');
-                btnStartWebcamStream.classList.add('hidden'); btnStopWebcamStream.classList.remove('hidden');
-                $('#webcam-display-area .empty-state').classList.add('hidden');
+                webcamStreamImg.src = "";
+                webcamStreamImg.classList.add('hidden');
+                webcamVideoOutput.classList.add('hidden'); 
+                btnSaveVideo.classList.add('hidden');
+
+                const emptyState = $('#webcam-display-area .empty-state');
+                emptyState.classList.remove('hidden');
+                $('.empty-icon').classList.add('hidden');
+                webcamPlaceholder.textContent = "Initializing Camera Stream...";
+                webcamSpinner.classList.remove('hidden');
+
+                sendWsMessage({ command: 'start_webcam_stream', fps: 30 });
+                
+                btnStartRecord.classList.add('hidden'); 
+                btnStopRecord.classList.add('hidden');
+                btnStartWebcamStream.classList.add('hidden'); 
+                btnStopWebcamStream.classList.remove('hidden');
             } else alert('Connect first');
         };
         btnStopWebcamStream.onclick = () => {
