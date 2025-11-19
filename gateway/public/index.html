@@ -7,6 +7,7 @@
     <title>Remote Control Center</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/feather-icons"></script>
     <script src="app.js" defer></script>
 </head>
@@ -62,7 +63,7 @@
                         <li class="nav-item" data-view="system-control">
                             <i data-feather="power"></i> <span>Power & System</span>
                         </li>
-                        </ul>
+                    </ul>
                 </div>
             </nav>
 
@@ -85,6 +86,11 @@
                             <div class="card-icon green"><i data-feather="plus-square"></i></div>
                             <h3>Start New Task</h3>
                             <p>Run a new program or command</p>
+                        </div>
+                        <div class="dash-card" id="card-open-stop-procs">
+                            <div class="card-icon red"><i data-feather="activity"></i></div>
+                            <h3>Kill Process</h3>
+                            <p>Select a background process to kill</p>
                         </div>
                     </div>
                 </div>
@@ -128,6 +134,11 @@
                             <div class="card-icon green"><i data-feather="play"></i></div>
                             <h3>Launch App</h3>
                             <p>Open a program by name</p>
+                        </div>
+                        <div class="dash-card" id="card-open-stop-apps">
+                            <div class="card-icon red"><i data-feather="x-square"></i></div>
+                            <h3>Stop Application</h3>
+                            <p>Select an active app to force quit</p>
                         </div>
                     </div>
                 </div>
@@ -183,10 +194,6 @@
                                 <i data-feather="camera"></i> Capture
                             </button>
                             
-                            <button class="btn btn-outline" id="btn-reload-screen" title="Reset View">
-                                <i data-feather="refresh-cw"></i>
-                            </button>
-
                             <button class="btn btn-primary" id="btn-start-stream">
                                 <i data-feather="play"></i> Stream
                             </button>
@@ -201,6 +208,10 @@
 
                             <button class="btn btn-outline hidden" id="btn-copy-screenshot">
                                 <i data-feather="copy"></i> Copy
+                            </button>
+
+                            <button class="btn btn-round-refresh" id="btn-reload-screen" title="Reset UI">
+                                <i data-feather="refresh-cw"></i>
                             </button>
                         </div>
                     </div>
@@ -219,18 +230,29 @@
                     <div class="content-toolbar">
                         <h2>Webcam Recorder</h2>
                         <div class="button-group">
-                            
-                            <button class="btn btn-primary" id="btn-start-record"><i data-feather="video"></i> Record Clip</button>
-                            <button class="btn btn-danger hidden" id="btn-stop-record"><i data-feather="square"></i> Stop Record</button>
-
-                            <button class="btn btn-outline" id="btn-reload-webcam" title="Reset View">
-                                <i data-feather="refresh-cw"></i>
+                            <button class="btn btn-primary" id="btn-start-record">
+                                <i data-feather="video"></i> Record Clip
                             </button>
 
-                            <button class="btn btn-primary" id="btn-start-webcam-stream"><i data-feather="play"></i> Stream</button>
-                            <button class="btn btn-danger hidden" id="btn-stop-webcam-stream"><i data-feather="square"></i> Stop Stream</button>
+                            <button class="btn btn-danger hidden" id="btn-stop-record">
+                                <i data-feather="square"></i> Stop Record
+                            </button>
 
-                            <button class="btn btn-outline hidden" id="btn-save-video"><i data-feather="download"></i> Save</button>
+                            <button class="btn btn-primary" id="btn-start-webcam-stream">
+                                <i data-feather="play"></i> Stream
+                            </button>
+
+                            <button class="btn btn-danger hidden" id="btn-stop-webcam-stream">
+                                <i data-feather="square"></i> Stop Stream
+                            </button>
+
+                            <button class="btn btn-outline hidden" id="btn-save-video">
+                                <i data-feather="download"></i> Save
+                            </button>
+
+                            <button class="btn btn-round-refresh" id="btn-reload-webcam" title="Reset UI">
+                                <i data-feather="refresh-cw"></i>
+                            </button>
                         </div>
                     </div>
                     <div id="webcam-display-area">
@@ -265,7 +287,7 @@
                     </div>
                 </div>
 
-                </section>
+            </section>
         </div>
 
         <footer class="status-bar">
@@ -370,6 +392,42 @@
         <div class="modal-actions">
             <button class="btn btn-text" data-action="cancel">Cancel</button>
             <button class="btn btn-danger" id="btn-confirm-yes">Proceed</button>
+        </div>
+    </div>
+
+    <div id="modal-stop-app" class="modal styled-modal hidden">
+        <div class="modal-header">
+            <div class="icon-box red"><i data-feather="x-square"></i></div>
+            <div class="header-text">
+                <h2>Force Quit App</h2>
+                <p>Select an application to terminate</p>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="custom-list-container" id="stop-app-list">
+                <div class="list-loading">Loading apps...</div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-text" data-action="cancel">Close</button>
+        </div>
+    </div>
+
+    <div id="modal-stop-proc" class="modal styled-modal hidden">
+        <div class="modal-header">
+            <div class="icon-box red"><i data-feather="activity"></i></div>
+            <div class="header-text">
+                <h2>Kill Process</h2>
+                <p>Select a process ID to terminate</p>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="custom-list-container" id="stop-proc-list">
+                <div class="list-loading">Loading processes...</div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-text" data-action="cancel">Close</button>
         </div>
     </div>
 

