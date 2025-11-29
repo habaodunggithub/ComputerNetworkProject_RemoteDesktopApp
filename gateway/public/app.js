@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastLoggedKeyCode = null;
     let currentVideoBlob = null;
     let isKeylogClean = true;
+    let scanInterval = null; // Biến quản lý vòng lặp quét mạng
 
     // --- BỘ CHỌN DOM ---
     const $ = (s) => document.querySelector(s);
@@ -29,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const wsUrlInput = $('#ws-url-input');
     const btnConnect = $('#btn-connect');
     const btnDisconnect = $('#btn-disconnect');
+    const btnScanLan = $('#btn-scan-lan');
 
     // Capture
     const btnTakeScreenshot = $('#btn-take-screenshot');
@@ -77,18 +79,49 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnConfirmYes) {
         btnConfirmYes.onclick = () => {
             if (confirmCallback) confirmCallback();
-            hideAllModals();
+            handleCloseModal();
         };
+    }
+
+    function showModal(id) {
+        $(`#${id}`).classList.remove('hidden');
+        $('#modal-backdrop').classList.remove('hidden');
     }
 
     function hideAllModals() {
         $$('.modal').forEach(m => m.classList.add('hidden'));
         $('#modal-backdrop').classList.add('hidden');
     }
-    function showModal(id) {
-        $(`#${id}`).classList.remove('hidden');
-        $('#modal-backdrop').classList.remove('hidden');
-    }
+
+    // Logic đóng modal chung + Dừng quét mạng
+    const handleCloseModal = () => {
+        hideAllModals();
+        stopScanning(); // Dừng polling khi đóng modal
+    };
+
+    // --- LOGIC QUÉT MẠNG LAN (HTTP API + POLLING) ---
+    const fetchScanList = async () => {
+        try {
+            // Gọi về chính server đang phục vụ trang web này
+            const apiUrl = `${location.protocol}//${location.host}/api/scan`;
+            const response = await fetch(apiUrl);
+            if (!response.ok) throw new Error("Network response was not ok");
+            const result = await response.json();
+            renderScanList(result.data);
+        } catch (error) {
+            console.error("Scan error:", error);
+            // Không báo lỗi ra UI liên tục để tránh phiền
+        }
+    };
+
+    const stopScanning = () => {
+        if (scanInterval) {
+            clearInterval(scanInterval);
+            scanInterval = null;
+        }
+
+        if (btnScanLan) btnScanLan.classList.remove('active-scan');
+    };
 
     // --- CONNECTION STATE ---
     function setConnectedState(isConnected) {
@@ -146,7 +179,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function onWsMessage(event) {
         const msg = JSON.parse(event.data);
         
-        // Kiểm tra xem các Modal Stop có đang mở không
         const modalAppEl = document.getElementById('modal-stop-app');
         const modalProcEl = document.getElementById('modal-stop-proc');
         
@@ -156,17 +188,17 @@ document.addEventListener('DOMContentLoaded', () => {
         switch (msg.type) {
             case 'process_list':
                 if (isStopProcOpen) {
-                    renderStopProcList(msg.data); // Vẽ vào modal nhỏ
+                    renderStopProcList(msg.data);
                 } else {
-                    renderProcessTable(msg.data); // Vẽ vào bảng to
+                    renderProcessTable(msg.data);
                 }
                 break;
                 
             case 'application_list':
                 if (isStopAppOpen) {
-                    renderStopAppList(msg.data); // Vẽ vào modal nhỏ
+                    renderStopAppList(msg.data);
                 } else {
-                    renderAppTable(msg.data); // Vẽ vào bảng to
+                    renderAppTable(msg.data);
                 }
                 break;
             
@@ -213,7 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             case 'status':
                 if (msg.success) {
-                    // Nếu lệnh stop thành công, refresh lại đúng danh sách đang xem
                     if (isStopAppOpen) sendWsMessage({command: 'list_applications'});
                     if (isStopProcOpen) sendWsMessage({command: 'list_processes'});
                     
@@ -282,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
     
-        // Giới hạn hiển thị 100 process để tránh lag
         const displayData = data.slice(0, 100); 
     
         container.innerHTML = displayData.map(proc => `
@@ -304,6 +334,66 @@ document.addEventListener('DOMContentLoaded', () => {
         if(typeof feather !== 'undefined') feather.replace();
     }
 
+    // --- RENDER SCAN LIST ---
+    // Biến lưu trữ dữ liệu lần quét trước
+    let lastScanDataJson = "";
+
+    // --- RENDER SCAN LIST ---
+    function renderScanList(data) {
+        const container = $('#scan-list');
+        
+        // Sắp xếp data theo IP hoặc Hostname để đảm bảo thứ tự nhất quán
+        if (data && data.length > 0) {
+            data.sort((a, b) => a.ip.localeCompare(b.ip));
+        }
+
+        // Nếu dữ liệu y hệt lần trước thì KHÔNG làm gì cả (giữ nguyên DOM và trạng thái Hover)
+        const currentDataJson = JSON.stringify(data);
+        if (currentDataJson === lastScanDataJson && container.innerHTML.trim() !== "") {
+            return; 
+        }
+        lastScanDataJson = currentDataJson; // Cập nhật dữ liệu mới
+
+        // 2. Xử lý hiển thị
+        if (!data || data.length === 0) {
+            container.innerHTML = `
+                <div class="list-loading" style="grid-column: 1 / -1;">
+                    <div class="spinner" style="border-color: #06b6d4; border-top-color: transparent;"></div>
+                    <br>
+                    <span style="color: #06b6d4; font-weight: 500;">Scanning Radar Active...</span>
+                    <br><small style="opacity:0.7">Looking for agents on port 9102</small>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = data.map(agent => {
+            let iconName = 'monitor';
+            if (agent.os.includes('Windows')) iconName = 'layout'; 
+            else if (agent.os.includes('Linux')) iconName = 'terminal';
+
+            return `
+            <div class="device-card" data-os="${agent.os}" onclick="selectAgent('${agent.ip}')">
+                <div class="device-status" title="Online"></div>
+                
+                <button class="btn-connect-action" title="Connect Now">
+                    <i data-feather="zap" style="width:18px; height:18px; fill:currentColor;"></i>
+                </button>
+
+                <div class="device-icon-large">
+                    <i data-feather="${iconName}"></i>
+                </div>
+                
+                <div class="device-info">
+                    <span class="device-hostname" title="${agent.hostname}">${agent.hostname}</span>
+                    <span class="device-ip">${agent.ip}</span>
+                </div>
+            </div>
+            `;
+        }).join('');
+        
+        if(typeof feather !== 'undefined') feather.replace();
+    }
+
     window.requestStopApp = (name) => {
         if(confirm(`Force stop "${name}"?`)) {
             if(ws) ws.send(JSON.stringify({command: 'stop_application', app_name: name}));
@@ -314,6 +404,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if(confirm(`Kill process PID ${pid}?`)) {
             if(ws) ws.send(JSON.stringify({command: 'stop_process_pid', pid: parseInt(pid)}));
         }
+    };
+
+    window.selectAgent = (ip) => {
+        const port = location.port || 8080; // Giả sử Gateway cũng chạy 8080
+        const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+        const url = `${proto}://${ip}:${port}/ws`;
+        
+        wsUrlInput.value = url;
+        handleCloseModal();
+        
+        if(ws) disconnectWs();
+        setTimeout(connectWs, 500);
     };
 
     // --- KEYLOGGER ---
@@ -330,122 +432,11 @@ document.addEventListener('DOMContentLoaded', () => {
         function translateKeyCode(code) {
             if (code >= 65 && code <= 90) return String.fromCharCode(code);
             if (code >= 48 && code <= 57) return String.fromCharCode(code);
-            if (code >= 96 && code <= 105) return `[Num ${code - 96}]`;
-            switch (code) {
-                case 8:
-                    return '[Backspace]';
-                case 9:
-                    return '[Tab]';
-                case 13:
-                    return '[Enter]\n';
-                case 19:
-                    return '[Pause]';
-                case 20:
-                    return '[CapsLk]';
-                case 27:
-                    return '[Esc]';
-                case 32:
-                    return '[Space]';
-                case 33:
-                    return '[PgUp]';
-                case 34:
-                    return '[PgDn]';
-                case 35:
-                    return '[End]';
-                case 36:
-                    return '[Home]';
-                case 37:
-                    return '[Left]';
-                case 38:
-                    return '[Up]';
-                case 39:
-                    return '[Right]';
-                case 40:
-                    return '[Down]';
-                case 44:
-                    return '[PrtSc]';
-                case 45:
-                    return '[Insert]';
-                case 46:
-                    return '[Delete]';
-                case 106:
-                    return '[Num *]';
-                case 107:
-                    return '[Num +]';
-                case 109:
-                    return '[Num -]';
-                case 110:
-                    return '[Num .]';
-                case 111:
-                    return '[Num /]';
-                case 144:
-                    return '[NumLock]';
-                case 112:
-                    return '[F1]';
-                case 113:
-                    return '[F2]';
-                case 114:
-                    return '[F3]';
-                case 115:
-                    return '[F4]';
-                case 116:
-                    return '[F5]';
-                case 117:
-                    return '[F6]';
-                case 118:
-                    return '[F7]';
-                case 119:
-                    return '[F8]';
-                case 120:
-                    return '[F9]';
-                case 121:
-                    return '[F10]';
-                case 122:
-                    return '[F11]';
-                case 123:
-                    return '[F12]';
-                case 160:
-                    return '[LShift]';
-                case 161:
-                    return '[RShift]';
-                case 162:
-                case 163:
-                    return '[LCtrl]';
-                case 164:
-                    return '[LAlt]';
-                case 165:
-                    return '[RAlt]';
-                case 186:
-                    return ';';
-                case 187:
-                    return '=';
-                case 188:
-                    return ',';
-                case 189:
-                    return '-';
-                case 190:
-                    return '.';
-                case 191:
-                    return '/';
-                case 192:
-                    return '`';
-                case 219:
-                    return '[';
-                case 220:
-                    return '\\';
-                case 221:
-                    return ']';
-                case 222:
-                    return "'";
-                case 91:
-                    return '[LWin]';
-                case 92:
-                    return '[RWin]';
-                case 93:
-                    return '[Menu]';
-                default:
-                    return `[${code}]`;
-            }
+            // ... (Simple map)
+            if (code === 8) return '[Backspace]';
+            if (code === 13) return '[Enter]\n';
+            if (code === 32) return '[Space]';
+            return `[${code}]`;
         }
 
         const char = translateKeyCode(keyCode);
@@ -557,14 +548,44 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = e.target.closest('[data-action="show-view"]');
             if(card) showView(card.dataset.target);
             
-            // Xử lý các nút stop trong bảng lớn
             const stopBtn = e.target.closest('[data-action="stop-proc"]');
             if(stopBtn) showConfirmModal('Stop Process', `PID ${stopBtn.dataset.pid}?`, 'danger', () => sendWsMessage({command:'stop_process_pid', pid: parseInt(stopBtn.dataset.pid)}));
             const stopAppBtn = e.target.closest('[data-action="stop-app"]');
             if(stopAppBtn) showConfirmModal('Stop App', `Close "${stopAppBtn.dataset.name}"?`, 'danger', () => sendWsMessage({command:'stop_application', app_name: stopAppBtn.dataset.name}));
         };
 
-        // STOP APPS
+        // SCAN LAN - Nút Quét mạng
+        const stopScanning = () => {
+                if (scanInterval) {
+                    clearInterval(scanInterval);
+                    scanInterval = null;
+                }
+                btnScanLan.classList.remove('active-scan');
+        };
+
+        // 2. Sự kiện bấm nút
+        if (btnScanLan) {
+            btnScanLan.onclick = () => {
+                btnScanLan.classList.add('active-scan');
+
+                showModal('modal-scan-lan');
+                $('#scan-list').innerHTML = '<div class="list-loading"><div class="spinner"></div><br>Scanning network...</div>';
+
+                // Gọi lần đầu
+                fetchScanList();
+
+                // Thiết lập vòng lặp
+                stopScanning(); // Clear cũ
+                btnScanLan.classList.add('active-scan');
+                scanInterval = setInterval(fetchScanList, 2000); 
+            };
+        }
+
+        // Đóng Modal chung (bao gồm cả dừng quét)
+        $('#modal-backdrop').onclick = handleCloseModal;
+        $$('[data-action="cancel"]').forEach(b => b.onclick = handleCloseModal);
+
+        // STOP APPS & KILL PROCESS MODALS
         const cardStopApps = $('#card-open-stop-apps');
         if (cardStopApps) {
             cardStopApps.onclick = () => {
@@ -575,7 +596,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // KILL PROCESS
         const cardStopProcs = $('#card-open-stop-procs');
         if (cardStopProcs) {
             cardStopProcs.onclick = () => {
@@ -721,6 +741,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btnStartRecord.onclick = () => showModal('modal-webcam-device');
         $('#modal-webcam-device [data-action="confirm"]').onclick = () => {
              webcamVideoOutput.src = "";
+             
+             webcamStreamImg.classList.add('hidden');
+             webcamStreamImg.src = "";
+
             currentVideoBlob = null;
             webcamVideoOutput.classList.add('hidden'); 
             
@@ -729,60 +753,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 time: parseInt(inputWebcamDuration.value)||10, 
                 device_name: inputWebcamDeviceName.value
             });
-            hideAllModals();
+            handleCloseModal();
+            
+            webcamPlaceholder.parentElement.classList.add('hidden');
+            webcamSpinner.classList.remove('hidden');
         };
         btnStopRecord.onclick = () => sendWsMessage({command: 'stop_webcam_record'});
         btnSaveVideo.onclick = () => { if(currentVideoBlob) { const a = document.createElement('a'); a.href = URL.createObjectURL(currentVideoBlob); a.download = `webcam-${Date.now()}.mp4`; a.click(); }};
-
-        if (btnReloadWebcam) {
-            btnReloadWebcam.onclick = () => {
-                if(ws && ws.readyState === WebSocket.OPEN) {
-                    sendWsMessage({ command: 'stop_webcam_stream' });
-                    sendWsMessage({ command: 'stop_webcam_record' });
-                }
-
-                webcamStreamImg.classList.add('hidden');
-                webcamStreamImg.src = ""; 
-
-                webcamVideoOutput.classList.add('hidden');
-                webcamVideoOutput.src = "";
-                if (currentVideoBlob) {
-                    URL.revokeObjectURL(currentVideoBlob);
-                    currentVideoBlob = null;
-                }
-
-                const emptyState = $('#webcam-display-area .empty-state');
-                emptyState.classList.remove('hidden');
-                
-                webcamSpinner.classList.add('hidden');
-                webcamStatus.classList.add('hidden');
-
-                const emptyIcon = emptyState.querySelector('.empty-icon');
-                if(emptyIcon) emptyIcon.classList.remove('hidden');
-                
-                webcamPlaceholder.textContent = "Ready to record or stream webcam";
-                webcamPlaceholder.parentElement.classList.remove('hidden');
-
-                btnStartWebcamStream.classList.remove('hidden'); 
-                btnStopWebcamStream.classList.add('hidden');
-                
-                btnStartRecord.classList.remove('hidden'); 
-                btnStopRecord.classList.add('hidden'); 
-                
-                btnSaveVideo.classList.add('hidden');
-            };
-        }
 
         btnStartWebcamStream.onclick = () => {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 webcamStreamImg.src = "";
                 webcamStreamImg.classList.add('hidden');
+                
                 webcamVideoOutput.classList.add('hidden'); 
+                if (currentVideoBlob) { 
+                    URL.revokeObjectURL(currentVideoBlob); 
+                    currentVideoBlob = null; 
+                }
+                
                 btnSaveVideo.classList.add('hidden');
 
                 const emptyState = $('#webcam-display-area .empty-state');
                 emptyState.classList.remove('hidden');
-                $('.empty-icon').classList.add('hidden');
+                
+                const emptyIcon = emptyState.querySelector('.empty-icon');
+                if(emptyIcon) emptyIcon.classList.add('hidden');
+                
                 webcamPlaceholder.textContent = "Initializing Camera Stream...";
                 webcamSpinner.classList.remove('hidden');
 
@@ -812,14 +809,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Modals Common
         $('#btn-start-process').onclick = () => showModal('modal-start-process');
         $('#btn-start-app').onclick = () => showModal('modal-start-app');
-        $('#modal-backdrop').onclick = hideAllModals;
-        $$('[data-action="cancel"]').forEach(b => b.onclick = hideAllModals);
         
         $('#modal-start-process [data-action="confirm"]').onclick = () => {
-            sendWsMessage({command:'start_process', path: $('#input-proc-path').value, args: $('#input-proc-args').value}); hideAllModals();
+            sendWsMessage({command:'start_process', path: $('#input-proc-path').value, args: $('#input-proc-args').value}); handleCloseModal();
         };
         $('#modal-start-app [data-action="confirm"]').onclick = () => {
-            sendWsMessage({command:'start_application', app_name: $('#input-app-name').value}); hideAllModals();
+            sendWsMessage({command:'start_application', app_name: $('#input-app-name').value}); handleCloseModal();
         };
 
         if($('#btn-system-restart')) $('#btn-system-restart').onclick = () => showConfirmModal('Restart', 'Restart remote PC?', 'danger', () => sendWsMessage({command: 'system_restart'}));

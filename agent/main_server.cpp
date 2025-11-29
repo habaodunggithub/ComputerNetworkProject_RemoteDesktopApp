@@ -22,6 +22,7 @@ using namespace Gdiplus;
 #include <asio.hpp>
 
 #include "AgentTcpServer.h"
+#include "Discovery.h"
 
 int main()
 {
@@ -69,13 +70,21 @@ int main()
         AgentTcpServer server(io, gatewayHost, gatewayPort);
         AgentTcpServer::setInstance(&server);
 
-        server.start(); // bắt đầu connect tới Gateway
-        io.run();       // vòng lặp event ASIO
+        // --- BẮT ĐẦU DISCOVERY ---
+        // Bắn gói tin UDP Broadcast mỗi 3 giây để Web Client quét thấy
+        Discovery::start(9102);
+
+        server.start(); // bắt đầu connect tới Gateway (TCP)
+        io.run();       // vòng lặp event ASIO (Blocking tại đây)
     }
     catch (const std::exception &e)
     {
         std::cerr << "[Agent] Fatal error: " << e.what() << "\n";
     }
+
+    // --- DỪNG DISCOVERY ---
+    // Đảm bảo dừng luồng bắn UDP khi chương trình thoát
+    Discovery::stop();
 
 #ifdef _WIN32
     // --- Shutdown GDI+ ---

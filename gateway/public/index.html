@@ -296,6 +296,11 @@
                     <span class="status-dot"></span>
                     <span class="status-text">Disconnected</span>
                 </div>
+                
+                <button id="btn-scan-lan" title="Scan Local Network">
+                    <i data-feather="wifi"></i>
+                </button>
+
                 <input type="text" id="ws-url-input" placeholder="ws://localhost:8080/ws">
                 <button class="btn btn-sm btn-glass" id="btn-connect">Connect</button>
                 <button class="btn btn-sm btn-danger hidden" id="btn-disconnect">Disconnect</button>
@@ -428,6 +433,26 @@
         </div>
         <div class="modal-actions">
             <button class="btn btn-text" data-action="cancel">Close</button>
+        </div>
+    </div>
+
+    <div id="modal-scan-lan" class="modal styled-modal hidden">
+        <div class="modal-header">
+            <div class="icon-box blue"><i data-feather="monitor"></i></div>
+            <div class="header-text">
+                <h2>Discovered Devices</h2>
+                <p>Select a machine to control</p>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="custom-list-container" id="scan-list">
+                <div class="list-loading">Scanning network...</div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-scan-close" data-action="cancel">
+                <i data-feather="x"></i> Close Radar
+            </button>
         </div>
     </div>
 

@@ -73,7 +73,7 @@ body.dark-theme #app-window { border-color: rgba(255,255,255,0.1); }
 
 .app-body { display: flex; flex: 1; overflow: hidden; }
 
-/* --- SIDEBAR NAVIGATION (MODERN) --- */
+/* --- SIDEBAR NAVIGATION --- */
 #sidebar {
     width: var(--sidebar-width); background: rgba(255,255,255,0.03);
     border-right: 1px solid var(--glass-border); padding: 24px 16px;
@@ -326,7 +326,7 @@ img, video { max-width: 100%; max-height: 100%; border-radius: 8px; box-shadow: 
 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 50; }
 .styled-modal {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 420px; background: var(--glass-bg); backdrop-filter: blur(20px);
+    width: 500px; background: var(--glass-bg); backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
     box-shadow: 0 20px 50px rgba(0,0,0,0.2); z-index: 100;
     animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -376,7 +376,7 @@ body.dark-theme .input-wrapper input { background: rgba(0, 0, 0, 0.3); border: 1
 #ws-url-input { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--glass-border); font-size: 12px; width: 220px; background: transparent; color: var(--text-main); transition: 0.2s; }
 #ws-url-input:focus { border-color: #3b82f6; background: rgba(255,255,255,0.1); }
 
-/* --- PREMIUM TOGGLE SWITCH --- */
+/* --- TOGGLE SWITCH --- */
 .toggle-switch {
     position: relative;
     display: inline-block;
@@ -521,7 +521,7 @@ body.dark-theme .slider { background-color: rgba(0, 0, 0, 0.4); }
     filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.6));
 }
 
-/* --- PREMIUM STATUS BAR & INPUT --- */
+/* --- STATUS BAR & INPUT --- */
 
 /* 1. Status Pill (Thẻ trạng thái) */
 .status-pill {
@@ -584,7 +584,7 @@ body.dark-theme .slider { background-color: rgba(0, 0, 0, 0.4); }
     100% { width: 300%; height: 300%; opacity: 0; }
 }
 
-/* 3. Input Field (Ô nhập URL High-tech) */
+/* 3. Input Field */
 #ws-url-input {
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -671,3 +671,293 @@ body.dark-theme .list-item:hover { background: rgba(255, 255, 255, 0.1); }
     box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
 }
 .btn-kill-sm i { width: 16px; height: 16px; }
+
+/* --- RADAR SCAN BUTTON --- */
+#btn-scan-lan {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%; /* Tròn hoàn hảo */
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Màu Cyan Neon - Khác biệt với các nút khác */
+    background: rgba(6, 182, 212, 0.1); 
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    color: #06b6d4;
+    
+    position: relative;
+    overflow: visible; /* Để sóng radar lan ra ngoài nút */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1; /* Để nổi lên trên sóng */
+}
+
+/* Icon bên trong */
+#btn-scan-lan i {
+    width: 18px; height: 18px;
+    transition: transform 0.3s ease;
+}
+
+/* Kích hoạt trạng thái "Đang quét" */
+#btn-scan-lan:hover,
+#btn-scan-lan.active-scan {
+    background: rgba(6, 182, 212, 0.25);
+    border-color: #06b6d4;
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+    transform: scale(1.05);
+    cursor: pointer;
+    z-index: 100; /* Đảm bảo nó nổi lên trên */
+}
+
+/* Icon xoay khi đang quét */
+#btn-scan-lan:hover i,
+#btn-scan-lan.active-scan i {
+    transform: rotate(-10deg) scale(1.1);
+}
+
+/* Kích hoạt sóng Radar */
+#btn-scan-lan:hover::before,
+#btn-scan-lan.active-scan::before {
+    animation: radar-ping 1.5s infinite;
+}
+
+#btn-scan-lan:hover::after,
+#btn-scan-lan.active-scan::after {
+    animation: radar-ping 1.5s infinite 0.4s;
+}
+
+/* --- TẠO SÓNG RADAR (PULSE) --- */
+#btn-scan-lan::before,
+#btn-scan-lan::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    border: 1px solid #06b6d4;
+    opacity: 0;
+    z-index: -1; /* Nằm dưới nút */
+    pointer-events: none;
+}
+
+/* Kích hoạt sóng khi Hover */
+#btn-scan-lan:hover::before {
+    animation: radar-ping 1.5s infinite;
+}
+#btn-scan-lan:hover::after {
+    animation: radar-ping 1.5s infinite 0.4s; /* Trễ một chút để tạo sóng thứ 2 */
+}
+
+@keyframes radar-ping {
+    0% {
+        width: 100%;
+        height: 100%;
+        opacity: 0.8;
+        border-width: 2px;
+    }
+    100% {
+        width: 260%; /* Lan rộng ra gấp 2.6 lần */
+        height: 260%;
+        opacity: 0;
+        border-width: 0px;
+    }
+}
+
+/* Dark mode tinh chỉnh */
+body.dark-theme #btn-scan-lan {
+    background: rgba(6, 182, 212, 0.15);
+    color: #22d3ee; /* Sáng hơn chút trong nền tối */
+    border-color: rgba(34, 211, 238, 0.3);
+}
+
+/* --- DISCOVERY SCAN PANEL --- */
+
+/* Chuyển container sang dạng lưới */
+#scan-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* Tự động chia cột */
+    gap: 16px;
+    padding: 8px;
+}
+
+/* --- DEVICE CARD --- */
+.device-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px; /* Bo góc tròn hơn chút */
+    padding: 24px 16px; /* Tăng padding trên dưới */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px; /* Tăng khoảng cách giữa icon và text */
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transform: translateZ(0); 
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.device-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 0;
+}
+
+.device-card:hover {
+    transform: translateY(-5px); /* Nổi lên nhẹ nhàng */
+    border-color: #06b6d4;
+    box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.3); /* Bóng sâu hơn */
+}
+
+.device-card:hover::before {
+    opacity: 1;
+}
+
+/* Icon OS */
+.device-icon-large {
+    width: 64px; /* Icon to hơn cho đẹp */
+    height: 64px;
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1;
+    transition: transform 0.4s ease;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-muted);
+}
+
+/* Icon bên trong SVG */
+.device-icon-large svg {
+    width: 32px;
+    height: 32px;
+}
+
+.device-card[data-os*="Windows"] .device-icon-large { color: #38bdf8; background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.2); }
+.device-card[data-os*="Linux"] .device-icon-large { color: #fbbf24; background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.2); }
+
+.device-card:hover .device-icon-large {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+}
+
+/* Thông tin Text */
+.device-info {
+    text-align: center;
+    z-index: 1;
+    display: flex; flex-direction: column; gap: 6px; width: 100%;
+}
+.device-hostname {
+    font-weight: 700; font-size: 15px; color: var(--text-main);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    padding: 0 8px;
+}
+.device-ip {
+    font-family: 'Fira Code', monospace; font-size: 12px; color: var(--text-muted);
+    background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 99px;
+    align-self: center;
+    border: 1px solid transparent;
+    transition: 0.3s;
+}
+/* Khi hover thẻ thì IP sáng lên */
+.device-card:hover .device-ip {
+    background: rgba(6, 182, 212, 0.15);
+    color: #06b6d4;
+    border-color: rgba(6, 182, 212, 0.3);
+}
+
+/* Dấu chấm trạng thái: Góc TRÁI trên */
+.device-status {
+    position: absolute; top: 16px; left: 16px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background-color: #10b981;
+    box-shadow: 0 0 10px #10b981;
+    z-index: 2;
+}
+
+/* Nút Connect: Góc PHẢI trên */
+.btn-connect-action {
+    position: absolute;
+    top: 12px; /* Đặt lên trên */
+    right: 12px;
+    width: 36px; height: 36px;
+    border-radius: 12px; /* Vuông bo góc thay vì tròn */
+    background: #06b6d4;
+    color: white;
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+    
+    opacity: 0;
+    transform: translateX(10px); /* Trượt từ phải sang */
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 2;
+    cursor: pointer;
+}
+
+/* Khi hover vào thẻ thì nút hiện ra */
+.device-card:hover .btn-connect-action {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.btn-connect-action:hover {
+    background: #22d3ee;
+    transform: scale(1.1);
+}
+
+/* --- CLOSE BUTTON --- */
+.btn-scan-close {
+    padding: 10px 24px;
+    border-radius: 99px; /* Bo tròn hoàn toàn */
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Viền mờ */
+    color: var(--text-muted);
+    font-family: var(--font-main);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex; align-items: center; gap: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Hiệu ứng nền kính mờ */
+.btn-scan-close::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: rgba(255, 255, 255, 0.05);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+/* HOVER STATE: Chuyển đỏ Neon */
+.btn-scan-close:hover {
+    border-color: #ef4444; /* Viền đỏ */
+    color: #ef4444;       /* Chữ đỏ */
+    background: rgba(239, 68, 68, 0.1); /* Nền đỏ nhạt */
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.25); /* Phát sáng */
+    transform: translateY(-2px); /* Bay lên nhẹ */
+}
+
+/* Icon bên trong */
+.btn-scan-close i {
+    width: 16px; height: 16px;
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Hiệu ứng xoay nảy */
+}
+
+/* Khi hover thì xoay icon X 90 độ */
+.btn-scan-close:hover i {
+    transform: rotate(90deg) scale(1.2);
+}
+
+/* Active (Click) */
+.btn-scan-close:active {
+    transform: scale(0.95);
+}
