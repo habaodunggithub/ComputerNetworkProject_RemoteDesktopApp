@@ -1,7 +1,6 @@
 #include "WebcamStream.h"
 #include "WebcamRecord.h"
 #include "AgentTcpServer.h"
-
 #include <iostream>
 #include <chrono>
 #include <sstream>
@@ -20,12 +19,11 @@ static const std::string FFMPEG_PATH = "..\\include\\FFmpeg\\ffmpeg.exe";
 static const std::string FFMPEG_PATH = "ffmpeg";
 #endif
 
-// Khởi tạo biến static
 std::atomic<bool> WebcamStream::m_running = false;
 std::thread WebcamStream::m_thread;
 std::string WebcamStream::m_deviceName;
 
-// Hàm trợ giúp: Base64 encode từ buffer bộ nhớ (không đọc file)
+// Mã hóa base64 từ buffer
 static std::string mem_base64(const unsigned char *data, size_t len)
 {
     static const char tbl[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -57,7 +55,7 @@ void WebcamStream::runStream(int fps)
         fps = 15;
     m_running = true;
 
-    // 1. Tìm tên thiết bị
+    // Tìm thiết bị webcam
     std::string list = WebcamRecord::listDevices();
     m_deviceName = WebcamRecord::findDefaultDevice(list);
 
@@ -68,19 +66,16 @@ void WebcamStream::runStream(int fps)
         return;
     }
 
-    // 2. Xây dựng lệnh FFmpeg chạy chế độ STREAM (image2pipe)
-    // -s 640x480: Giảm độ phân giải để mượt hơn (quan trọng)
-    // -q:v 4: Giảm chất lượng JPEG một chút để nhẹ hơn (1-31, thấp hơn là nét hơn)
-    // -f image2pipe -: Xuất ra stdout
+    // Xây dựng lệnh FFmpeg stream (MJPEG)
     std::stringstream cmd;
     cmd << FFMPEG_PATH << " -y -f dshow -i video=\"" << m_deviceName << "\" "
         << "-framerate " << fps << " "
-        << "-s 640x480 "                              // Resize để tăng tốc độ truyền tải
-        << "-c:v mjpeg -q:v 4 -f image2pipe - 2>nul"; // 2>nul để ẩn log rác
+        << "-s 640x480 " // Giảm độ phân giải để tăng tốc độ
+        << "-c:v mjpeg -q:v 4 -f image2pipe - 2>nul";
 
     std::cout << "[WebcamStream] Cmd: " << cmd.str() << "\n";
 
-    FILE *pipe = POPEN(cmd.str().c_str(), "rb"); // Mở chế độ Binary
+    FILE *pipe = POPEN(cmd.str().c_str(), "rb");
     if (!pipe)
     {
         std::cerr << "[WebcamStream] Failed to open ffmpeg pipe.\n";
@@ -88,18 +83,17 @@ void WebcamStream::runStream(int fps)
         return;
     }
 
-    // 3. Vòng lặp đọc pipe
+    // Vòng lặp đọc pipe và tách frame
     std::vector<unsigned char> buffer;
-    buffer.reserve(1024 * 512); // Dự trữ 512KB
+    buffer.reserve(1024 * 512);
     unsigned char chunk[4096];
-    const unsigned char EOI[2] = {0xFF, 0xD9}; // End Of Image Marker của JPEG
+    const unsigned char EOI[2] = {0xFF, 0xD9}; // JPEG End Of Image
 
     while (m_running)
     {
-        // Đọc dữ liệu từ FFmpeg
         size_t bytes = fread(chunk, 1, sizeof(chunk), pipe);
         if (bytes == 0)
-            break; // FFmpeg chết hoặc stream kết thúc
+            break;
 
         buffer.insert(buffer.end(), chunk, chunk + bytes);
 
@@ -108,19 +102,18 @@ void WebcamStream::runStream(int fps)
         {
             auto it = std::search(buffer.begin(), buffer.end(), EOI, EOI + 2);
             if (it == buffer.end())
-                break; // Chưa đủ 1 ảnh
+                break;
 
             size_t frameLen = (it - buffer.begin()) + 2;
 
-            // Encode và gửi ngay lập tức
+            // Mã hóa và gửi frame
             std::string b64 = mem_base64(buffer.data(), frameLen);
-
             json msg = {
                 {"type", "webcam_frame"},
                 {"data", b64}};
             AgentTcpServer::instance().sendJson(msg);
 
-            // Xóa frame đã xử lý khỏi buffer
+            // Xóa frame đã xử lý
             buffer.erase(buffer.begin(), buffer.begin() + frameLen);
         }
     }
