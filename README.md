@@ -86,4 +86,12 @@
         [Agent] Connecting to gateway 127.0.0.1:9100...
         [Agent] Connected to gateway
     ```
- - Vào web client bằng đường link HTTP, nhập websocket path (nếu chưa có sẵn)
+ - Vào web client có 2 cách:
+    - Cách 1: Vào web client bằng đường link HTTP, nhập websocket path (nếu chưa có sẵn), chỉ truy cập web client trong mạng LAN
+    - Cách 2: bật thêm 1 terminal, vào thư mục `gateway`, chạy lệnh `.\cloudflared.exe tunnel --url http://127.0.0.1:8080`, truy cập bằng đường link `https...`, lúc này web client có thể được truy cập từ bất cứ đâu trên internet
+    ```txt
+        INF +--------------------------------------------------------------------------------------------+
+        INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
+        INF |  https://perception-subsection-formed-contests.trycloudflare.com                           |
+        INF +--------------------------------------------------------------------------------------------+
+    ```
