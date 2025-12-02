@@ -61,7 +61,7 @@ int main()
 
         // Nếu Agent & Gateway cùng máy  -> "127.0.0.1"
         // Nếu Gateway là máy khác      -> IP LAN của máy chạy node gateway.js
-        std::string gatewayHost = "127.0.0.1";
+        std::string gatewayHost = "10.29.160.219";
         uint16_t gatewayPort = 9100; // phải trùng với AGENT_PORT trong gateway.js
 
         std::cout << "[Agent] Gateway = " << gatewayHost
