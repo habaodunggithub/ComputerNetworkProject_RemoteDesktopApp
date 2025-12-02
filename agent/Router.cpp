@@ -35,6 +35,4 @@ void Router::registerAllHandlers(std::unordered_map<std::string, Handler> &map)
 
     map["start_webcam_stream"] = ProcessHandlers::startWebcamStream; 
     map["stop_webcam_stream"] = ProcessHandlers::stopWebcamStream;
-
-    map["help"] = ProcessHandlers::help;
 }
