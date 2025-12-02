@@ -102,7 +102,7 @@ void Discovery::broadcastLoop(int port)
         {
         }
 
-        // Gửi mỗi 3 giây
+        // Gửi mỗi 5 mili giây
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
