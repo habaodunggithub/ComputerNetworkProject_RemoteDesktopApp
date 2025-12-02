@@ -53,6 +53,7 @@ void GatewayDiscovery::listenLoop(int port)
 
         buffer[len] = 0;
 
+        // Parse JSON beacon từ Gateway
         try
         {
             auto j = nlohmann::json::parse(buffer);
