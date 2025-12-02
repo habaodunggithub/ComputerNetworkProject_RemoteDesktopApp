@@ -23,6 +23,7 @@ using namespace Gdiplus;
 
 #include "AgentTcpServer.h"
 #include "Discovery.h"
+#include "GatewayDiscovery.h"
 
 int main()
 {
@@ -59,19 +60,37 @@ int main()
     {
         asio::io_context io;
 
-        // Nếu Agent & Gateway cùng máy  -> "127.0.0.1"
-        // Nếu Gateway là máy khác      -> IP LAN của máy chạy node gateway.js
-        std::string gatewayHost = "10.29.160.219";
-        uint16_t gatewayPort = 9100; // phải trùng với AGENT_PORT trong gateway.js
+        // ==== Start gateway auto-discovery ====
+        GatewayDiscovery::start(9103);
 
-        std::cout << "[Agent] Gateway = " << gatewayHost
-                  << ":" << gatewayPort << "\n";
+        std::cout << "[Agent] Waiting for Gateway...\n";
 
-        AgentTcpServer server(io, gatewayHost, gatewayPort);
+        // Wait for beacon
+        while (GatewayDiscovery::gatewayIp.empty())
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        }
+
+        std::string finalGatewayIp = GatewayDiscovery::gatewayIp;
+        uint16_t finalGatewayPort = GatewayDiscovery::gatewayPort;
+
+        // ==== Nếu cùng hostname, dùng 127.0.0.1 ====
+        if (GatewayDiscovery::gatewayHostname == Discovery::getHostName())
+        {
+            finalGatewayIp = "127.0.0.1";
+            std::cout << "[Agent] Same machine detected. Switching to localhost.\n";
+        }
+
+        std::cout << "[Agent] Connecting to Gateway @ "
+                  << finalGatewayIp << ":" << finalGatewayPort << "\n";
+
+        GatewayDiscovery::stop(); // ← STOP SPAMMING
+
+        AgentTcpServer server(io, finalGatewayIp, finalGatewayPort);
         AgentTcpServer::setInstance(&server);
 
         // --- BẮT ĐẦU DISCOVERY ---
-        // Bắn gói tin UDP Broadcast mỗi 3 giây để Web Client quét thấy
+        // Bắn gói tin UDP Broadcast mỗi 5 mili giây để Web Client quét thấy
         Discovery::start(9102);
 
         server.start(); // bắt đầu connect tới Gateway (TCP)

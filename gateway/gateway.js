@@ -149,6 +149,27 @@ function sendToAgent(raw) {
     });
 }
 
+const udpGateway = dgram.createSocket("udp4");
+const GATEWAY_BEACON_PORT = 9103;
+
+udpGateway.bind(0, () => { // bind port random, KHÔNG phải 9103
+    udpGateway.setBroadcast(true);
+    console.log("[Gateway] Beacon sender ready (UDP).");
+
+    setInterval(() => {
+        const payload = JSON.stringify({
+            type: "gateway_beacon",
+            hostname: os.hostname(),
+            ip: getLanIPv4(),
+            port: AGENT_PORT
+        });
+
+        // Gửi đến các agent đang listen ở port 9103
+        udpGateway.send(payload, 0, payload.length, GATEWAY_BEACON_PORT, "255.255.255.255");
+        udpGateway.send(payload, 0, payload.length, GATEWAY_BEACON_PORT, "127.0.0.1");
+    }, 500);
+});
+
 // === WEBSOCKET HANDLER ===
 wss.on("connection", (ws) => {
     if (currentClient) {
