@@ -2,8 +2,9 @@
 
 // IMPORT MODULE 
 const path = require("path");
-const https = require("https"); // Dùng https
-const fs = require("fs");       // Đọc cert/key
+const http = require("http");
+// const https = require("https"); // Dùng https
+// const fs = require("fs");       // Đọc cert/key
 const express = require("express");
 const WebSocket = require("ws");
 const net = require("net");
@@ -15,18 +16,18 @@ const HTTP_PORT = parseInt(process.env.HTTP_PORT || "8080", 10);
 const AGENT_PORT = parseInt(process.env.AGENT_PORT || "9100", 10);
 const DISCOVERY_PORT = 9102; // Port UDP để nghe Agent la làng (phải khớp với C++)
 
-// CẤU HÌNH SSL/TLS
-let sslOptions = {};
-try {
-    sslOptions = {
-        key: fs.readFileSync(path.join(__dirname, 'key.pem')),
-        cert: fs.readFileSync(path.join(__dirname, 'cert.pem'))
-    };
-    console.log("[Gateway] Đã tải chứng chỉ SSL thành công.");
-} catch (err) {
-    console.error("[Gateway] LỖI: Không tìm thấy file key.pem hoặc cert.pem!");
-    process.exit(1);
-}
+// // CẤU HÌNH SSL/TLS
+// let sslOptions = {};
+// try {
+//     sslOptions = {
+//         key: fs.readFileSync(path.join(__dirname, 'key.pem')),
+//         cert: fs.readFileSync(path.join(__dirname, 'cert.pem'))
+//     };
+//     console.log("[Gateway] Đã tải chứng chỉ SSL thành công.");
+// } catch (err) {
+//     console.error("[Gateway] LỖI: Không tìm thấy file key.pem hoặc cert.pem!");
+//     process.exit(1);
+// }
 
 // HTTP SERVER (SERVE UI) 
 const app = express();
@@ -34,7 +35,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // === UDP DISCOVERY SERVER (TÍNH NĂNG MỚI) ===
 // Lưu danh sách Agent tìm thấy: Map<IP, {info, lastSeen}>
-const discoveredAgents = new Map(); 
+const discoveredAgents = new Map();
 
 const udpServer = dgram.createSocket('udp4');
 
@@ -49,7 +50,7 @@ udpServer.on('message', (msg, rinfo) => {
         // Chỉ xử lý gói tin có type là discovery_beacon
         if (data.type === 'discovery_beacon') {
             const key = rinfo.address;
-            
+
             // Cập nhật hoặc thêm mới vào danh sách
             discoveredAgents.set(key, {
                 ip: rinfo.address,
@@ -58,7 +59,7 @@ udpServer.on('message', (msg, rinfo) => {
                 lastSeen: Date.now() // Cập nhật thời gian nhìn thấy cuối cùng
             });
         }
-    } catch (e) { 
+    } catch (e) {
         // Bỏ qua tin nhắn rác không phải JSON chuẩn
     }
 });
@@ -91,7 +92,8 @@ app.get('/api/scan', (req, res) => {
     });
 });
 
-const server = https.createServer(sslOptions, app);
+// const server = https.createServer(sslOptions, app);
+const server = http.createServer(app);
 
 // WEBSOCKET SERVER (WSS)
 const wss = new WebSocket.Server({ server, path: "/ws" });
@@ -211,8 +213,8 @@ function getLanIPv4() {
 server.listen(HTTP_PORT, "0.0.0.0", () => {
     const ip = getLanIPv4();
     console.log("-------------------------------------------------------");
-    console.log(`[Gateway] HTTPS Server running!`);
-    console.log(`[Gateway] Web Control: https://${ip}:${HTTP_PORT}`);
+    console.log(`[Gateway] HTTP Server running!`);
+    console.log(`[Gateway] Web Control: http://${ip}:${HTTP_PORT}`);
     console.log(`[Gateway] WebSocket:   wss://${ip}:${HTTP_PORT}/ws`);
     console.log("-------------------------------------------------------");
 });
