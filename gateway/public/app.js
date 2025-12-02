@@ -409,7 +409,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.selectAgent = (ip) => {
         const port = location.port || 8080; // Giả sử Gateway cũng chạy 8080
         const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-        const url = `${proto}://${ip}:${port}/ws`;
+        const gatewayIp = location.hostname; // địa chỉ của Gateway
+        const url = `${proto}://${gatewayIp}:${port}/ws`;
+
         
         wsUrlInput.value = url;
         handleCloseModal();
@@ -577,7 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Thiết lập vòng lặp
                 stopScanning(); // Clear cũ
                 btnScanLan.classList.add('active-scan');
-                scanInterval = setInterval(fetchScanList, 2000); 
+                scanInterval = setInterval(fetchScanList, 1000); 
             };
         }
 

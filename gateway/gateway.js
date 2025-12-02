@@ -71,15 +71,15 @@ udpServer.on('listening', () => {
 // Bắt đầu lắng nghe UDP
 udpServer.bind(DISCOVERY_PORT);
 
-// Dọn dẹp danh sách: Xóa các Agent không gửi tín hiệu trong 10 giây qua
+// Dọn dẹp danh sách: Xóa các Agent không gửi tín hiệu trong 2 giây qua
 setInterval(() => {
     const now = Date.now();
     for (const [key, agent] of discoveredAgents.entries()) {
-        if (now - agent.lastSeen > 10000) {
+        if (now - agent.lastSeen > 2000) {
             discoveredAgents.delete(key);
         }
     }
-}, 5000); // Chạy mỗi 5 giây
+}, 2000); // Chạy mỗi 2 giây
 
 // --- API SCAN (HTTP GET) ---
 // Frontend gọi vào đây để lấy danh sách mà không cần WebSocket

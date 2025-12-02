@@ -103,7 +103,7 @@ void Discovery::broadcastLoop(int port)
         }
 
         // Gửi mỗi 3 giây
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
     closesocket(sock);
