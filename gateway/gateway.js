@@ -7,10 +7,12 @@ const express = require("express");
 const WebSocket = require("ws");
 const net = require("net");
 const os = require("os");
+const dgram = require("dgram");
 
 // Cấu hình
 const HTTP_PORT = parseInt(process.env.HTTP_PORT || "8080", 10);
 const AGENT_PORT = parseInt(process.env.AGENT_PORT || "9100", 10);
+const BEACON_PORT = 9103;
 
 // HTTP server phục vụ UI
 const app = express();
@@ -131,6 +133,28 @@ const agentServer = net.createServer((socket) => {
 
 agentServer.listen(AGENT_PORT, "0.0.0.0", () => {
     console.log(`[Gateway] TCP listening for agents at 0.0.0.0:${AGENT_PORT}`);
+});
+
+// UDP Beacon: Gateway gửi broadcast để Agent tự động tìm
+const udpBeacon = dgram.createSocket("udp4");
+
+udpBeacon.bind(0, () => {  // Bind port random (không phải 9103)
+    udpBeacon.setBroadcast(true);
+    console.log("[Gateway] UDP Beacon sender ready.");
+
+    // Gửi beacon mỗi 500ms
+    setInterval(() => {
+        const payload = JSON.stringify({
+            type: "gateway_beacon",
+            hostname: os.hostname(),
+            ip: getLanIPv4(),
+            port: AGENT_PORT
+        });
+
+        // Broadcast LAN + localhost (cho agent cùng máy)
+        udpBeacon.send(payload, 0, payload.length, BEACON_PORT, "255.255.255.255");
+        udpBeacon.send(payload, 0, payload.length, BEACON_PORT, "127.0.0.1");
+    }, 500);
 });
 
 // Xử lý buffer từ Agent (tách theo dòng)
