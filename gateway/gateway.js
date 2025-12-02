@@ -1,14 +1,9 @@
 // Gateway: HTTPS + WebSocket (WSS) + TCP cho Agent + UDP Beacon
 
 const path = require("path");
-<<<<<<< HEAD
 const http = require("http");
 // const https = require("https"); // Dùng https
 // const fs = require("fs");       // Đọc cert/key
-=======
-const https = require("https");
-const fs = require("fs");
->>>>>>> 44219beff93bce04341fce5113b03f18ce40c1cf
 const express = require("express");
 const WebSocket = require("ws");
 const net = require("net");
@@ -20,7 +15,6 @@ const HTTP_PORT = parseInt(process.env.HTTP_PORT || "8080", 10);
 const AGENT_PORT = parseInt(process.env.AGENT_PORT || "9100", 10);
 const BEACON_PORT = 9103;
 
-<<<<<<< HEAD
 // // CẤU HÌNH SSL/TLS
 // let sslOptions = {};
 // try {
@@ -33,36 +27,16 @@ const BEACON_PORT = 9103;
 //     console.error("[Gateway] LỖI: Không tìm thấy file key.pem hoặc cert.pem!");
 //     process.exit(1);
 // }
-=======
-// Load SSL certificate
-let sslOptions = {};
-try {
-    sslOptions = {
-        key: fs.readFileSync(path.join(__dirname, "key.pem")),
-        cert: fs.readFileSync(path.join(__dirname, "cert.pem"))
-    };
-    console.log("[Gateway] SSL certificate loaded.");
-} catch (err) {
-    console.error("[Gateway] ERROR: key.pem or cert.pem not found!");
-    process.exit(1);
-}
->>>>>>> 44219beff93bce04341fce5113b03f18ce40c1cf
 
 // HTTP server phục vụ UI
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
 
-<<<<<<< HEAD
 // === UDP DISCOVERY SERVER (TÍNH NĂNG MỚI) ===
 // Lưu danh sách Agent tìm thấy: Map<IP, {info, lastSeen}>
 const discoveredAgents = new Map();
 
 const udpServer = dgram.createSocket('udp4');
-
-udpServer.on('error', (err) => {
-    console.error(`[Discovery] UDP error:\n${err.stack}`);
-    udpServer.close();
-});
 
 udpServer.on('message', (msg, rinfo) => {
     try {
@@ -81,22 +55,8 @@ udpServer.on('message', (msg, rinfo) => {
         }
     } catch (e) {
         // Bỏ qua tin nhắn rác không phải JSON chuẩn
-=======
-// Danh sách Agent đang kết nối TCP: Map<socket, { ip, hostname, os, connectedAt }>
-const connectedAgents = new Map();
-
-// API scan: Frontend lấy danh sách Agent đang kết nối
-app.get("/api/scan", (req, res) => {
-    const list = [];
-    for (const [sock, info] of connectedAgents.entries()) {
-        list.push({
-            ip: info.ip,
-            hostname: info.hostname,
-            os: info.os
-        });
->>>>>>> 44219beff93bce04341fce5113b03f18ce40c1cf
     }
-    res.json({ success: true, data: list });
+    // ĐÃ XÓA DÒNG res.json(...) BỊ LỖI Ở ĐÂY
 });
 
 // const server = https.createServer(sslOptions, app);
@@ -109,6 +69,7 @@ let currentClient = null;
 // TCP server cho Agent kết nối
 let agentSocket = null;
 let agentBuffer = "";
+const connectedAgents = new Map(); // <--- ĐÃ KHAI BÁO BIẾN THIẾU
 
 const agentServer = net.createServer((socket) => {
     console.log(`[Gateway] Agent TCP connected from ${socket.remoteAddress}:${socket.remotePort}`);
@@ -134,14 +95,6 @@ const agentServer = net.createServer((socket) => {
     agentSocket.on("data", (chunk) => {
         agentBuffer += chunk;
         processAgentBuffer(socket);
-    });
-
-    agentSocket.on("error", (err) => console.error("[Gateway] Agent socket error:", err.message));
-
-    agentSocket.on("close", () => {
-        console.log("[Gateway] Agent TCP disconnected");
-        if (agentSocket === socket) agentSocket = null;
-        connectedAgents.delete(socket);
     });
 });
 
@@ -202,7 +155,7 @@ function sendToAgent(raw) {
 // UDP Beacon: Quảng bá thông tin Gateway để Agent tự động tìm
 const udpBeacon = dgram.createSocket("udp4");
 
-udpBeacon.bind(0, () => {  // Bind port random (không phải 9103)
+udpBeacon.bind(0, () => { // Bind port random (không phải 9103)
     udpBeacon.setBroadcast(true);
     console.log("[Gateway] UDP Beacon sender ready.");
 
@@ -233,7 +186,7 @@ wss.on("connection", (ws) => {
     ws.on("message", (data) => {
         try {
             const msg = JSON.parse(data.toString());
-            sendToAgent(msg);  // Forward lệnh xuống Agent
+            sendToAgent(msg); // Forward lệnh xuống Agent
         } catch (e) {
             // Bỏ qua nếu không phải JSON
         }
