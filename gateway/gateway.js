@@ -18,39 +18,11 @@ const BEACON_PORT = 9103;
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
 
-// === UDP DISCOVERY SERVER ===
-// Lưu danh sách Agent tìm thấy: Map<IP, {info, lastSeen}>
-const discoveredAgents = new Map();
+// ====== TRẠNG THÁI TOÀN CỤC ======
 
-const udpServer = dgram.createSocket('udp4');
-
-udpServer.on('message', (msg, rinfo) => {
-    try {
-        const data = JSON.parse(msg.toString());
-        // Chỉ xử lý gói tin có type là discovery_beacon
-        if (data.type === 'discovery_beacon') {
-            const key = rinfo.address;
-
-            // Cập nhật hoặc thêm mới vào danh sách
-            discoveredAgents.set(key, {
-                ip: rinfo.address,
-                hostname: data.hostname,
-                os: data.os,
-                lastSeen: Date.now() // Cập nhật thời gian nhìn thấy cuối cùng
-            });
-        }
-    } catch (e) {
-        // Bỏ qua tin nhắn rác không phải JSON chuẩn
-    }
-});
-
-try { udpServer.bind(9102); } catch (e) { console.log("[Discovery] Port 9102 busy."); }
-
-// const server = https.createServer(sslOptions, app);
-const server = http.createServer(app);
-
-// WebSocket server (WSS) cho Web client
-const wss = new WebSocket.Server({ server, path: "/ws" });
+/**
+ * Web client (UI) – chỉ cho phép 1 browser điều khiển tại 1 thời điểm
+ */
 let currentClient = null;
 
 /**
@@ -59,7 +31,63 @@ let currentClient = null;
  */
 let agentSocket = null;
 let agentBuffer = "";
+
+/**
+ * Danh sách agent đang kết nối TCP:
+ * Map<socket, { ip, hostname, os, connectedAt, lastSeen }>
+ */
 const connectedAgents = new Map();
+
+// Lấy địa chỉ IP LAN
+function getLanIPv4() {
+    const nets = os.networkInterfaces();
+    for (const name of Object.keys(nets)) {
+        for (const netInfo of nets[name]) {
+            if (netInfo.family === "IPv4" && !netInfo.internal) {
+                return netInfo.address;
+            }
+        }
+    }
+    return "localhost";
+}
+
+// Build danh sách agent đang online cho API /api/scan
+function buildAgentList() {
+    const list = [];
+    const now = Date.now();
+
+    connectedAgents.forEach((info, socket) => {
+        if (socket.destroyed) return;
+
+        list.push({
+            ip: info.ip || socket.remoteAddress,
+            hostname: info.hostname || "Unknown",
+            os: info.os || "Unknown",
+            connectedAt: info.connectedAt || now,
+            lastSeen: info.lastSeen || now
+        });
+    });
+
+    return list;
+}
+
+// API scan: Frontend gọi để lấy danh sách Agent đang kết nối TCP
+// Dùng được cả khi Gateway nằm sau Cloudflare tunnel
+app.get("/api/scan", (_req, res) => {
+    const list = buildAgentList();
+    res.json({
+        success: true,
+        data: list
+    });
+});
+
+// HTTP server
+const server = http.createServer(app);
+
+// WebSocket server cho Web client
+const wss = new WebSocket.Server({ server, path: "/ws" });
+
+// TCP server cho Agent kết nối
 
 const agentServer = net.createServer((socket) => {
     console.log(`[Gateway] Agent TCP connected from ${socket.remoteAddress}:${socket.remotePort}`);
@@ -213,18 +241,6 @@ wss.on("connection", (ws) => {
         console.error("[Gateway] WebSocket error:", err.message);
     });
 });
-
-function getLanIPv4() {
-    const nets = os.networkInterfaces();
-    for (const name of Object.keys(nets)) {
-        for (const netInfo of nets[name]) {
-            if (netInfo.family === "IPv4" && !netInfo.internal) {
-                return netInfo.address;
-            }
-        }
-    }
-    return "localhost";
-}
 
 // Hàm chạy Cloudflare Tunnel tự động
 function startCloudflareTunnel() {
