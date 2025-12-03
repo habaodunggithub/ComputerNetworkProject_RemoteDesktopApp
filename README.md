@@ -72,26 +72,32 @@
  - Mở terminal 1: ở folder gateway: chạy `node gateway.js` (yêu cầu đã tải `Node.js`)
  - Trên terminal của gateway hiện: 
     ```txt
-        [Gateway] gateway.js started (TCP server for agent, WS+HTTP for web)
+        [Gateway] UDP Beacon sender ready.
         [Gateway] TCP listening for agents at 0.0.0.0:9100
-        [Gateway] HTTP listening at  http://192.168.0.102:8080
-        [Gateway] WebSocket path    ws://192.168.0.102:8080/ws
-        [Gateway] Agent connected from 127.0.0.1 : 62596
+        -------------------------------------------------------
+        [Gateway] HTTP Server running!
+        [Gateway] Web Control: http://192.168.0.102:8080
+        [Gateway] WebSocket:   ws://192.168.0.102:8080/ws
+        -------------------------------------------------------
+        [Cloudflare] Starting tunnel...
+
+        -------------------------------------------------------
+        [Cloudflare] Public url (internet): https://expired-questionnaire-tier-differential.trycloudflare.com
+        -------------------------------------------------------
     ```
 - Mở terminal 2: ở folder agent: chạy `build.bat`, chạy file `agent.exe`.
  - Trên terminal của agent hiện:
     ```txt
         [GDI+] Started
-        [Agent] Gateway = 127.0.0.1:9100
+        [Agent] Waiting for Gateway...
+        [Agent] Beacon from LAPTOP-B12DLF2V @ 192.168.0.102:9100
+        [Agent] Beacon from LAPTOP-B12DLF2V @ 192.168.0.102:9100
+        [Agent] Same machine detected. Switching to localhost.
+        [Agent] Connecting to Gateway @ 127.0.0.1:9100
+        [Agent] Beacon from LAPTOP-B12DLF2V @ 192.168.0.102:9100
         [Agent] Connecting to gateway 127.0.0.1:9100...
         [Agent] Connected to gateway
     ```
  - Vào web client có 2 cách:
-    - Cách 1: Vào web client bằng đường link HTTP, nhập websocket path (nếu chưa có sẵn), chỉ truy cập web client trong mạng LAN
-    - Cách 2: bật thêm 1 terminal, vào thư mục `gateway`, chạy lệnh `.\cloudflared.exe tunnel --url http://127.0.0.1:8080`, truy cập bằng đường link `https...`, lúc này web client có thể được truy cập từ bất cứ đâu trên internet
-    ```txt
-        INF +--------------------------------------------------------------------------------------------+
-        INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
-        INF |  https://perception-subsection-formed-contests.trycloudflare.com                           |
-        INF +--------------------------------------------------------------------------------------------+
-    ```
+    - Cách 1: Vào web client bằng đường link HTTP, chỉ truy cập web client trong mạng LAN
+    - Cách 2: Vào web client bằng đường link HTTPS public, có thể truy cập web client trên internet.

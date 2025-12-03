@@ -44,6 +44,8 @@ udpServer.on('message', (msg, rinfo) => {
     }
 });
 
+try { udpServer.bind(9102); } catch (e) { console.log("[Discovery] Port 9102 busy."); }
+
 // const server = https.createServer(sslOptions, app);
 const server = http.createServer(app);
 
@@ -212,6 +214,54 @@ wss.on("connection", (ws) => {
     });
 });
 
+function getLanIPv4() {
+    const nets = os.networkInterfaces();
+    for (const name of Object.keys(nets)) {
+        for (const netInfo of nets[name]) {
+            if (netInfo.family === "IPv4" && !netInfo.internal) {
+                return netInfo.address;
+            }
+        }
+    }
+    return "localhost";
+}
+
+// Hàm chạy Cloudflare Tunnel tự động
+function startCloudflareTunnel() {
+    const cfPath = path.join(__dirname, "cloudflared.exe");
+
+    console.log(`[Cloudflare] Starting tunnel...`);
+
+    // Fix cứng IP 127.0.0.1 để tránh lỗi IPv6
+    const tunnel = spawn(cfPath, ["tunnel", "--url", `http://127.0.0.1:${HTTP_PORT}`]);
+
+    // Bắt log từ Cloudflare để tìm URL
+    tunnel.stderr.on("data", (data) => {
+        const output = data.toString();
+
+        // Tìm chuỗi https://....trycloudflare.com
+        const match = output.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
+
+        if (match) {
+            const publicUrl = match[0];
+            console.log("\n-------------------------------------------------------");
+            console.log("[Cloudflare] Public url (internet):", publicUrl);
+            console.log("-------------------------------------------------------\n");
+        }
+    });
+
+    tunnel.on("close", (code) => {
+        console.log(`[Cloudflare] Tunnel process exited with code ${code}`);
+    });
+
+    // Khi tắt Node.js, thì tắt luôn Cloudflare
+    process.on("exit", () => tunnel.kill());
+    process.on("SIGINT", () => {
+        tunnel.kill();
+        process.exit();
+    });
+}
+
 // Khởi động HTTP server
 server.listen(HTTP_PORT, "0.0.0.0", () => {
     const ip = getLanIPv4();
@@ -220,4 +270,6 @@ server.listen(HTTP_PORT, "0.0.0.0", () => {
     console.log(`[Gateway] Web Control: http://${ip}:${HTTP_PORT}`);
     console.log(`[Gateway] WebSocket:   ws://${ip}:${HTTP_PORT}/ws`);
     console.log("-------------------------------------------------------");
+
+    startCloudflareTunnel();
 });
