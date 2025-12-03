@@ -36,6 +36,4 @@ public:
 
     static json startWebcamStream(const json &);
     static json stopWebcamStream(const json &);
-
-    static json help(const json &);
 };

@@ -3,8 +3,7 @@
 #ifdef _WIN32
 bool capture_screenshot(const std::string &output_path)
 {
-    // GDI+ được giả định là đã khởi tạo bởi RemoteServer
-
+    // GDI+ được khởi tạo bởi main_server
     HDC hScreen = GetDC(nullptr);
     if (!hScreen)
     {
@@ -33,12 +32,12 @@ bool capture_screenshot(const std::string &output_path)
     }
 
     HGDIOBJ old = SelectObject(hDC, hBitmap);
-    // Thực hiện copy từ màn hình vào hDC
     BitBlt(hDC, 0, 0, width, height, hScreen, 0, 0, SRCCOPY);
-    SelectObject(hDC, old); // Phục hồi object cũ
+    SelectObject(hDC, old);
 
+    // Làm PNG encoder CLSID
     CLSID clsid;
-    CLSIDFromString(L"{557CF406-1A04-11D3-9A73-0000F81EF32E}", &clsid); // PNG encoder
+    CLSIDFromString(L"{557CF406-1A04-11D3-9A73-0000F81EF32E}", &clsid);
 
     Bitmap bmp(hBitmap, nullptr);
     std::wstring wpath(output_path.begin(), output_path.end());
@@ -53,29 +52,25 @@ bool capture_screenshot(const std::string &output_path)
 }
 #endif
 
-// Hàm chuyển file ảnh sang base64
+// Chuyển file ảnh sang base64
 static std::string file_to_base64(const std::string &path)
 {
-    // Mở file ở chế độ binary
     std::ifstream ifs(path, std::ios::binary | std::ios::ate);
     if (!ifs.is_open())
         return "";
 
-    // Lấy kích thước file và resize buffer
     std::streamsize size = ifs.tellg();
     ifs.seekg(0, std::ios::beg);
     std::vector<char> buffer(size);
 
-    // Đọc file vào buffer
     if (!ifs.read(buffer.data(), size))
         return "";
 
-    // Bảng mã Base64
     static const char *base64_chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     std::string encoded;
-    encoded.reserve(((size + 2) / 3) * 4); // Ước lượng kích thước
+    encoded.reserve(((size + 2) / 3) * 4);
 
     int val = 0;
     int valb = -6;
@@ -101,7 +96,6 @@ static std::string file_to_base64(const std::string &path)
 
 std::string capture_screenshot_base64()
 {
-    // Dùng tên file tạm thời
     const std::string path = "temp_screenshot.png";
     if (!capture_screenshot(path))
     {

