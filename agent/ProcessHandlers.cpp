@@ -82,7 +82,7 @@ json ProcessHandlers::captureScreen(const json &)
 
 json ProcessHandlers::startScreenStream(const json &req)
 {
-    int fps = req.value("fps", 60);
+    int fps = req.value("fps", 30);
     ScreenStream::start(fps);
 
     return {
@@ -176,7 +176,7 @@ json ProcessHandlers::stopWebcamRecord(const json &)
 
 json ProcessHandlers::startWebcamStream(const json &req)
 {
-    int fps = req.value("fps", 15);
+    int fps = req.value("fps", 30);
     WebcamStream::start(fps);
 
     json status_msg = {

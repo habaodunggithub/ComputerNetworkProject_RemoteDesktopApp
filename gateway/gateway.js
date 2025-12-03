@@ -1,38 +1,24 @@
-// Gateway: HTTPS + WebSocket (WSS) + TCP cho Agent + UDP Beacon
+// Gateway: HTTP + WebSocket (WSS) + TCP cho Agent + UDP Beacon + Auto Clould Flare Tunnel
 
 const path = require("path");
 const http = require("http");
-// const https = require("https"); // Dùng https
-// const fs = require("fs");       // Đọc cert/key
 const express = require("express");
 const WebSocket = require("ws");
 const net = require("net");
 const os = require("os");
 const dgram = require("dgram");
+const { spawn } = require("child_process");
 
 // Cấu hình
 const HTTP_PORT = parseInt(process.env.HTTP_PORT || "8080", 10);
 const AGENT_PORT = parseInt(process.env.AGENT_PORT || "9100", 10);
 const BEACON_PORT = 9103;
 
-// // CẤU HÌNH SSL/TLS
-// let sslOptions = {};
-// try {
-//     sslOptions = {
-//         key: fs.readFileSync(path.join(__dirname, 'key.pem')),
-//         cert: fs.readFileSync(path.join(__dirname, 'cert.pem'))
-//     };
-//     console.log("[Gateway] Đã tải chứng chỉ SSL thành công.");
-// } catch (err) {
-//     console.error("[Gateway] LỖI: Không tìm thấy file key.pem hoặc cert.pem!");
-//     process.exit(1);
-// }
-
 // HTTP server phục vụ UI
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
 
-// === UDP DISCOVERY SERVER (TÍNH NĂNG MỚI) ===
+// === UDP DISCOVERY SERVER ===
 // Lưu danh sách Agent tìm thấy: Map<IP, {info, lastSeen}>
 const discoveredAgents = new Map();
 
@@ -56,7 +42,6 @@ udpServer.on('message', (msg, rinfo) => {
     } catch (e) {
         // Bỏ qua tin nhắn rác không phải JSON chuẩn
     }
-    // ĐÃ XÓA DÒNG res.json(...) BỊ LỖI Ở ĐÂY
 });
 
 // const server = https.createServer(sslOptions, app);
@@ -69,7 +54,7 @@ let currentClient = null;
 // TCP server cho Agent kết nối
 let agentSocket = null;
 let agentBuffer = "";
-const connectedAgents = new Map(); // <--- ĐÃ KHAI BÁO BIẾN THIẾU
+const connectedAgents = new Map();
 
 const agentServer = net.createServer((socket) => {
     console.log(`[Gateway] Agent TCP connected from ${socket.remoteAddress}:${socket.remotePort}`);

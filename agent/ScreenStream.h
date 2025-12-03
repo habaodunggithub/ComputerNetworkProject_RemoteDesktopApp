@@ -11,7 +11,7 @@ class AgentTcpServer; // gọi AgentTcpServer để push dữ liệu
 
 class ScreenStream {
 public:
-    static bool start(int fps = 10);
+    static bool start(int fps = 15);
     static void stop();
 
 private:
