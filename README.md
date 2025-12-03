@@ -78,7 +78,6 @@ Project_Root/
 ```
 
 ## 5. Công nghệ sử dụng
-## Công nghệ sử dụng
 
 | Thành phần | Công nghệ |
 | :--- | :--- |
