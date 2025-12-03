@@ -37,7 +37,7 @@ bool capture_screenshot(const std::string &output_path)
 
     // Làm PNG encoder CLSID
     CLSID clsid;
-    CLSIDFromString(L"{557CF406-1A04-11D3-9A73-0000F81EF32E}", &clsid);
+    CLSIDFromString(L"{557CF401-1A04-11D3-9A73-0000F81EF32E}", &clsid);
 
     Bitmap bmp(hBitmap, nullptr);
     std::wstring wpath(output_path.begin(), output_path.end());
@@ -96,7 +96,7 @@ static std::string file_to_base64(const std::string &path)
 
 std::string capture_screenshot_base64()
 {
-    const std::string path = "temp_screenshot.png";
+    const std::string path = "temp_screenshot.jpg";
     if (!capture_screenshot(path))
     {
         std::cerr << "Capture screenshot thất bại.\n";
