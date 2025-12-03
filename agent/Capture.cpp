@@ -96,7 +96,6 @@ static std::string file_to_base64(const std::string &path)
 
 std::string capture_screenshot_base64()
 {
-    // Dùng tên file tạm thời
     const std::string path = "temp_screenshot.png";
     if (!capture_screenshot(path))
     {

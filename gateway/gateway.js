@@ -51,7 +51,10 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: "/ws" });
 let currentClient = null;
 
-// TCP server cho Agent kết nối
+/**
+ * Agent TCP – hiện tại vẫn giữ mô hình 1 Agent “chính”.
+ * Future: có thể mở rộng multi-agent nếu muốn.
+ */
 let agentSocket = null;
 let agentBuffer = "";
 const connectedAgents = new Map();
@@ -59,7 +62,7 @@ const connectedAgents = new Map();
 const agentServer = net.createServer((socket) => {
     console.log(`[Gateway] Agent TCP connected from ${socket.remoteAddress}:${socket.remotePort}`);
 
-    // Chỉ cho phép 1 agent cùng lúc: đóng agent cũ nếu có
+    // Chỉ cho phép 1 agent cùng lúc: đóng agent cũ
     if (agentSocket && agentSocket !== socket) {
         try { agentSocket.destroy(); } catch (e) {}
         connectedAgents.delete(agentSocket);
@@ -69,22 +72,59 @@ const agentServer = net.createServer((socket) => {
     agentBuffer = "";
     agentSocket.setEncoding("utf8");
 
-    // Thêm vào danh sách agent đang kết nối
+    // Thêm agent vào danh sách
     connectedAgents.set(socket, {
         ip: socket.remoteAddress,
         hostname: "Unknown",
         os: "Unknown",
-        connectedAt: Date.now()
+        connectedAt: Date.now(),
+        lastSeen: Date.now()
     });
 
+    // Nhận data từ Agent
     agentSocket.on("data", (chunk) => {
         agentBuffer += chunk;
         processAgentBuffer(socket);
+    });
+
+    agentSocket.on("close", () => {
+        console.log("[Gateway] Agent TCP disconnected");
+        connectedAgents.delete(socket);
+        if (agentSocket === socket) {
+            agentSocket = null;
+            agentBuffer = "";
+        }
+    });
+
+    agentSocket.on("error", (err) => {
+        console.error("[Gateway] Agent socket error:", err.message);
     });
 });
 
 agentServer.listen(AGENT_PORT, "0.0.0.0", () => {
     console.log(`[Gateway] TCP listening for agents at 0.0.0.0:${AGENT_PORT}`);
+});
+
+// UDP Beacon: Gateway gửi broadcast để Agent tự động tìm
+const udpBeacon = dgram.createSocket("udp4");
+
+udpBeacon.bind(0, () => { // Bind port random (không phải 9103)
+    udpBeacon.setBroadcast(true);
+    console.log("[Gateway] UDP Beacon sender ready.");
+
+    // Gửi beacon mỗi 500ms
+    setInterval(() => {
+        const payload = JSON.stringify({
+            type: "gateway_beacon",
+            hostname: os.hostname(),
+            ip: getLanIPv4(),
+            port: AGENT_PORT
+        });
+
+        // Broadcast LAN + localhost (cho agent cùng máy)
+        udpBeacon.send(payload, 0, payload.length, BEACON_PORT, "255.255.255.255");
+        udpBeacon.send(payload, 0, payload.length, BEACON_PORT, "127.0.0.1");
+    }, 500);
 });
 
 // Xử lý buffer từ Agent (tách theo dòng)
@@ -100,18 +140,21 @@ function processAgentBuffer(socket) {
             currentClient.send(line);
         }
 
-        // Parse để bắt gói "hello" (cập nhật thông tin agent)
+        // Parse để bắt gói "hello" và cập nhật lastSeen
         try {
             const msg = JSON.parse(line);
-            if (msg.type === "hello") {
-                const info = connectedAgents.get(socket);
-                if (info) {
+            const info = connectedAgents.get(socket);
+            if (info) {
+                info.lastSeen = Date.now();
+
+                if (msg.type === "hello") {
                     info.hostname = msg.hostname || info.hostname;
                     info.os = msg.os || info.os;
                     info.ip = info.ip || socket.remoteAddress;
-                    connectedAgents.set(socket, info);
                     console.log("[Gateway] Registered agent info:", info);
                 }
+
+                connectedAgents.set(socket, info);
             }
         } catch (e) {
             // Bỏ qua nếu không phải JSON
@@ -137,30 +180,10 @@ function sendToAgent(raw) {
     });
 }
 
-// UDP Beacon: Quảng bá thông tin Gateway để Agent tự động tìm
-const udpBeacon = dgram.createSocket("udp4");
+// WebSocket: Nhận lệnh từ Web client, forward xuống Agent
 
-udpBeacon.bind(0, () => { // Bind port random (không phải 9103)
-    udpBeacon.setBroadcast(true);
-    console.log("[Gateway] UDP Beacon sender ready.");
-
-    // Gửi beacon mỗi 500ms
-    setInterval(() => {
-        const payload = JSON.stringify({
-            type: "gateway_beacon",
-            hostname: os.hostname(),
-            ip: getLanIPv4(),
-            port: AGENT_PORT
-        });
-
-        // Broadcast LAN + localhost (cho agent cùng máy)
-        udpBeacon.send(payload, 0, payload.length, BEACON_PORT, "255.255.255.255");
-        udpBeacon.send(payload, 0, payload.length, BEACON_PORT, "127.0.0.1");
-    }, 500);
-});
-
-// WebSocket handler: Nhận lệnh từ Web client và forward xuống Agent
 wss.on("connection", (ws) => {
+    // Chỉ cho phép 1 client
     if (currentClient) {
         ws.close(1013, "Another client already connected");
         return;
@@ -183,27 +206,18 @@ wss.on("connection", (ws) => {
             console.log("[Gateway] Web client disconnected");
         }
     });
+
+    ws.on("error", (err) => {
+        console.error("[Gateway] WebSocket error:", err.message);
+    });
 });
 
-// Lấy địa chỉ IP LAN
-function getLanIPv4() {
-    const nets = os.networkInterfaces();
-    for (const name of Object.keys(nets)) {
-        for (const netInfo of nets[name]) {
-            if (netInfo.family === "IPv4" && !netInfo.internal) {
-                return netInfo.address;
-            }
-        }
-    }
-    return "localhost";
-}
-
-// Khởi động server
+// Khởi động HTTP server
 server.listen(HTTP_PORT, "0.0.0.0", () => {
     const ip = getLanIPv4();
     console.log("-------------------------------------------------------");
     console.log(`[Gateway] HTTP Server running!`);
     console.log(`[Gateway] Web Control: http://${ip}:${HTTP_PORT}`);
-    console.log(`[Gateway] WebSocket:   wss://${ip}:${HTTP_PORT}/ws`);
+    console.log(`[Gateway] WebSocket:   ws://${ip}:${HTTP_PORT}/ws`);
     console.log("-------------------------------------------------------");
 });
