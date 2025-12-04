@@ -24,6 +24,7 @@ AgentTcpServer::AgentTcpServer(asio::io_context &io,
     : m_io(io),
       m_socket(io),
       m_reconnectTimer(io),
+      m_heartbeatTimer(io),
       m_gatewayHost(gatewayHost),
       m_gatewayPort(gatewayPort)
 {
@@ -72,6 +73,7 @@ void AgentTcpServer::connectToGateway()
 
                 m_readBuffer.clear();
                 startRead();
+                startHeartbeat(); // Bắt đầu gửi heartbeat định kỳ
 
                 // Gửi gói HELLO với thông tin Agent
                 char hostBuf[256] = {0};
@@ -173,4 +175,21 @@ void AgentTcpServer::sendJson(const json &j)
         std::cerr << "[Agent] sendJson exception: "
                   << e.what() << "\n";
     }
+}
+
+void AgentTcpServer::startHeartbeat()
+{
+    using namespace std::chrono_literals;
+
+    m_heartbeatTimer.expires_after(10s);
+    m_heartbeatTimer.async_wait([this](std::error_code ec)
+                                {
+        if (!ec && m_socket.is_open())
+        {
+            json heartbeat = {{"type", "heartbeat"}};
+            sendJson(heartbeat);
+            
+            // Schedule lại heartbeat tiếp theo
+            startHeartbeat();
+        } });
 }

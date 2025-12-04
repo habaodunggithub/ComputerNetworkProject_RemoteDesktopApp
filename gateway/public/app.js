@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentVideoBlob = null;
     let isKeylogClean = true;
     let scanInterval = null; // Biến quản lý vòng lặp quét mạng
+    let currentAgentId = null; // Agent hiện đang được chọn
 
     // --- BỘ CHỌN DOM ---
     const $ = (s) => document.querySelector(s);
@@ -174,7 +175,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function disconnectWs() { if (ws) ws.close(); }
 
     function sendWsMessage(payload) {
-        if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            // Thêm agentId vào mọi command nếu đã chọn agent
+            if (currentAgentId) {
+                payload.agentId = currentAgentId;
+            } else {
+                alert('Please select an agent first (click Scan button)');
+                return;
+            }
+            ws.send(JSON.stringify(payload));
+        }
         else alert('Not connected.');
     }
 
@@ -377,13 +387,17 @@ document.addEventListener('DOMContentLoaded', () => {
             let iconName = 'monitor';
             if (agent.os.includes('Windows')) iconName = 'layout';
             else if (agent.os.includes('Linux')) iconName = 'terminal';
+            
+            // Highlight agent hiện tại đang chọn
+            const isSelected = agent.agentId === currentAgentId;
+            const selectedClass = isSelected ? 'selected-agent' : '';
 
             return `
-            <div class="device-card" data-os="${agent.os}" onclick="selectAgent('${agent.ip}')">
+            <div class="device-card ${selectedClass}" data-os="${agent.os}" data-agent-id="${agent.agentId}" onclick="selectAgent('${agent.agentId}', '${agent.hostname}')">
                 <div class="device-status" title="Online"></div>
                 
-                <button class="btn-connect-action" title="Connect Now">
-                    <i data-feather="zap" style="width:18px; height:18px; fill:currentColor;"></i>
+                <button class="btn-connect-action" title="${isSelected ? 'Selected' : 'Select Agent'}">
+                    <i data-feather="${isSelected ? 'check' : 'zap'}" style="width:18px; height:18px; fill:currentColor;"></i>
                 </button>
 
                 <div class="device-icon-large">
@@ -392,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 <div class="device-info">
                     <span class="device-hostname" title="${agent.hostname}">${agent.hostname}</span>
-                    <span class="device-ip">${agent.ip}</span>
+                    <span class="device-ip">${agent.agentId || agent.ip}</span>
                 </div>
             </div>
             `;
@@ -400,6 +414,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (typeof feather !== 'undefined') feather.replace();
     }
+
+    // Global function để chọn agent
+    window.selectAgent = (agentId, hostname) => {
+        currentAgentId = agentId;
+        console.log('[App] Selected agent:', agentId, hostname);
+        
+        // Cập nhật UI status
+        if (statusText) {
+            statusText.textContent = `Agent: ${hostname || agentId}`;
+        }
+        
+        // Đóng modal scan
+        handleCloseModal();
+        
+        // Load data cho view hiện tại
+        loadDataForView(currentView);
+    };
 
     window.requestStopApp = (name) => {
         if (confirm(`Force stop "${name}"?`)) {

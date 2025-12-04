@@ -819,6 +819,24 @@ body.dark-theme #btn-scan-lan {
     opacity: 1;
 }
 
+/* Agent được chọn */
+.device-card.selected-agent {
+    background: rgba(6, 182, 212, 0.15);
+    border-color: #06b6d4;
+    box-shadow: 0 0 30px rgba(6, 182, 212, 0.3);
+}
+
+.device-card.selected-agent::before {
+    opacity: 1;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+}
+
+.device-card.selected-agent .device-icon-large {
+    background: rgba(6, 182, 212, 0.2);
+    border-color: #06b6d4;
+    color: #06b6d4;
+}
+
 /* Icon OS */
 .device-icon-large {
     width: 64px; /* Icon to hơn cho đẹp */
