@@ -181,7 +181,7 @@ void AgentTcpServer::startHeartbeat()
 {
     using namespace std::chrono_literals;
 
-    m_heartbeatTimer.expires_after(10s);
+    m_heartbeatTimer.expires_after(2s);
     m_heartbeatTimer.async_wait([this](std::error_code ec)
                                 {
         if (!ec && m_socket.is_open())

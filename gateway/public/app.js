@@ -125,11 +125,19 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- CONNECTION STATE ---
-    function setConnectedState(isConnected) {
+    function setConnectedState(isConnected, agentName = null) {
         if (isConnected) {
             statusPill.classList.remove('disconnected');
             statusPill.classList.add('connected');
-            if (statusText) statusText.textContent = 'Connected';
+            if (statusText) {
+                if (agentName) {
+                    statusText.textContent = `Connected: ${agentName}`;
+                } else if (currentAgentId) {
+                    statusText.textContent = `Connected: ${currentAgentId}`;
+                } else {
+                    statusText.textContent = 'Connected';
+                }
+            }
             btnConnect.classList.add('hidden');
             btnDisconnect.classList.remove('hidden');
             wsUrlInput.disabled = true;
@@ -140,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnConnect.classList.remove('hidden');
             btnDisconnect.classList.add('hidden');
             wsUrlInput.disabled = false;
+            currentAgentId = null;
         }
     }
 
@@ -156,8 +165,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         ws.onopen = () => {
-            setConnectedState(true);
-            loadDataForView(currentView);
+            setConnectedState(true, currentAgentId);
+            // Chỉ load data nếu đã có agent được chọn
+            if (currentAgentId) {
+                loadDataForView(currentView);
+            }
         };
         ws.onclose = () => {
             setConnectedState(false);
@@ -420,16 +432,45 @@ document.addEventListener('DOMContentLoaded', () => {
         currentAgentId = agentId;
         console.log('[App] Selected agent:', agentId, hostname);
         
-        // Cập nhật UI status
-        if (statusText) {
-            statusText.textContent = `Agent: ${hostname || agentId}`;
-        }
+        // Tự động kết nối WebSocket
+        const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+        const url = `${proto}://${location.host}/ws`;
+        wsUrlInput.value = url;
         
         // Đóng modal scan
         handleCloseModal();
         
-        // Load data cho view hiện tại
-        loadDataForView(currentView);
+        // Ngắt kết nối cũ nếu có
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.close();
+        }
+        
+        // Kết nối mới
+        setTimeout(() => {
+            try {
+                ws = new WebSocket(url);
+                
+                ws.onopen = () => {
+                    setConnectedState(true, hostname);
+                    loadDataForView(currentView);
+                };
+                
+                ws.onclose = () => {
+                    setConnectedState(false);
+                    ws = null;
+                    if ($('#processes-table tbody')) $('#processes-table tbody').innerHTML = '';
+                    if ($('#apps-table tbody')) $('#apps-table tbody').innerHTML = '';
+                    if (keylogOutput) keylogOutput.textContent = 'System ready. Waiting...';
+                    if (keylogToggle) keylogToggle.checked = false;
+                    lastLoggedKeyCode = null;
+                };
+                
+                ws.onerror = (e) => alert('Connection failed');
+                ws.onmessage = onWsMessage;
+            } catch (e) {
+                alert('Failed to connect to agent');
+            }
+        }, 300);
     };
 
     window.requestStopApp = (name) => {
@@ -442,22 +483,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm(`Kill process PID ${pid}?`)) {
             if (ws) ws.send(JSON.stringify({ command: 'stop_process_pid', pid: parseInt(pid) }));
         }
-    };
-
-    window.selectAgent = (ip) => {
-        const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-
-        // Dùng location.host: Nó tự động lấy "domain" hoặc "domain:port" tùy theo thực tế
-        // Không ép buộc thêm :8080 nữa
-        const url = `${proto}://${location.host}/ws`;
-
-        console.log("Connecting to:", url); // Kiểm tra log để thấy đường dẫn đúng (không có :8080)
-
-        wsUrlInput.value = url;
-        handleCloseModal();
-
-        if (ws) disconnectWs();
-        setTimeout(connectWs, 500);
     };
 
     // --- KEYLOGGER ---
@@ -729,10 +754,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Gọi lần đầu
                 fetchScanList();
 
-                // Thiết lập vòng lặp
+                // Thiết lập vòng lặp - quét nhanh hơn (300ms)
                 stopScanning(); // Clear cũ
                 btnScanLan.classList.add('active-scan');
-                scanInterval = setInterval(fetchScanList, 1000);
+                scanInterval = setInterval(fetchScanList, 300);
             };
         }
 
@@ -1014,7 +1039,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.className = e.target.checked ? 'dark-theme' : '';
                 localStorage.setItem('theme', e.target.checked ? 'dark' : 'light');
             };
-            if (localStorage.getItem('theme') === 'dark') {
+            // Mặc định dark mode
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || !savedTheme) {
                 document.body.classList.add('dark-theme');
                 themeToggle.checked = true;
             }
