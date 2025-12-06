@@ -6,12 +6,15 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include "Utils.h"
 
 #ifdef _WIN32
 #include <windows.h>
-#define POPEN _popen
-#define PCLOSE _pclose
-static const std::string FFMPEG_PATH = "..\\include\\FFmpeg\\ffmpeg.exe";
+#define POPEN popen_hidden
+#define PCLOSE fclose
+
+static const std::string FFMPEG_PATH = getFFmpegPath();
+
 #else
 #include <unistd.h>
 #define POPEN popen
@@ -68,10 +71,12 @@ void WebcamStream::runStream(int fps)
 
     // Xây dựng lệnh FFmpeg stream (MJPEG)
     std::stringstream cmd;
-    cmd << FFMPEG_PATH << " -y -f dshow -i video=\"" << m_deviceName << "\" "
+    cmd << FFMPEG_PATH 
+        << " -loglevel quiet "
+        << "-y -f dshow -i video=\"" << m_deviceName << "\" "
         << "-framerate " << fps << " "
-        << "-s 640x480 " // Giảm độ phân giải để tăng tốc độ
-        << "-c:v mjpeg -q:v 4 -f image2pipe - 2>nul";
+        << "-s 640x480 " 
+        << "-c:v mjpeg -q:v 4 -f image2pipe -";
 
     std::cout << "[WebcamStream] Cmd: " << cmd.str() << "\n";
 

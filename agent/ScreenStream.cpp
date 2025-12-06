@@ -1,15 +1,16 @@
 #include "ScreenStream.h"
 #include "AgentTcpServer.h"
+#include "Utils.h"
 #include <sstream>
 #include <algorithm>
 
 #ifdef _WIN32
 #include <windows.h>
-#define POPEN _popen
-#define PCLOSE _pclose
+#define POPEN popen_hidden
+#define PCLOSE fclose
 #endif
 
-static std::string FFMPEG = "..\\include\\FFmpeg\\ffmpeg.exe";
+static std::string FFMPEG_PATH = getFFmpegPath();
 
 std::atomic<bool> ScreenStream::running(false);
 std::thread ScreenStream::worker;
@@ -23,7 +24,7 @@ bool ScreenStream::start(int fps)
     worker = std::thread([fps]()
                          {
         std::stringstream cmd;
-        cmd << FFMPEG
+        cmd << FFMPEG_PATH
             << " -loglevel quiet"
             << " -f gdigrab -framerate " << fps << " -i desktop "
             << " -c:v mjpeg -q:v 4 -f image2pipe -";

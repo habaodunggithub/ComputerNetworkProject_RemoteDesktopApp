@@ -17,14 +17,25 @@ using namespace Gdiplus;
 
 #include <iostream>
 #include <string>
-
 #include <asio.hpp>
 
 #include "AgentTcpServer.h"
 #include "GatewayDiscovery.h"
+#include "Utils.h"
 
-int main()
+
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                   LPSTR lpCmdLine, int nShowCmd)
 {
+    // Giải nén ffmpeg từ resource
+    std::string ffmpegPath = getFFmpegPath();
+    if (!ExtractResource(101, ffmpegPath)) {
+        std::cerr << "[Agent] Failed to extract ffmpeg to " << ffmpegPath << "\n";
+        return 1;
+    }
+
+
 #ifdef _WIN32
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
 
