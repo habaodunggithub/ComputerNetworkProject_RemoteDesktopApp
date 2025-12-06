@@ -71,6 +71,10 @@ void AgentTcpServer::connectToGateway()
             {
                 std::cout << "[Agent] Connected to gateway\n";
 
+                // Gửi gói tin ngay, không cần đợi gom đủ dữ liệu
+                asio::ip::tcp::no_delay option(true);
+                m_socket.set_option(option);
+
                 m_readBuffer.clear();
                 startRead();
                 startHeartbeat(); // Bắt đầu gửi heartbeat định kỳ

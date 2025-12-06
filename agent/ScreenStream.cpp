@@ -24,10 +24,18 @@ bool ScreenStream::start(int fps)
     worker = std::thread([fps]()
                          {
         std::stringstream cmd;
-        cmd << FFMPEG_PATH
-            << " -loglevel quiet"
-            << " -f gdigrab -framerate " << fps << " -i desktop "
-            << " -c:v mjpeg -q:v 4 -f image2pipe -";
+        cmd << FFMPEG_PATH  
+            << " -loglevel quiet"    
+            << " -f gdigrab"
+            << " -framerate " << fps   
+            << " -draw_mouse 1"    
+            << " -i desktop"
+            << " -vf scale=1280:-1"    
+            << " -c:v mjpeg"           
+            << " -q:v 10"          
+            << " -preset ultrafast"   
+            << " -tune zerolatency"   
+            << " -f image2pipe -";
 
         FILE* pipe = POPEN(cmd.str().c_str(), "rb");
         if (!pipe) {
