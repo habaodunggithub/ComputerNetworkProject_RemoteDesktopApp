@@ -281,7 +281,9 @@ setInterval(() => {
 
 // Hàm chạy Cloudflare Tunnel tự động
 function startCloudflareTunnel() {
-    const cfPath = path.join(__dirname, "cloudflared.exe");
+    const isPkg = typeof process.pkg !== 'undefined';
+    const basePath = isPkg ? path.dirname(process.execPath) : __dirname;
+    const cfPath = path.join(basePath, "cloudflared.exe");
 
     console.log(`[Cloudflare] Starting tunnel...`);
 
