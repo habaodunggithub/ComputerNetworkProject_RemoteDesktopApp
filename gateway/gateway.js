@@ -1,330 +1,184 @@
-// Gateway: HTTP + WebSocket + TCP cho Multi-Agent + UDP Beacon
-
+// --- Gateway: HTTP + WebSocket + TCP + UDP ---
 const path = require("path");
 const http = require("http");
 const express = require("express");
 const WebSocket = require("ws");
 const net = require("net");
-const os = require("os");
 const dgram = require("dgram");
+const os = require("os");
 const { spawn } = require("child_process");
 
-// Cấu hình
-const HTTP_PORT = parseInt(process.env.HTTP_PORT || "8080", 10);
-const AGENT_PORT = parseInt(process.env.AGENT_PORT || "9100", 10);
-const BEACON_PORT = 9103;
+// --- CẤU HÌNH ---
+const CFG = {
+    HTTP_PORT: parseInt(process.env.HTTP_PORT || 8080),
+    AGENT_PORT: parseInt(process.env.AGENT_PORT || 9100),
+    BEACON_PORT: 9103,
+    TIMEOUT_MS: 30000,   // 30s không heartbeat -> Offline
+    CLEANUP_MS: 60000    // 60s dọn dẹp agent chết
+};
 
-// HTTP server phục vụ UI
+// --- QUẢN LÝ TRẠNG THÁI ---
+const agents = new Map(); // Map<ip, { socket, buffer, info, lastSeen }>
+let webClient = null;     // Chỉ 1 client điều khiển tại 1 thời điểm
+
+// --- HELPER FUNCTIONS ---
+const getLanIP = () => {
+    for (const nets of Object.values(os.networkInterfaces())) {
+        for (const net of nets) {
+            if (net.family === "IPv4" && !net.internal) return net.address;
+        }
+    }
+    return "127.0.0.1";
+};
+
+// --- 1. HTTP SERVER & API ---
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
 
-// Web client: chỉ cho phép 1 browser điều khiển cùng lúc
-let currentClient = null;
-
-// Danh sách agent: Map<agentId, { socket, buffer, ip, hostname, os, connectedAt, lastSeen }>
-const connectedAgents = new Map();
-
-// Lấy địa chỉ IP LAN
-function getLanIPv4() {
-    const nets = os.networkInterfaces();
-    for (const name of Object.keys(nets)) {
-        for (const netInfo of nets[name]) {
-            if (netInfo.family === "IPv4" && !netInfo.internal) {
-                return netInfo.address;
-            }
-        }
-    }
-    return "localhost";
-}
-
-// Build danh sách agent đang online
-function buildAgentList() {
-    const list = [];
+app.get("/api/scan", (_, res) => {
     const now = Date.now();
-
-    connectedAgents.forEach((info, agentId) => {
-        // Bỏ qua agent không còn socket hoặc socket bị destroy
-        if (!info.socket || info.socket.destroyed) return;
-
-        // Bỏ qua agent không phản hồi quá 30s
-        if (now - info.lastSeen > 30000) return;
-
-        list.push({
-            agentId: agentId,
-            ip: info.ip,
-            hostname: info.hostname || "Unknown",
-            os: info.os || "Unknown",
-            connectedAt: info.connectedAt,
-            lastSeen: info.lastSeen
-        });
-    });
-
-    return list;
-}
-
-// API scan: Frontend gọi để lấy danh sách Agent đang kết nối
-app.get("/api/scan", (_req, res) => {
-    const list = buildAgentList();
-    res.json({
-        success: true,
-        data: list
-    });
+    const activeAgents = Array.from(agents.values())
+        .filter(a => a.socket && !a.socket.destroyed && (now - a.lastSeen < CFG.TIMEOUT_MS))
+        .map(a => ({
+            agentId: a.id,
+            ip: a.info.ip,
+            hostname: a.info.hostname,
+            os: a.info.os,
+            lastSeen: a.lastSeen
+        }));
+    res.json({ success: true, data: activeAgents });
 });
 
-// HTTP server
 const server = http.createServer(app);
 
-// WebSocket server cho Web client
+// --- 2. WEBSOCKET SERVER (UI <-> GATEWAY) ---
 const wss = new WebSocket.Server({ server, path: "/ws" });
 
-// TCP server cho Agent kết nối
-const agentServer = net.createServer((socket) => {
-    const agentIp = socket.remoteAddress;
-    const agentId = agentIp; // Dùng IP làm unique ID
+wss.on("connection", (ws) => {
+    if (webClient) { ws.close(1013, "Busy"); return; }
     
-    console.log(`[Gateway] Agent connected: ${agentId}:${socket.remotePort}`);
+    webClient = ws;
+    console.log("[Gateway] Web Client connected");
 
-    // Lấy agent info cũ (nếu reconnect) hoặc tạo mới
-    let agentInfo = connectedAgents.get(agentId);
+    ws.on("message", (raw) => {
+        try {
+            const msg = JSON.parse(raw);
+            if (!msg.agentId) return ws.send(JSON.stringify({ type: "status", success: false, message: "Missing agentId" }));
+            
+            // Route lệnh xuống Agent qua TCP
+            const agent = agents.get(msg.agentId);
+            if (agent && agent.socket && !agent.socket.destroyed) {
+                agent.socket.write(JSON.stringify(msg) + "\n");
+            } else {
+                ws.send(JSON.stringify({ type: "status", success: false, message: "Agent offline" }));
+            }
+        } catch (e) { console.error("[WS] Error:", e.message); }
+    });
 
-    if (agentInfo) {
-        // Agent reconnect: đóng socket cũ, update socket mới
-        if (agentInfo.socket && agentInfo.socket !== socket) {
-            try { agentInfo.socket.destroy(); } catch (e) {}
-        }
-        agentInfo.socket = socket;
-        agentInfo.buffer = "";
-        agentInfo.lastSeen = Date.now();
-        console.log(`[Gateway] Agent reconnected: ${agentId}`);
-    } else {
-        // Agent mới
-        agentInfo = {
-            socket: socket,
-            buffer: "",
-            ip: agentIp,
-            hostname: "Unknown",
-            os: "Unknown",
-            connectedAt: Date.now(),
-            lastSeen: Date.now()
-        };
-    }
+    ws.on("close", () => { if (webClient === ws) webClient = null; });
+});
 
-    connectedAgents.set(agentId, agentInfo);
+// --- 3. TCP SERVER (AGENT <-> GATEWAY) ---
+const tcpServer = net.createServer((socket) => {
+    const id = socket.remoteAddress; // Dùng IP làm ID
     socket.setEncoding("utf8");
 
-    // Nhận data từ Agent
+    // Init hoặc Update Agent
+    let agent = agents.get(id);
+    if (agent?.socket) agent.socket.destroy(); // Đóng socket cũ nếu reconnect
+    
+    agent = { 
+        id, 
+        socket, 
+        buffer: "", 
+        lastSeen: Date.now(),
+        info: { ip: id, hostname: "Unknown", os: "Unknown" }
+    };
+    agents.set(id, agent);
+    console.log(`[TCP] Agent connected: ${id}`);
+
     socket.on("data", (chunk) => {
-        agentInfo.buffer += chunk;
-        processAgentBuffer(agentId);
+        agent.buffer += chunk;
+        agent.lastSeen = Date.now();
+
+        // Xử lý Stream buffer (Cắt dòng \n)
+        let idx;
+        while ((idx = agent.buffer.indexOf("\n")) !== -1) {
+            const line = agent.buffer.slice(0, idx).trim();
+            agent.buffer = agent.buffer.slice(idx + 1);
+            if (!line) continue;
+
+            try {
+                const msg = JSON.parse(line);
+                
+                if (msg.type === "hello") {
+                    agent.info = { ...agent.info, hostname: msg.hostname, os: msg.os };
+                    console.log(`[TCP] Registered: ${agent.info.hostname} (${id})`);
+                } else if (msg.type !== "heartbeat") {
+                    // Forward data lên Web Client
+                    if (webClient?.readyState === WebSocket.OPEN) {
+                        msg.agentId = id; // Gắn ID để UI biết của ai
+                        webClient.send(JSON.stringify(msg));
+                    }
+                }
+            } catch (e) { /* Bỏ qua JSON lỗi */ }
+        }
     });
 
-    socket.on("close", () => {
-        console.log(`[Gateway] Agent disconnected: ${agentId}`);
-        // Không xóa ngay, để UI vẫn hiển thị (sẽ cleanup sau 60s)
-    });
-
-    socket.on("error", (err) => {
-        console.error(`[Gateway] Agent error (${agentId}):`, err.message);
-    });
+    socket.on("error", (e) => console.error(`[TCP] Error ${id}: ${e.message}`));
+    socket.on("close", () => console.log(`[TCP] Disconnect: ${id}`));
 });
 
-agentServer.listen(AGENT_PORT, "0.0.0.0", () => {
-    console.log(`[Gateway] TCP listening for agents at 0.0.0.0:${AGENT_PORT}`);
+tcpServer.listen(CFG.AGENT_PORT, "0.0.0.0", () => {
+    console.log(`[Gateway] TCP listening on 0.0.0.0:${CFG.AGENT_PORT}`);
 });
 
-// UDP Beacon: Gateway gửi broadcast để Agent tự động tìm
-const udpBeacon = dgram.createSocket("udp4");
-
-udpBeacon.bind(0, () => {
-    udpBeacon.setBroadcast(true);
-    console.log("[Gateway] UDP Beacon sender ready.");
-
-    // Gửi beacon mỗi 500ms
+// --- 4. UDP BEACON (AUTO DISCOVERY) ---
+const udp = dgram.createSocket("udp4");
+udp.bind(0, () => {
+    udp.setBroadcast(true);
     setInterval(() => {
-        const payload = JSON.stringify({
+        const msg = JSON.stringify({
             type: "gateway_beacon",
             hostname: os.hostname(),
-            ip: getLanIPv4(),
-            port: AGENT_PORT
+            ip: getLanIP(),
+            port: CFG.AGENT_PORT
         });
-
-        // Broadcast LAN + localhost
-        udpBeacon.send(payload, 0, payload.length, BEACON_PORT, "255.255.255.255");
-        udpBeacon.send(payload, 0, payload.length, BEACON_PORT, "127.0.0.1");
+        udp.send(msg, 0, msg.length, CFG.BEACON_PORT, "255.255.255.255");
     }, 500);
 });
 
-// Xử lý buffer từ Agent (tách theo dòng)
-function processAgentBuffer(agentId) {
-    const agentInfo = connectedAgents.get(agentId);
-    if (!agentInfo) return;
-
-    let idx;
-    while ((idx = agentInfo.buffer.indexOf("\n")) >= 0) {
-        const line = agentInfo.buffer.slice(0, idx).trim();
-        agentInfo.buffer = agentInfo.buffer.slice(idx + 1);
-        if (!line) continue;
-
-        // Parse JSON từ Agent
-        try {
-            const msg = JSON.parse(line);
-            
-            // Cập nhật lastSeen cho mọi gói hợp lệ
-            agentInfo.lastSeen = Date.now();
-
-            // Xử lý gói "hello" để cập nhật thông tin agent
-            if (msg.type === "hello") {
-                agentInfo.hostname = msg.hostname || agentInfo.hostname;
-                agentInfo.os = msg.os || agentInfo.os;
-                console.log(`[Gateway] Registered agent: ${agentId}`, {
-                    hostname: agentInfo.hostname,
-                    os: agentInfo.os
-                });
-            }
-            // Xử lý gói "heartbeat" (chỉ update lastSeen, đã làm ở trên)
-            else if (msg.type === "heartbeat") {
-                // Silent, không log
-            }
-            // Forward các gói khác lên Web client (kèm agentId)
-            else {
-                if (currentClient && currentClient.readyState === WebSocket.OPEN) {
-                    msg.agentId = agentId; // Thêm agentId vào message
-                    currentClient.send(JSON.stringify(msg));
-                }
-            }
-
-            connectedAgents.set(agentId, agentInfo);
-        } catch (e) {
-            // Bỏ qua nếu không phải JSON
-        }
-    }
-}
-
-// Gửi lệnh xuống Agent qua TCP (route theo agentId)
-function sendToAgent(agentId, raw) {
-    const agentInfo = connectedAgents.get(agentId);
-    
-    if (!agentInfo || !agentInfo.socket || agentInfo.socket.destroyed) {
-        if (currentClient && currentClient.readyState === WebSocket.OPEN) {
-            currentClient.send(JSON.stringify({
-                type: "status",
-                success: false,
-                message: `Agent ${agentId} not connected`
-            }));
-        }
-        return;
-    }
-
-    const text = typeof raw === "string" ? raw : JSON.stringify(raw);
-    agentInfo.socket.write(text + "\n", (err) => {
-        if (err) console.error(`[Gateway] Error writing to agent ${agentId}:`, err.message);
-    });
-}
-
-// WebSocket: Nhận lệnh từ Web client, forward xuống Agent theo agentId
-wss.on("connection", (ws) => {
-    // Chỉ cho phép 1 client
-    if (currentClient) {
-        ws.close(1013, "Another client already connected");
-        return;
-    }
-    currentClient = ws;
-    console.log("[Gateway] Web client connected");
-
-    ws.on("message", (data) => {
-        try {
-            const msg = JSON.parse(data.toString());
-            
-            // Client phải gửi kèm agentId để route đúng agent
-            if (!msg.agentId) {
-                ws.send(JSON.stringify({
-                    type: "status",
-                    success: false,
-                    message: "Missing agentId in command"
-                }));
-                return;
-            }
-
-            // Forward lệnh xuống Agent tương ứng
-            sendToAgent(msg.agentId, msg);
-        } catch (e) {
-            console.error("[Gateway] WebSocket parse error:", e.message);
-        }
-    });
-
-    ws.on("close", () => {
-        if (currentClient === ws) {
-            currentClient = null;
-            console.log("[Gateway] Web client disconnected");
-        }
-    });
-
-    ws.on("error", (err) => {
-        console.error("[Gateway] WebSocket error:", err.message);
-    });
-});
-
-// Cleanup agents cũ mỗi 60s
-setInterval(() => {
-    const now = Date.now();
-    connectedAgents.forEach((info, agentId) => {
-        // Xóa agent không phản hồi quá 60s
-        if (now - info.lastSeen > 60000) {
-            console.log(`[Gateway] Removing stale agent: ${agentId}`);
-            if (info.socket) {
-                try { info.socket.destroy(); } catch (e) {}
-            }
-            connectedAgents.delete(agentId);
-        }
-    });
-}, 60000);
-
-// Hàm chạy Cloudflare Tunnel tự động
-function startCloudflareTunnel() {
+// --- 5. CLOUDFLARE TUNNEL (AUTO) ---
+const startTunnel = () => {
+    // Logic tìm đường dẫn file exe chuẩn kể cả khi đóng gói pkg
     const isPkg = typeof process.pkg !== 'undefined';
     const basePath = isPkg ? path.dirname(process.execPath) : __dirname;
-    const cfPath = path.join(basePath, "cloudflared.exe");
+    const cfExe = path.join(basePath, "cloudflared.exe");
 
-    console.log(`[Cloudflare] Starting tunnel...`);
+    console.log("[Tunnel] Starting Cloudflare...");
+    const child = spawn(cfExe, ["tunnel", "--url", `http://127.0.0.1:${CFG.HTTP_PORT}`]);
 
-    // Fix cứng IP 127.0.0.1 để tránh lỗi IPv6
-    const tunnel = spawn(cfPath, ["tunnel", "--url", `http://127.0.0.1:${HTTP_PORT}`]);
+    child.stderr.on("data", (d) => {
+        const url = d.toString().match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
+        if (url) console.log(`\n>>> PUBLIC URL: ${url[0]} <<<\n`);
+    });
+    
+    process.on("exit", () => child.kill()); 
+};
 
-    // Bắt log từ Cloudflare để tìm URL
-    tunnel.stderr.on("data", (data) => {
-        const output = data.toString();
-
-        // Tìm chuỗi https://....trycloudflare.com
-        const match = output.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
-
-        if (match) {
-            const publicUrl = match[0];
-            console.log("\n-------------------------------------------------------");
-            console.log("[Cloudflare] Public url (internet):", publicUrl);
-            console.log("-------------------------------------------------------\n");
+// --- 6. CLEANUP TASK ---
+setInterval(() => {
+    const now = Date.now();
+    agents.forEach((a, id) => {
+        if (now - a.lastSeen > CFG.CLEANUP_MS) {
+            if (a.socket) a.socket.destroy();
+            agents.delete(id);
         }
     });
+}, CFG.CLEANUP_MS);
 
-    tunnel.on("close", (code) => {
-        console.log(`[Cloudflare] Tunnel process exited with code ${code}`);
-    });
-
-    // Khi tắt Node.js, thì tắt luôn Cloudflare
-    process.on("exit", () => tunnel.kill());
-    process.on("SIGINT", () => {
-        tunnel.kill();
-        process.exit();
-    });
-}
-
-// Khởi động HTTP server
-server.listen(HTTP_PORT, "0.0.0.0", () => {
-    const ip = getLanIPv4();
-    console.log("-------------------------------------------------------");
-    console.log(`[Gateway] HTTP Server running!`);
-    console.log(`[Gateway] Web Control: http://${ip}:${HTTP_PORT}`);
-    console.log(`[Gateway] WebSocket:   ws://${ip}:${HTTP_PORT}/ws`);
-    console.log("-------------------------------------------------------");
-
-    startCloudflareTunnel();
+// --- START ---
+server.listen(CFG.HTTP_PORT, "0.0.0.0", () => {
+    console.log(`[Gateway] UI Server: http://${getLanIP()}:${CFG.HTTP_PORT}`);
+    startTunnel();
 });

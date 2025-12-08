@@ -11,7 +11,7 @@ g++ -O2 -std=gnu++17 ^
   -I ../include/asio-1.18.0/include ^
   -I ../include/websocketpp ^
   -I ../include/nlohmann ^
-  main_server.cpp AgentTcpServer.cpp ProcessManager.cpp Capture.cpp ScreenStream.cpp Keylogging.cpp ProcessHandlers.cpp Router.cpp WebcamRecord.cpp WebcamStream.cpp GatewayDiscovery.cpp resource.o^
+  main_server.cpp AgentTcpServer.cpp ProcessManager.cpp ProcessHandlers.cpp GatewayDiscovery.cpp resource.o^
   -o agent.exe ^
   -mwindows ^
   -static ^

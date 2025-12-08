@@ -1,128 +1,75 @@
-// Agent main: Kết nối Gateway qua TCP, chạy Router, Capture, Keylog...
-
-#ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <windows.h>
-#include <objidl.h>
-#include <gdiplus.h>
-#include <shellscalingapi.h>
-
-#pragma comment(lib, "Ws2_32.lib")
-#pragma comment(lib, "Gdiplus.lib")
-#pragma comment(lib, "Shcore.lib")
-
-using namespace Gdiplus;
-#endif
-
 #include <iostream>
 #include <string>
 #include <asio.hpp>
 
+#include <winsock2.h>
+#include <windows.h>
+#include <objidl.h> 
+#include <gdiplus.h>
+
+// Link libraries
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "Gdiplus.lib")
+#pragma comment(lib, "Shcore.lib") // Cho SetProcessDpiAwareness
+
 #include "AgentTcpServer.h"
 #include "GatewayDiscovery.h"
-#include "Utils.h"
+#include "Utils.h" // Chứa getFFmpegPath, ExtractResource
 
+using namespace Gdiplus;
 
-
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nShowCmd)
-{
-    // Giải nén ffmpeg từ resource
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+    // 1. Chuẩn bị FFmpeg
     std::string ffmpegPath = getFFmpegPath();
-    if (!ExtractResource(101, ffmpegPath)) {
-        std::cerr << "[Agent] Failed to extract ffmpeg to " << ffmpegPath << "\n";
-        return 1;
-    }
+    if (!ExtractResource(101, ffmpegPath)) return 1;
 
-
-#ifdef _WIN32
+    // 2. Khởi tạo Windows Components (DPI, Winsock, GDI+)
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
-
-    // Khởi tạo WinSock
+    
     WSADATA wsa;
-    int wsaRes = WSAStartup(MAKEWORD(2, 2), &wsa);
-    if (wsaRes != 0)
-    {
-        std::cerr << "[Agent] WSAStartup failed: " << wsaRes << "\n";
-        return 1;
-    }
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) return 1;
 
-    // Khởi tạo GDI+
-    ULONG_PTR gdiplusToken = 0;
-    {
-        GdiplusStartupInput gdiplusStartupInput;
-        Status st = GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
-        if (st != Ok)
-        {
-            std::cerr << "[GDI+] Startup failed, status = " << st << "\n";
-        }
-        else
-        {
-            std::cout << "[GDI+] Started\n";
-        }
-    }
-#endif
+    GdiplusStartupInput gdiInput;
+    ULONG_PTR gdiToken;
+    if (GdiplusStartup(&gdiToken, &gdiInput, nullptr) != Ok) return 1;
 
-    try
-    {
+    try {
         asio::io_context io;
 
-        // Bắt đầu tự động phát hiện Gateway qua UDP beacon
+        // 3. Discovery Gateway
         GatewayDiscovery::start(9103);
         std::cout << "[Agent] Waiting for Gateway...\n";
 
-        // Chờ nhận beacon từ Gateway
-        while (GatewayDiscovery::gatewayIp.empty())
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        while (GatewayDiscovery::gatewayIp.empty()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
-        std::string finalGatewayIp = GatewayDiscovery::gatewayIp;
-        uint16_t finalGatewayPort = GatewayDiscovery::gatewayPort;
-
-        // Lấy hostname của Agent
+        // 4. Config IP (Check localhost)
+        std::string targetIp = GatewayDiscovery::gatewayIp;
+        uint16_t targetPort = GatewayDiscovery::gatewayPort;
+        
         char hostBuf[256];
-        gethostname(hostBuf, sizeof(hostBuf));
-        std::string agentHostname = hostBuf;
-
-        // Nếu cùng máy với Gateway → dùng localhost
-        if (GatewayDiscovery::gatewayHostname == agentHostname)
-        {
-            finalGatewayIp = "127.0.0.1";
-            std::cout << "[Agent] Same machine detected. Switching to localhost.\n";
+        if (gethostname(hostBuf, sizeof(hostBuf)) == 0) {
+            if (GatewayDiscovery::gatewayHostname == std::string(hostBuf)) {
+                targetIp = "127.0.0.1";
+                std::cout << "[Agent] Localhost detected.\n";
+            }
         }
-
-        std::cout << "[Agent] Connecting to Gateway @ "
-                  << finalGatewayIp << ":" << finalGatewayPort << "\n";
-
-        // Ngừng nghe beacon, tránh spam
         GatewayDiscovery::stop();
 
-        // Tạo Agent TCP server
-        AgentTcpServer server(io, finalGatewayIp, finalGatewayPort);
+        // 5. Start Agent Server
+        AgentTcpServer server(io, targetIp, targetPort);
         AgentTcpServer::setInstance(&server);
-
-        // Kết nối và chạy event loop
         server.start();
-        io.run();
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "[Agent] Fatal error: " << e.what() << "\n";
+
+        io.run(); // Block here until exit
+    } catch (const std::exception& e) {
+        std::cerr << "[Error] " << e.what() << "\n";
     }
 
-#ifdef _WIN32
-    // Shutdown GDI+
-    if (gdiplusToken != 0)
-    {
-        GdiplusShutdown(gdiplusToken);
-        std::cout << "[GDI+] Shutdown\n";
-    }
-
-    // Cleanup WinSock
+    // 6. Cleanup
+    GdiplusShutdown(gdiToken);
     WSACleanup();
-#endif
 
     return 0;
 }

