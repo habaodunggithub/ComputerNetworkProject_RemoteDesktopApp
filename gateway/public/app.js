@@ -475,13 +475,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.requestStopApp = (name) => {
         if (confirm(`Force stop "${name}"?`)) {
-            if (ws) ws.send(JSON.stringify({ command: 'stop_application', app_name: name }));
+            sendWsMessage({ command: 'stop_application', app_name: name });
         }
     };
 
     window.requestStopProc = (pid) => {
         if (confirm(`Kill process PID ${pid}?`)) {
-            if (ws) ws.send(JSON.stringify({ command: 'stop_process_pid', pid: parseInt(pid) }));
+            sendWsMessage({ command: 'stop_process_pid', pid: parseInt(pid) });
         }
     };
 
@@ -926,6 +926,11 @@ document.addEventListener('DOMContentLoaded', () => {
         btnStopStream.onclick = () => {
             sendWsMessage({ command: 'stop_screen_stream' });
             streamImg.classList.add('hidden');
+            streamImg.src = "";
+            captureSpinner.classList.add('hidden');
+            const emptyIcon = $('#capture-display-area .empty-icon');
+            if (emptyIcon) emptyIcon.classList.remove('hidden');
+            capturePlaceholder.textContent = "Ready to capture/stream screen";
             capturePlaceholder.parentElement.classList.remove('hidden');
             btnStartStream.classList.remove('hidden');
             btnStopStream.classList.add('hidden');
@@ -995,6 +1000,11 @@ document.addEventListener('DOMContentLoaded', () => {
         btnStopWebcamStream.onclick = () => {
             sendWsMessage({ command: 'stop_webcam_stream' });
             webcamStreamImg.classList.add('hidden');
+            webcamStreamImg.src = "";
+            webcamSpinner.classList.add('hidden');
+            const emptyIcon = $('#webcam-display-area .empty-icon');
+            if (emptyIcon) emptyIcon.classList.remove('hidden');
+            webcamPlaceholder.textContent = "Ready to record or stream webcam";
             webcamPlaceholder.parentElement.classList.remove('hidden');
             btnStartWebcamStream.classList.remove('hidden');
             btnStopWebcamStream.classList.add('hidden');
