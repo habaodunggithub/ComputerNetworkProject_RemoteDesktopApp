@@ -1049,10 +1049,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.className = e.target.checked ? 'dark-theme' : '';
                 localStorage.setItem('theme', e.target.checked ? 'dark' : 'light');
             };
-            // Mặc định dark mode
+            // Mặc định light mode
             const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark' || !savedTheme) {
-                document.body.classList.add('dark-theme');
+            if (savedTheme === 'light' || !savedTheme) {
+                document.body.classList.add('light-theme');
                 themeToggle.checked = true;
             }
         }

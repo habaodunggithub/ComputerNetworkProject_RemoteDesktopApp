@@ -90,6 +90,7 @@ Project_Root/
 ├── gateway/                # Mã nguồn Node.js (Server trung gian)
 │   ├── public/             # Giao diện Web (HTML/CSS/JS)
 │   ├── gateway.js          # Server Core
+│   ├── gateway.exe         # File thực thi
 │   └── cloudflared.exe     # Tool Tunneling
 │
 └── README.md               # Tài liệu dự án
