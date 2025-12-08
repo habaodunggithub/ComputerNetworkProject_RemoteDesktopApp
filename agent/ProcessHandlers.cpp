@@ -82,7 +82,7 @@ json ProcessHandlers::captureScreen(const json &)
 
 json ProcessHandlers::startScreenStream(const json &req)
 {
-    int fps = req.value("fps", 30);
+    int fps = req.value("fps", 15);
     ScreenStream::start(fps);
 
     return {

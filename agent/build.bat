@@ -3,7 +3,7 @@ echo Compiling...
 
 windres resource.rc -o resource.o
 
-g++ -std=gnu++17 ^
+g++ -O2 -std=gnu++17 ^
   -DASIO_STANDALONE -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00 ^
   -D_WEBSOCKETPP_NO_REGEX_ ^
   -D_WEBSOCKETPP_CPP11_THREAD_ -D_WEBSOCKETPP_CPP11_CHRONO_ -D_WEBSOCKETPP_CPP11_SYSTEM_ERROR_ ^

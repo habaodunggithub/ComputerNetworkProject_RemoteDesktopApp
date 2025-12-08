@@ -917,7 +917,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 capturePlaceholder.textContent = "Initializing Screen Stream...";
                 captureSpinner.classList.remove('hidden');
 
-                sendWsMessage({ command: 'start_screen_stream', fps: 30 });
+                sendWsMessage({ command: 'start_screen_stream', fps: 15 });
 
                 btnStartStream.classList.add('hidden');
                 btnStopStream.classList.remove('hidden');
