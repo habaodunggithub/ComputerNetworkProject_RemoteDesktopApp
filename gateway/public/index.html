@@ -184,11 +184,6 @@
                         </div>
                         <pre id="keylog-output">System ready. Waiting for input stream...</pre>
                     </div>
-                    <select id="keylog-mode" class="keylog-select">
-                        <option value="raw">Raw</option>
-                        <option value="telex">Telex</option>
-                        <option value="vni">VNI</option>
-                    </select>
                 </div>
 
                 <div class="content-view" id="view-capture">
@@ -217,10 +212,6 @@
 
                             <button class="btn btn-round-refresh" id="btn-reload-screen" title="Reset UI">
                                 <i data-feather="refresh-cw"></i>
-                            </button>
-
-                            <button class="btn btn-outline" id="btn-fullscreen-screen" title="Fullscreen">
-                                <i data-feather="maximize"></i>
                             </button>
                         </div>
                     </div>
@@ -262,10 +253,6 @@
                             <button class="btn btn-round-refresh" id="btn-reload-webcam" title="Reset UI">
                                 <i data-feather="refresh-cw"></i>
                             </button>
-
-                            <button class="btn btn-outline" id="btn-fullscreen-webcam" title="Fullscreen">
-                                <i data-feather="maximize"></i>
-                            </button>
                         </div>
                     </div>
                     <div id="webcam-display-area">
@@ -275,8 +262,7 @@
                             <p id="webcam-status" class="status-text hidden">Idle</p>
                             <div id="webcam-spinner" class="spinner hidden"></div>
                         </div>
-                        <img id="webcam-stream-img" class="hidden shadow-lg" alt="Webcam Stream">
-                        <video id="webcam-video-output" controls class="hidden shadow-lg"></video>
+                        <img id="webcam-stream-img" class="hidden shadow-lg" alt="Webcam Stream"> <video id="webcam-video-output" controls class="hidden shadow-lg"></video>
                     </div>
                 </div>
 
@@ -343,7 +329,7 @@
         <div class="modal-body">
             <div class="input-group">
                 <label>Executable Path</label>
-                <div class="input-wrapper"><i data-feather="folder"></i><input type="text" id="input-proc-path" placeholder="C:/Windows/notepad.exe"></div>
+                <div class="input-wrapper"><i data-feather="folder"></i><input type="text" id="input-proc-path" placeholder="C:\Windows\notepad.exe"></div>
             </div>
             <div class="input-group">
                 <label>Arguments (Optional)</label>
