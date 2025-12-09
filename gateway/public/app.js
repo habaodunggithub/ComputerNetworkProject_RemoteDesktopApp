@@ -720,6 +720,116 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     /** ---------------------------------------------------
+     *  FULLSCREEN FUNCTIONALITY
+     * --------------------------------------------------*/
+    const btnFullscreenScreen = $("#btn-fullscreen-screen");
+    const btnFullscreenWebcam = $("#btn-fullscreen-webcam");
+
+    let fullscreenOverlay = null;
+    let originalParent = null;
+    let originalElement = null;
+
+    function createFullscreenOverlay(element) {
+        if (!element || element.classList.contains("hidden")) {
+            alert("No content to display in fullscreen");
+            return;
+        }
+
+        // Create overlay
+        fullscreenOverlay = document.createElement("div");
+        fullscreenOverlay.id = "fullscreen-overlay";
+        fullscreenOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.98);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            cursor: pointer;
+        `;
+
+        // Save original parent and move element
+        originalParent = element.parentElement;
+        originalElement = element;
+
+        // Move actual element (not clone) to fullscreen
+        fullscreenOverlay.appendChild(element);
+        element.style.maxWidth = "95vw";
+        element.style.maxHeight = "95vh";
+        element.style.objectFit = "contain";
+        element.style.cursor = "pointer";
+
+        // Close on click
+        fullscreenOverlay.onclick = closeFullscreen;
+
+        // Close on Escape key
+        document.addEventListener("keydown", handleEscapeKey);
+
+        document.body.appendChild(fullscreenOverlay);
+    }
+
+    function closeFullscreen() {
+        if (!fullscreenOverlay) return;
+
+        // Restore element to original parent
+        if (originalElement && originalParent) {
+            originalParent.appendChild(originalElement);
+            originalElement.style.maxWidth = "";
+            originalElement.style.maxHeight = "";
+            originalElement.style.objectFit = "";
+            originalElement.style.cursor = "";
+        }
+
+        // Remove overlay
+        document.body.removeChild(fullscreenOverlay);
+        fullscreenOverlay = null;
+        originalParent = null;
+        originalElement = null;
+
+        document.removeEventListener("keydown", handleEscapeKey);
+    }
+
+    function handleEscapeKey(e) {
+        if (e.key === "Escape") closeFullscreen();
+    }
+
+    // Button: Fullscreen for Screen
+    btnFullscreenScreen?.addEventListener("click", () => {
+        // Prioritize stream image if visible, otherwise capture image
+        const activeImg = !streamImg.classList.contains("hidden") 
+            ? streamImg 
+            : !captureImg.classList.contains("hidden") 
+            ? captureImg 
+            : null;
+
+        if (activeImg) {
+            createFullscreenOverlay(activeImg);
+        } else {
+            alert("No screen capture or stream to display");
+        }
+    });
+
+    // Button: Fullscreen for Webcam
+    btnFullscreenWebcam?.addEventListener("click", () => {
+        // Prioritize stream image if visible, otherwise video
+        const activeMedia = !webcamStreamImg.classList.contains("hidden")
+            ? webcamStreamImg
+            : !webcamVideoOutput.classList.contains("hidden")
+            ? webcamVideoOutput
+            : null;
+
+        if (activeMedia) {
+            createFullscreenOverlay(activeMedia);
+        } else {
+            alert("No webcam stream or video to display");
+        }
+    });
+
+    /** ---------------------------------------------------
      *  KEYLOGGER
      * --------------------------------------------------*/
     function handleKeyEvent(keyCode) {
