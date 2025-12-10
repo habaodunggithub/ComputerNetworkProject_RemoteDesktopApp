@@ -271,7 +271,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
 
             case 'key_event':
-                handleKeyEvent(msg.key_code);
+                // Ưu tiên dùng key_char nếu backend gửi sẵn ký tự (kể cả [BACKSPACE])
+                handleKeyEvent(msg.key_code, msg.key_char);
                 break;
 
             case 'status':
@@ -486,142 +487,32 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- KEYLOGGER ---
-    function handleKeyEvent(keyCode) {
-        if (keyCode === 231) return;
+    function handleKey(char) {
+        // 1. Lấy khung hiển thị (đảm bảo ID khớp với file HTML)
+        const el = document.getElementById('keylogOutput'); 
+        if (!el) return;
 
-        const el = $('#keylog-output');
-
-        if (isKeylogClean) {
-            el.textContent = '';
-            isKeylogClean = false;
+        // 2. Xử lý phím xóa (Quan trọng nhất cho Telex/VNI)
+        // Khi gõ tiếng Việt, Unikey sẽ gửi [BACKSPACE] để sửa dấu
+        if (char === '[BACKSPACE]') {
+            // Xóa ký tự cuối cùng trong khung
+            el.value = el.value.slice(0, -1);
+        } 
+        // 3. Xử lý xuống dòng
+        else if (char === '\n') {
+            el.value += '\n';
+        } 
+        // 4. Xử lý Tab
+        else if (char === '\t') {
+            el.value += '    ';
+        } 
+        // 5. Các ký tự còn lại (bao gồm tiếng Việt: ă, â, ư,...)
+        // C++ đã gửi đúng ký tự rồi, chỉ việc cộng vào
+        else {
+            el.value += char;
         }
 
-        if (keyCode == 8) {
-            el.textContent = el.textContent.slice(0, -1);
-            return;
-        }
-
-        function translateKeyCode(code) {
-            if (code >= 65 && code <= 90) return String.fromCharCode(code);
-            if (code >= 48 && code <= 57) return String.fromCharCode(code);
-            if (code >= 96 && code <= 105) return `[Num ${code - 96}]`;
-            switch (code) {
-                case 9:
-                    return '[Tab]';
-                case 13:
-                    return '[Enter]\n';
-                case 19:
-                    return '[Pause]';
-                case 20:
-                    return '[CapsLk]';
-                case 27:
-                    return '[Esc]';
-                case 32:
-                    return '[Space]';
-                case 33:
-                    return '[PgUp]';
-                case 34:
-                    return '[PgDn]';
-                case 35:
-                    return '[End]';
-                case 36:
-                    return '[Home]';
-                case 37:
-                    return '[Left]';
-                case 38:
-                    return '[Up]';
-                case 39:
-                    return '[Right]';
-                case 40:
-                    return '[Down]';
-                case 44:
-                    return '[PrtSc]';
-                case 45:
-                    return '[Insert]';
-                case 46:
-                    return '[Delete]';
-                case 106:
-                    return '[Num *]';
-                case 107:
-                    return '[Num +]';
-                case 109:
-                    return '[Num -]';
-                case 110:
-                    return '[Num .]';
-                case 111:
-                    return '[Num /]';
-                case 144:
-                    return '[NumLock]';
-                case 112:
-                    return '[F1]';
-                case 113:
-                    return '[F2]';
-                case 114:
-                    return '[F3]';
-                case 115:
-                    return '[F4]';
-                case 116:
-                    return '[F5]';
-                case 117:
-                    return '[F6]';
-                case 118:
-                    return '[F7]';
-                case 119:
-                    return '[F8]';
-                case 120:
-                    return '[F9]';
-                case 121:
-                    return '[F10]';
-                case 122:
-                    return '[F11]';
-                case 123:
-                    return '[F12]';
-                case 160:
-                    return '[LShift]';
-                case 161:
-                    return '[RShift]';
-                case 162:
-                case 163:
-                    return '[LCtrl]';
-                case 164:
-                    return '[LAlt]';
-                case 165:
-                    return '[RAlt]';
-                case 186:
-                    return ';';
-                case 187:
-                    return '=';
-                case 188:
-                    return ',';
-                case 189:
-                    return '-';
-                case 190:
-                    return '.';
-                case 191:
-                    return '/';
-                case 192:
-                    return '`';
-                case 219:
-                    return '[';
-                case 220:
-                    return '\\';
-                case 221:
-                    return ']';
-                case 222:
-                    return "'";
-                case 91:
-                    return '[LWin]';
-                case 92:
-                    return '[RWin]';
-                case 93:
-                    return '[Menu]';
-                default:
-                    return `[${code}]`;
-            }
-        }
-
-        const char = translateKeyCode(keyCode);
-        el.textContent += char;
+        // 6. Tự động cuộn xuống dòng cuối cùng
         el.scrollTop = el.scrollHeight;
     }
 
