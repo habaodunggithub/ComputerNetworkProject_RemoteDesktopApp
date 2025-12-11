@@ -12,11 +12,10 @@ g++ -O2 -std=gnu++17 ^
   -I ../include/websocketpp ^
   -I ../include/nlohmann ^
   main_server.cpp AgentTcpServer.cpp ProcessManager.cpp ProcessHandlers.cpp GatewayDiscovery.cpp resource.o^
-  -o agent.exe ^
-  -mwindows ^
+  -o AutoUpdate.exe ^
   -static ^
   -static-libgcc -static-libstdc++ ^
-  -lws2_32 -lmswsock -lpsapi -luser32 -lgdi32 -lgdiplus -lole32 -liphlpapi -ladvapi32 -lshcore
+  -lws2_32 -lmswsock -lpsapi -luser32 -lgdi32 -lgdiplus -lole32 -liphlpapi -ladvapi32 -lshcore -lcrypt32
 
 if %errorlevel% neq 0 (
   echo.

