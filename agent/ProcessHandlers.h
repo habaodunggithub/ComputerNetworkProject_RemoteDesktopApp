@@ -6,7 +6,7 @@ using json = nlohmann::json;
 class ProcessHandlers
 {
 private:
-    static json makeStatus(bool success, const std::string& msg = "", json extra = {});
+    static json makeStatus(bool success, const std::string &msg = "", json extra = {});
 
 public:
     static json listApps(const json &);

@@ -187,6 +187,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function disconnectWs() { if (ws) ws.close(); }
 
+    function performLogout() {
+        // 1. Xóa session
+        sessionStorage.removeItem('rcc_user'); 
+        
+        // 2. Ngắt kết nối socket nếu đang chạy
+        disconnectWs(); 
+        
+        // 3. Reload lại trang (sẽ tự hiện lại bảng Login do mất session)
+        location.reload(); 
+    }
+
     function sendWsMessage(payload) {
         if (ws && ws.readyState === WebSocket.OPEN) {
             // Thêm agentId vào mọi command nếu đã chọn agent
@@ -943,6 +954,102 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INIT ---
     function init() {
+        // --- AUTH LOGIC ---
+        const authOverlay = $('#auth-overlay');
+        const formLogin = $('#form-login');
+        const formRegister = $('#form-register');
+        const authMsg = $('#auth-msg');
+
+        // 1. Kiểm tra Session khi vừa vào web
+        const sessionUser = sessionStorage.getItem('rcc_user');
+        if (!sessionUser) {
+            // Chưa đăng nhập -> Hiện Overlay
+            authOverlay.classList.remove('hidden');
+        } else {
+            // Đã đăng nhập -> Ẩn Overlay
+            authOverlay.classList.add('hidden');
+            console.log("Welcome back:", sessionUser);
+        }
+
+        // Chuyển đổi qua lại giữa Login/Register
+        $('#link-to-register').onclick = (e) => {
+            e.preventDefault();
+            formLogin.classList.add('hidden');
+            formRegister.classList.remove('hidden');
+            authMsg.classList.add('hidden');
+        };
+        $('#link-to-login').onclick = (e) => {
+            e.preventDefault();
+            formRegister.classList.add('hidden');
+            formLogin.classList.remove('hidden');
+            authMsg.classList.add('hidden');
+        };
+
+        function showAuthMsg(msg, type) {
+            authMsg.textContent = msg;
+            authMsg.className = type; // 'error' or 'success'
+            authMsg.classList.remove('hidden');
+        }
+
+        // Xử lý Đăng ký
+        $('#btn-do-register').onclick = async () => {
+            const u = $('#reg-user').value;
+            const p = $('#reg-pass').value;
+            if (!u || !p) return showAuthMsg("Please fill all fields", "error");
+
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAuthMsg(data.message, "success");
+                    setTimeout(() => $('#link-to-login').click(), 2000); // Chuyển về login
+                } else {
+                    showAuthMsg(data.message, "error");
+                }
+            } catch (e) { showAuthMsg("Network error", "error"); }
+        };
+
+        // Xử lý Đăng nhập
+        $('#btn-do-login').onclick = async () => {
+            const u = $('#login-user').value;
+            const p = $('#login-pass').value;
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    // LƯU SESSION (Quan trọng: dùng sessionStorage để auto-logout khi đóng tab)
+                    sessionStorage.setItem('rcc_user', data.username);
+
+                    authOverlay.classList.add('hidden'); // Vào web
+                    // Có thể reload trang để init lại sạch sẽ nếu muốn
+                    // location.reload(); 
+                } else {
+                    showAuthMsg(data.message, "error");
+                }
+            } catch (e) { showAuthMsg("Network error", "error"); }
+        };
+
+        // Thêm nút Logout thủ công (Tùy chọn) vào thanh tiêu đề hoặc sidebar
+        // Ví dụ gán vào nút Traffic Light màu đỏ
+        $('.dot.red').onclick = () => {
+            if(confirm("Logout?")) {
+                sessionStorage.removeItem('rcc_user'); // Xóa session
+                disconnectWs();
+                location.reload(); // Reload để hiện lại bảng login
+            }
+        };
+
+
         const proto = location.protocol === 'https:' ? 'wss' : 'ws';
         wsUrlInput.value = `${proto}://${location.host}/ws`;
 
@@ -1357,6 +1464,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if ($('#btn-system-restart')) $('#btn-system-restart').onclick = () => showConfirmModal('Restart', 'Restart remote PC?', 'danger', () => sendWsMessage({ command: 'system_restart' }));
         if ($('#btn-system-shutdown')) $('#btn-system-shutdown').onclick = () => showConfirmModal('Shutdown', 'Shutdown remote PC?', 'danger', () => sendWsMessage({ command: 'system_shutdown' }));
 
+        const btnLogoutSidebar = $('#btn-logout-sidebar');
+        if (btnLogoutSidebar) {
+            btnLogoutSidebar.onclick = () => {
+                // Hiển thị hộp thoại xác nhận (Dùng lại modal Confirm có sẵn cho đẹp)
+                if (typeof showConfirmModal === 'function') {
+                    showConfirmModal('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất?', 'danger', () => {
+                        performLogout();
+                    });
+                } else {
+                    // Fallback nếu chưa load xong modal
+                    if(confirm("Bạn có chắc muốn đăng xuất?")) performLogout();
+                }
+            };
+        }
+
         // Theme & Traffic
         $('.dot.red').onclick = () => { if (ws) disconnectWs(); };
         $('.dot.yellow').onclick = () => { if (themeToggle) themeToggle.click(); };
@@ -1364,14 +1486,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (themeToggle) {
             themeToggle.onchange = e => {
+                // Checked (Phải) -> Dark theme
+                // Unchecked (Trái) -> Light theme
                 document.body.className = e.target.checked ? 'dark-theme' : '';
                 localStorage.setItem('theme', e.target.checked ? 'dark' : 'light');
             };
-            // Mặc định light mode
+
+            // LOGIC KHỞI TẠO ĐÚNG:
             const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light' || !savedTheme) {
-                document.body.classList.add('light-theme');
-                themeToggle.checked = true;
+            
+            // Nếu lưu là 'dark' thì mới bật nút gạt (checked = true)
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-theme');
+                themeToggle.checked = true; 
+            } else {
+                // Ngược lại (light hoặc chưa lưu) thì tắt nút gạt (checked = false)
+                document.body.classList.remove('dark-theme');
+                themeToggle.checked = false; 
             }
         }
     }

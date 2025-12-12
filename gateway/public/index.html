@@ -13,6 +13,43 @@
 </head>
 
 <body>
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="icon-box blue"><i data-feather="shield"></i></div>
+                <h2>Security Gate</h2>
+                <p>Remote Control Center</p>
+            </div>
+
+            <div id="form-login">
+                <div class="input-group">
+                    <label>Username</label>
+                    <div class="input-wrapper"><i data-feather="user"></i><input type="text" id="login-user"></div>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <div class="input-wrapper"><i data-feather="lock"></i><input type="password" id="login-pass"></div>
+                </div>
+                <button class="btn btn-primary w-100" id="btn-do-login">Sign In</button>
+                <p class="auth-footer">No account? <a href="#" id="link-to-register">Sign Up</a></p>
+            </div>
+
+            <div id="form-register" class="hidden">
+                <div class="input-group">
+                    <label>New Username</label>
+                    <div class="input-wrapper"><i data-feather="user-plus"></i><input type="text" id="reg-user"></div>
+                </div>
+                <div class="input-group">
+                    <label>New Password</label>
+                    <div class="input-wrapper"><i data-feather="lock"></i><input type="password" id="reg-pass"></div>
+                </div>
+                <button class="btn btn-primary w-100" id="btn-do-register">Request Access</button>
+                <p class="auth-footer">Has account? <a href="#" id="link-to-login">Sign In</a></p>
+            </div>
+            
+            <div id="auth-msg" class="hidden"></div>
+        </div>
+    </div>
 
     <div id="desktop-background"></div>
 
@@ -61,14 +98,22 @@
                     </ul>
                 </div>
 
-                <div class="nav-group mt-auto">
+                <div class="nav-group mt-auto" style="padding-top: 20px;">
                     <ul class="nav-list">
-                        <li class="nav-item" data-view="system-control">
+                        <li class="nav-item" data-view="system-control" style="margin-bottom: 4px;">
                             <i data-feather="power"></i> <span>Power & System</span>
+                        </li>
+
+                        <li style="border-top: 1px solid var(--glass-border); margin: 8px 0;"></li>
+
+                        <li class="nav-item logout-item" id="btn-logout-sidebar">
+                            <i data-feather="log-out"></i> <span>Log out</span>
                         </li>
                     </ul>
                 </div>
             </nav>
+
+
 
             <section id="main-content">
 
@@ -356,12 +401,11 @@
                 <button class="btn btn-sm btn-danger hidden" id="btn-disconnect">Disconnect</button>
             </div>
             <div class="theme-switcher">
-                <i data-feather="moon"></i>
-                <label class="toggle-switch sm">
+                <i data-feather="sun"></i> <label class="toggle-switch sm">
                     <input type="checkbox" id="theme-toggle">
                     <span class="slider"></span>
                 </label>
-                <i data-feather="sun"></i>
+                <i data-feather="moon"></i> </div>
             </div>
         </footer>
     </main>

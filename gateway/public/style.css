@@ -1122,3 +1122,112 @@ body.dark-theme #btn-scan-lan {
 .btn-fs-action.delete { background: #ef4444; }
 .btn-fs-action.download { background: #3b82f6; }
 .btn-fs-action:hover { transform: scale(1.1); }
+
+
+/* --- AUTH SCREEN --- */
+#auth-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(15px);
+    z-index: 9999; /* Luôn nằm trên cùng */
+    display: flex; justify-content: center; align-items: center;
+}
+#auth-overlay.hidden { display: none; }
+
+.auth-card {
+    width: 360px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 32px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    text-align: center;
+}
+
+.auth-header { display: flex; flex-direction: column; align-items: center; margin-bottom: 24px; }
+.auth-header h2 { margin-top: 12px; font-size: 20px; }
+.auth-header p { color: var(--text-muted); font-size: 13px; }
+
+.w-100 { width: 100%; margin-top: 10px; }
+.auth-footer { margin-top: 16px; font-size: 13px; color: var(--text-muted); }
+.auth-footer a { color: #3b82f6; text-decoration: none; font-weight: 600; }
+
+#auth-msg {
+    margin-top: 12px; font-size: 13px; padding: 8px; border-radius: 8px;
+}
+#auth-msg.error { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+#auth-msg.success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+
+
+/* 1. Ẩn Label chữ phía trên đi */
+#form-login .input-group label,
+#form-register .input-group label {
+    display: none;
+}
+
+/* 2. Định vị wrapper để chứa icon */
+.input-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 12px; /* Thêm chút khoảng cách dưới mỗi ô */
+}
+
+/* 3. Style cho Icon (Căn giữa dọc, nằm bên trái) */
+.input-wrapper i,
+.input-wrapper svg {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: var(--text-muted);
+    pointer-events: none; /* Để bấm xuyên qua icon vào ô nhập */
+    z-index: 10;
+}
+
+/* 4. Style ô Input (Thụt lề trái để tránh icon) */
+.input-wrapper input {
+    width: 100%;
+    padding: 12px 12px 12px 48px; /* Padding trái 48px để chừa chỗ cho icon */
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--text-main);
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+/* Fix cho Dark Mode */
+body.dark-theme .input-wrapper input {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Hiệu ứng khi bấm vào */
+.input-wrapper input:focus {
+    border-color: #3b82f6;
+    background: var(--color-bg);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+/* --- SIDEBAR LOGOUT BUTTON --- */
+.logout-item {
+    color: #ef4444 !important; /* Màu đỏ */
+    transition: all 0.3s ease;
+}
+
+.logout-item:hover {
+    background: rgba(239, 68, 68, 0.1) !important; /* Nền đỏ nhạt khi hover */
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.logout-item i {
+    color: #ef4444 !important;
+}
+
+/* Chỉnh lại icon logout khi hover để nó động đậy chút cho đẹp */
+.logout-item:hover i {
+    transform: translateX(-2px); 
+}

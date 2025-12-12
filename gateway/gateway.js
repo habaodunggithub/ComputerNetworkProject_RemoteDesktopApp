@@ -7,6 +7,8 @@ const net = require("net");
 const dgram = require("dgram");
 const os = require("os");
 const { spawn } = require("child_process");
+const bodyParser = require("body-parser");
+const Auth = require("./auth");
 
 // --- CẤU HÌNH ---
 const CFG = {
@@ -34,6 +36,10 @@ const getLanIP = () => {
 // --- 1. HTTP SERVER & API ---
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
+app.use(bodyParser.json());
+
+// --- KÍCH HOẠT AUTH MODULE ---
+Auth.setup(app); // Cài đặt các route /api/register, /api/login
 
 app.get("/api/scan", (_, res) => {
     const now = Date.now();
@@ -179,6 +185,10 @@ setInterval(() => {
 
 // --- START ---
 server.listen(CFG.HTTP_PORT, "0.0.0.0", () => {
-    console.log(`[Gateway] UI Server: http://${getLanIP()}:${CFG.HTTP_PORT}`);
+    console.log(`[Gateway] UI: http://localhost:${CFG.HTTP_PORT}`);
+    console.log(`[Gateway] TCP Listening: ${CFG.AGENT_PORT}`);
+    
     startTunnel();
+    
+    Auth.startCLI(); 
 });

@@ -18,14 +18,16 @@
  * @param len Độ dài dữ liệu.
  * @return Chuỗi Base64.
  */
-inline std::string base64_encode(const unsigned char* data, size_t len) {
+inline std::string base64_encode(const unsigned char *data, size_t len)
+{
     static const char tbl[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     std::string out;
     // Cấp phát trước bộ nhớ để tránh re-allocation liên tục
     out.resize(((len + 2) / 3) * 4);
 
     size_t i = 0, j = 0;
-    while (i < len) {
+    while (i < len)
+    {
         uint32_t a = i < len ? data[i++] : 0;
         uint32_t b = i < len ? data[i++] : 0;
         uint32_t c = i < len ? data[i++] : 0;
@@ -41,10 +43,13 @@ inline std::string base64_encode(const unsigned char* data, size_t len) {
     }
 
     // Xử lý Padding (=)
-    if (len % 3 == 1) {
+    if (len % 3 == 1)
+    {
         out[out.size() - 1] = '=';
         out[out.size() - 2] = '=';
-    } else if (len % 3 == 2) {
+    }
+    else if (len % 3 == 2)
+    {
         out[out.size() - 1] = '=';
     }
 
@@ -52,63 +57,84 @@ inline std::string base64_encode(const unsigned char* data, size_t len) {
 }
 
 // Overload cho std::vector để tiện dùng
-inline std::string base64_encode(const std::vector<unsigned char>& vec) {
+inline std::string base64_encode(const std::vector<unsigned char> &vec)
+{
     return base64_encode(vec.data(), vec.size());
 }
 
+// Helper Functions (Converted to inline for header-only usage)
+
+inline std::string ToUtf8(const std::wstring &wstr)
+{
+    if (wstr.empty())
+        return std::string();
+    int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+    std::string strTo(size_needed, 0);
+    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+    return strTo;
+}
 
 // --- RESOURCE & SYSTEM UTILITIES ---
 
 // Hàm trích xuất Resource ra file
-inline bool ExtractResource(int resourceId, const std::string& outputFilename) {
+inline bool ExtractResource(int resourceId, const std::string &outputFilename)
+{
     HRSRC hResource = FindResource(NULL, MAKEINTRESOURCE(resourceId), RT_RCDATA);
-    if (!hResource) return false;
+    if (!hResource)
+        return false;
 
     HGLOBAL hLoadedResource = LoadResource(NULL, hResource);
-    if (!hLoadedResource) return false;
+    if (!hLoadedResource)
+        return false;
 
-    void* pResourceData = LockResource(hLoadedResource);
+    void *pResourceData = LockResource(hLoadedResource);
     DWORD resourceSize = SizeofResource(NULL, hResource);
-    if (!pResourceData || resourceSize == 0) return false;
+    if (!pResourceData || resourceSize == 0)
+        return false;
 
     std::ofstream outFile(outputFilename, std::ios::binary);
-    if (!outFile) return false;
+    if (!outFile)
+        return false;
 
-    outFile.write(static_cast<const char*>(pResourceData), resourceSize);
+    outFile.write(static_cast<const char *>(pResourceData), resourceSize);
     outFile.close();
 
     return true;
 }
 
 // Hàm lấy đường dẫn FFmpeg trong thư mục Temp
-inline std::string getFFmpegPath() {
+inline std::string getFFmpegPath()
+{
     char tempPath[MAX_PATH];
     GetTempPathA(MAX_PATH, tempPath);
     return std::string(tempPath) + "ffmpeg_agent.exe";
 }
 
 // Hàm popen chạy ẩn (dùng CreateProcess)
-inline FILE* popen_hidden(const char* cmd, const char* mode) {
+inline FILE *popen_hidden(const char *cmd, const char *mode)
+{
     HANDLE hReadPipe, hWritePipe;
-    SECURITY_ATTRIBUTES sa = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
+    SECURITY_ATTRIBUTES sa = {sizeof(SECURITY_ATTRIBUTES), NULL, TRUE};
 
-    if (!CreatePipe(&hReadPipe, &hWritePipe, &sa, 0)) return NULL;
+    if (!CreatePipe(&hReadPipe, &hWritePipe, &sa, 0))
+        return NULL;
     SetHandleInformation(hReadPipe, HANDLE_FLAG_INHERIT, 0);
 
-    STARTUPINFOA si = { sizeof(si) };
+    STARTUPINFOA si = {sizeof(si)};
     si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
     si.wShowWindow = SW_HIDE;
     si.hStdOutput = hWritePipe;
     si.hStdError = hWritePipe;
 
-    PROCESS_INFORMATION pi = { 0 };
-    char* cmdBuf = _strdup(cmd);
-    
+    PROCESS_INFORMATION pi = {0};
+    char *cmdBuf = _strdup(cmd);
+
     BOOL success = CreateProcessA(NULL, cmdBuf, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
     free(cmdBuf);
     CloseHandle(hWritePipe);
 
-    if (!success) {
+    if (!success)
+    {
         CloseHandle(hReadPipe);
         return NULL;
     }
@@ -117,7 +143,8 @@ inline FILE* popen_hidden(const char* cmd, const char* mode) {
     CloseHandle(pi.hThread);
 
     int fd = _open_osfhandle((intptr_t)hReadPipe, _O_RDONLY | (_stricmp(mode, "rb") == 0 ? _O_BINARY : _O_TEXT));
-    if (fd == -1) {
+    if (fd == -1)
+    {
         CloseHandle(hReadPipe);
         return NULL;
     }
