@@ -54,12 +54,8 @@ public:
         std::string path(localAppData);
         free(localAppData);
 
-        if (browserName == "chrome")
-            path += "\\Google\\Chrome\\User Data\\Local State";
-        else if (browserName == "edge")
+        if (browserName == "edge")
             path += "\\Microsoft\\Edge\\User Data\\Local State";
-        else if (browserName == "brave")
-            path += "\\BraveSoftware\\Brave-Browser\\User Data\\Local State";
         else
             return {2, "Unknown Browser"};
 
@@ -141,12 +137,8 @@ public:
         std::string userDatapath(localAppData);
         free(localAppData);
 
-        if (browser == "chrome")
-            userDatapath += "\\Google\\Chrome\\User Data\\";
-        else if (browser == "edge")
+        if (browser == "edge")
             userDatapath += "\\Microsoft\\Edge\\User Data\\";
-        else if (browser == "brave")
-            userDatapath += "\\BraveSoftware\\Brave-Browser\\User Data\\";
 
         json dbList = json::array();
         int foundCount = 0;

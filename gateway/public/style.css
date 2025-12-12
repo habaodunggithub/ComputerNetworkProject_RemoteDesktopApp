@@ -1132,6 +1132,7 @@ body.dark-theme #btn-scan-lan {
     box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
     transition: transform 0.2s;
 }
+
 .btn-download:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0, 255, 136, 0.3); }
 
 .btn-copy {

