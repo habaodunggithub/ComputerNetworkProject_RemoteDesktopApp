@@ -4,5 +4,11 @@
     "password": "$2b$10$3H60H/EGUUqcicctvQeGRuR250rP5TI3Sx6lxGoRAjKIuY9Hsbafa",
     "approved": true,
     "createdAt": 1765544394884
+  },
+  {
+    "username": "shinkiisme",
+    "password": "$2b$10$IweAoc9AYImfusmnlnO.vuzXJQR5PJP.3K69P9MDIqGZ015yEXPBm",
+    "approved": true,
+    "createdAt": 1765550920384
   }
 ]

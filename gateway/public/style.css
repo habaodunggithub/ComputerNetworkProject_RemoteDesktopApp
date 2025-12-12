@@ -96,7 +96,14 @@ body.dark-theme #app-window { border-color: rgba(255,255,255,0.1); }
     border: 1px solid transparent;
 }
 
-.nav-item i { width: 20px; height: 20px; transition: 0.3s; }
+.nav-item svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+    flex-shrink: 0;
+    transition: 0.3s;
+}
+
 
 .nav-item:hover {
     background: rgba(0, 0, 0, 0.03);
@@ -111,10 +118,12 @@ body.dark-theme .nav-item:hover { background: rgba(255, 255, 255, 0.05); }
     border-left: 4px solid #3b82f6;
     border-radius: 4px 16px 16px 4px;
 }
-.nav-item.active i {
-    color: #3b82f6;
+
+.nav-item.active svg {
+    stroke: #3b82f6;
     filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
 }
+
 
 .mt-auto { margin-top: auto; }
 
