@@ -1,0 +1,26 @@
+# Node
+node_modules/
+
+# Native / build
+*.exe
+*.node
+*.pdb
+*.lib
+*.obj
+
+# Build dirs
+dist/
+build/
+
+# Env
+.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+*.o
+*.mp4
+*.png
+*.jpg
