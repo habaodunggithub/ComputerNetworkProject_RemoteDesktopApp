@@ -6,24 +6,18 @@
   "bin": "gateway.js",
   "scripts": {
     "start": "node gateway.js",
-    "build": "pkg . --output gateway.exe"
+    "build": "pkg . --targets node18-win-x64 --output gateway.exe"
   },
   "pkg": {
-    "scripts": [],
     "assets": [
-      "public/**/*"
-    ],
-    "targets": [
-      "node18-win-x64"
+      "public/**/*",
+      "better_sqlite3.node"
     ],
     "outputPath": "."
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
+    "better-sqlite3": "^11.0.0",
     "express": "^4.18.2",
-    "ws": "^8.18.3"
+    "ws": "^8.13.0"
   }
 }

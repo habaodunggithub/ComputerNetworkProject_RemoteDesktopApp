@@ -10,5 +10,17 @@
     "password": "$2b$10$IweAoc9AYImfusmnlnO.vuzXJQR5PJP.3K69P9MDIqGZ015yEXPBm",
     "approved": true,
     "createdAt": 1765550920384
+  },
+  {
+    "username": "habaohacker1",
+    "password": "$2b$10$fzo/KrS1yB9RwbELU9DD.eumy6iiC1RfGVnY6ebx3fCUHrpsdnrxy",
+    "approved": false,
+    "createdAt": 1765603234190
+  },
+  {
+    "username": "habaohacker13",
+    "password": "$2b$10$0ztfcDO3kpPlHrfZzxM.O.QKDOainN00Kyev92TVm6BdDw7hZcx8i",
+    "approved": true,
+    "createdAt": 1765603243464
   }
 ]

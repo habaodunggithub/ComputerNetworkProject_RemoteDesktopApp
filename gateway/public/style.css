@@ -1240,3 +1240,165 @@ body.dark-theme .input-wrapper input {
 .logout-item:hover i {
     transform: translateX(-2px); 
 }
+/* ================================================================= */
+/* 6. PASSWORD MANAGER UI (MODAL & TABLE FIXED)                      */
+/* ================================================================= */
+
+/* --- Modal Overlay (Nền tối) --- */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 10000;
+    display: flex; justify-content: center; align-items: center;
+    backdrop-filter: blur(5px);
+    opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+}
+
+.modal-overlay:not(.hidden) {
+    opacity: 1; pointer-events: auto;
+}
+
+/* --- Modal Container (Hộp thoại chính) --- */
+.modal-container {
+    background: #1a1a1d;
+    width: 900px; max-width: 95%; height: 85vh; /* Chiều cao cố định */
+    border-radius: 12px;
+    border: 1px solid #333;
+    box-shadow: 0 0 30px rgba(0, 255, 136, 0.15);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    transform: translateY(20px); transition: transform 0.3s ease;
+}
+
+.modal-overlay:not(.hidden) .modal-container {
+    transform: translateY(0);
+}
+
+/* --- Header --- */
+.modal-header {
+    padding: 15px 20px;
+    background: #202025;
+    border-bottom: 1px solid #333;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0; /* Không bị co lại */
+}
+
+.header-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 18px; font-weight: bold; color: #00ff88;
+}
+
+.close-btn {
+    background: none; border: none; color: #666; cursor: pointer;
+    transition: color 0.2s; padding: 5px;
+}
+.close-btn:hover { color: #fff; }
+
+/* --- Body (Vùng chứa bảng) --- */
+.modal-body {
+    flex: 1; /* Chiếm hết không gian còn lại */
+    overflow-y: auto; /* Cuộn dọc */
+    background: #161618;
+    position: relative;
+    padding: 0;
+}
+
+/* --- TABLE STYLES (SỬA LỖI TRÔI HEADER) --- */
+.pass-table {
+    width: 100%;
+    border-collapse: separate; 
+    border-spacing: 0;
+    table-layout: fixed; /* Quan trọng: Cố định cột */
+    font-size: 13px;
+    color: #ccc;
+}
+
+/* 1. Header Sticky */
+.pass-table th {
+    position: sticky; top: 0; z-index: 20; /* Dính lên đỉnh */
+    background-color: #202025; /* Nền đặc để che nội dung trôi qua */
+    color: #00ff88;
+    padding: 15px 10px;
+    text-align: left;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #444;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    white-space: nowrap;
+}
+
+/* 2. Dữ liệu dòng */
+.pass-table td {
+    padding: 10px;
+    border-bottom: 1px solid #2a2a30;
+    vertical-align: middle;
+    background-color: #161618;
+}
+.pass-table tr:hover td {
+    background-color: #2a2a35;
+}
+
+/* 3. Độ rộng cột (Tổng 100%) */
+.pass-table th:nth-child(1), .pass-table td:nth-child(1) { width: 40%; } /* URL */
+.pass-table th:nth-child(2), .pass-table td:nth-child(2) { width: 25%; } /* User */
+.pass-table th:nth-child(3), .pass-table td:nth-child(3) { width: 25%; } /* Pass */
+.pass-table th:nth-child(4), .pass-table td:nth-child(4) { width: 10%; text-align: center; } /* Action */
+
+/* --- Styling Text Cell (Cắt chữ thừa) --- */
+.url-cell, .user-cell, .pass-cell {
+    display: block; width: 100%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.url-cell { color: #4da6ff; font-family: 'Segoe UI', sans-serif; cursor: help; }
+.user-cell { color: #ffca28; font-weight: 500; }
+.pass-cell { 
+    color: #00ff88; font-family: 'Consolas', monospace; 
+    background: rgba(0, 255, 136, 0.08);
+    padding: 4px 8px; border-radius: 4px;
+}
+
+/* --- Custom Scrollbar --- */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #555 #1a1a1d;
+}
+.custom-scrollbar::-webkit-scrollbar { width: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #1a1a1d; }
+.custom-scrollbar::-webkit-scrollbar-thumb { 
+    background: #444; border-radius: 4px; 
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00ff88; }
+
+/* --- Footer & Buttons --- */
+.modal-footer {
+    padding: 15px 20px;
+    background: #202025;
+    border-top: 1px solid #333;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0;
+}
+
+.footer-info { display: flex; align-items: center; gap: 8px; color: #888; font-size: 13px; }
+
+.btn-download {
+    background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+    color: #000; border: none;
+    padding: 10px 20px; border-radius: 8px;
+    font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
+    transition: transform 0.2s;
+}
+
+.btn-download:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0, 255, 136, 0.3); }
+
+.btn-copy {
+    background: #2a2a30; border: 1px solid #444; color: #ccc;
+    padding: 6px 12px; border-radius: 6px; cursor: pointer;
+    font-size: 12px; transition: all 0.2s;
+}
+.btn-copy:hover { background: #00ff88; color: #000; border-color: #00ff88; }
+.btn-copy.copied { background: #4caf50; color: #fff; border-color: #4caf50; pointer-events: none; }

