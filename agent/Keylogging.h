@@ -220,6 +220,16 @@ private:
             return;
         }
 
+        std::string title = GetActiveWindowTitle();
+        if (!title.empty())
+        {
+            lastWindowTitle = title;
+            if (callback)
+            {
+                callback("\n\n[ " + title + " ]\n");
+            }
+        }
+
         MSG msg;
         while (GetMessage(&msg, nullptr, 0, 0))
         {
