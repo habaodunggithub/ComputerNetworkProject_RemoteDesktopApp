@@ -908,6 +908,23 @@ document.addEventListener('DOMContentLoaded', () => {
             btnStopStream.classList.add('hidden');
         };
 
+        btnStartStream.onclick = () => {
+            if (!canUseAgentFeature()) return;
+
+            $('#capture-display-area .empty-state').classList.add('hidden');
+            captureSpinner.classList.remove('hidden');
+
+            sendWsMessage({
+                command: 'start_screen_stream',
+                fps: 15
+            });
+
+            btnStartStream.classList.add('hidden');
+            btnStopStream.classList.remove('hidden');
+            btnCopyScreenshot.classList.add('hidden');
+            btnSaveScreenshot.classList.add('hidden');
+        };
+
 
         btnStopStream.onclick = () => { sendWsMessage({ command: 'stop_screen_stream' }); resetScreenUI(); };
         btnSaveScreenshot.onclick = () => { const a = document.createElement('a'); a.href = captureImg.src; a.download = `screen-${Date.now()}.png`; a.click(); };
