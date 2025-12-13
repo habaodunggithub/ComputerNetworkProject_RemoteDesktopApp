@@ -1,23 +1,53 @@
+/* ======================================================================== */
+/*  STYLE.CSS                                                               */
+/*  - Giữ nguyên toàn bộ selector/ID/class & hành vi CSS                    */
+/*  - Chỉ chuẩn hoá cách chia khu vực + comment + khoảng trắng              */
+/* ======================================================================== */
+
+/*
+  Mục lục:
+  1) Root Variables & Theme
+  2) Global Reset & Base Layout
+  3) App Window + Title Bar
+  4) Sidebar Navigation
+  5) Main Content (Views / Headers / Toolbars)
+  6) Dashboard Cards
+  7) Tables
+  8) Buttons
+  9) Terminal + Media Display Areas
+ 10) Modals & Inputs
+ 11) Status Bar + Toggle Switch + Theme Switcher
+ 12) Scan (Radar Button / Discovery Panel / Device Card)
+ 13) File Manager
+ 14) Auth Screen
+ 15) Password Manager Modal
+ 16) Utilities
+*/
+
 :root {
     --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    
+
     --hue-blue: 210;
     --hue-red: 0;
     --hue-green: 145;
     --hue-purple: 260;
-    
+
     --color-bg: #f3f4f6;
     --glass-bg: rgba(255, 255, 255, 0.75);
     --glass-border: rgba(255, 255, 255, 0.5);
     --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-    
+
     --text-main: #1f2937;
     --text-muted: #6b7280;
-    
+
     --sidebar-width: 240px;
     --radius-lg: 24px; /* Tăng độ bo tròn tổng thể */
     --radius-md: 16px;
     --radius-sm: 8px;
+
+    --scan-primary: #3b82f6;
+    --scan-primary-soft: rgba(59, 130, 246, 0.15);
+    --scan-glow: rgba(59, 130, 246, 0.45);
 }
 
 body.dark-theme {
@@ -58,7 +88,11 @@ body.dark-theme #desktop-background { filter: blur(30px) brightness(0.4); }
 }
 body.dark-theme #app-window { border-color: rgba(255,255,255,0.1); }
 
-/* --- TITLE BAR --- */
+
+/* ======================================================================== */
+/*  TITLE BAR                                                           */
+/* ======================================================================== */
+
 .title-bar {
     height: 50px; display: flex; align-items: center; padding: 0 24px;
     border-bottom: 1px solid var(--glass-border); background: rgba(255,255,255,0.05);
@@ -73,7 +107,11 @@ body.dark-theme #app-window { border-color: rgba(255,255,255,0.1); }
 
 .app-body { display: flex; flex: 1; overflow: hidden; }
 
-/* --- SIDEBAR NAVIGATION --- */
+
+/* ======================================================================== */
+/*  SIDEBAR NAVIGATION                                                  */
+/* ======================================================================== */
+
 #sidebar {
     width: var(--sidebar-width); background: rgba(255,255,255,0.03);
     border-right: 1px solid var(--glass-border); padding: 24px 16px;
@@ -127,7 +165,11 @@ body.dark-theme .nav-item:hover { background: rgba(255, 255, 255, 0.05); }
 
 .mt-auto { margin-top: auto; }
 
-/* --- MAIN CONTENT --- */
+
+/* ======================================================================== */
+/*  MAIN CONTENT                                                        */
+/* ======================================================================== */
+
 #main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;}
 .content-view { display: none; flex-direction: column; height: 100%; padding: 0; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
 .content-view.active { display: flex; }
@@ -143,7 +185,11 @@ body.dark-theme .nav-item:hover { background: rgba(255, 255, 255, 0.05); }
 }
 .content-toolbar h2 { font-size: 18px; font-weight: 600; display: flex; gap: 10px; align-items: center; }
 
-/* --- MODERN DASHBOARD CARDS --- */
+
+/* ======================================================================== */
+/*  MODERN DASHBOARD CARDS                                              */
+/* ======================================================================== */
+
 .dashboard-grid { padding: 24px 32px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; }
 
 .dash-card {
@@ -195,7 +241,11 @@ body.dark-theme .dash-card:hover {
 .dash-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: var(--text-main); }
 .dash-card p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
 
-/* --- TABLES --- */
+
+/* ======================================================================== */
+/*  TABLES                                                              */
+/* ======================================================================== */
+
 .table-container { flex: 1; overflow: auto; padding: 0; }
 table { width: 100%; border-collapse: collapse; }
 th { text-align: left; padding: 14px 32px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); background: rgba(0,0,0,0.02); position: sticky; top: 0; backdrop-filter: blur(5px); }
@@ -203,7 +253,11 @@ td { padding: 14px 32px; border-bottom: 1px solid var(--glass-border); font-size
 tr:hover { background: rgba(0,0,0,0.02); }
 .text-right { text-align: right; }
 
-/* --- MODERN BUTTONS --- */
+
+/* ======================================================================== */
+/*  MODERN BUTTONS                                                      */
+/* ======================================================================== */
+
 .btn {
     padding: 10px 20px;
     border-radius: 99px;
@@ -275,7 +329,11 @@ body.dark-theme .btn-outline:hover {
 .btn-glass { background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); }
 .btn-sm { padding: 6px 14px; font-size: 12px; }
 
-/* --- REFRESH BUTTON (CIRCULAR) --- */
+
+/* ======================================================================== */
+/*  REFRESH BUTTON (CIRCULAR)                                           */
+/* ======================================================================== */
+
 .btn-round-refresh {
     width: 40px; height: 40px; /* Lớn hơn một chút */
     border-radius: 50%;
@@ -302,17 +360,25 @@ body.dark-theme .btn-outline:hover {
 body.dark-theme .btn-round-refresh { background: rgba(0, 0, 0, 0.2); }
 body.dark-theme .btn-round-refresh:hover { background: rgba(59, 130, 246, 0.2); }
 
-/* --- BUTTON GROUP (FLEX FIX) --- */
+
+/* ======================================================================== */
+/*  BUTTON GROUP (FLEX FIX)                                             */
+/* ======================================================================== */
+
 .button-group {
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-/* --- OTHER COMPONENTS --- */
+
+/* ======================================================================== */
+/*  OTHER COMPONENTS                                                    */
+/* ======================================================================== */
+
 .terminal-window {
     background: #1e1e1e; color: #00ff00; font-family: 'Fira Code', monospace;
-    flex: 1; margin: 20px 32px; border-radius: var(--radius-md); display: flex; flex-direction: column; 
+    flex: 1; margin: 20px 32px; border-radius: var(--radius-md); display: flex; flex-direction: column;
     box-shadow: inset 0 0 20px rgba(0,0,0,0.5); border: 1px solid #333;
 }
 .terminal-header { background: #2d2d2d; padding: 8px 12px; display: flex; gap: 6px; border-bottom: 1px solid #333; border-radius: var(--radius-md) var(--radius-md) 0 0; }
@@ -331,23 +397,101 @@ img, video { max-width: 100%; max-height: 100%; border-radius: 8px; box-shadow: 
 .spinner { width: 24px; height: 24px; border: 3px solid rgba(59, 130, 246, 0.3); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* --- MODALS & INPUTS --- */
+
+/* ======================================================================== */
+/*  MODALS & INPUTS                                                     */
+/* ======================================================================== */
+
+/* Modal Scan nền kính đúng theme */
+#modal-scan-lan.styled-modal {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(22px) saturate(160%);
+}
+body.dark-theme #modal-scan-lan.styled-modal {
+    background: rgba(15, 23, 42, 0.75);
+}
+
+/* Header */
+#modal-scan-lan .modal-header {
+    background: rgba(255,255,255,0.04);
+}
+body.dark-theme #modal-scan-lan .modal-header {
+    background: rgba(0,0,0,0.3);
+}
+
+.modal.styled-modal > .modal-header {
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+body.dark-theme .modal.styled-modal > .modal-header {
+    background: rgba(15, 23, 42, 0.6); /* giống footer */
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 50; }
 .styled-modal {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 500px; background: var(--glass-bg); backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.2); z-index: 100;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    width: 500px;
+    max-width: 90vw;
+    overflow: hidden;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+
+    z-index: 100;
     animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+body.dark-theme .styled-modal {
+    background: rgba(15, 23, 42, 0.7); /* xanh đen */
+    border-color: rgba(148, 163, 184, 0.15);
+    box-shadow: 0 40px 100px rgba(2, 6, 23, 0.9);
 }
 @keyframes modalPop { from { transform: translate(-50%, -40%) scale(0.9); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
 
 .modal-header { padding: 24px; display: flex; gap: 16px; border-bottom: 1px solid var(--glass-border); }
 .icon-box { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+.icon-box.blue {
+    background: linear-gradient(
+        135deg,
+        rgba(59,130,246,0.15),
+        rgba(59,130,246,0.05)
+    );
+    color: #2563eb; /* xanh đậm, không bị chìm */
+    border: 1px solid rgba(59,130,246,0.25);
+    box-shadow: 0 6px 16px rgba(59,130,246,0.25);
+}
+
 .header-text h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
 .header-text p { font-size: 13px; color: var(--text-muted); }
 
 .modal-body { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+#modal-scan-lan .modal-body {
+    background: transparent;
+}
+
+body.dark-theme #modal-scan-lan .modal-body {
+    background: rgba(0, 0, 0, 0.4);
+}
+
 .input-group label { font-size: 12px; font-weight: 600; margin-bottom: 8px; display: block; color: var(--text-muted); letter-spacing: 0.5px; }
 .input-wrapper { position: relative; }
 .input-wrapper i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; color: var(--text-muted); pointer-events: none; }
@@ -373,7 +517,15 @@ body.dark-theme .input-wrapper input { background: rgba(0, 0, 0, 0.3); border: 1
 
 .modal-actions { padding: 16px 24px; display: flex; justify-content: flex-end; gap: 12px; background: rgba(0,0,0,0.02); border-top: 1px solid var(--glass-border); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
 
-/* --- STATUS BAR --- */
+body.dark-theme .modal-actions {
+  background: rgba(255,255,255,0.04);
+}
+
+
+/* ======================================================================== */
+/*  STATUS BAR                                                          */
+/* ======================================================================== */
+
 .status-bar {
     height: 44px; padding: 0 24px; background: rgba(255,255,255,0.1); border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;
 }
@@ -385,7 +537,11 @@ body.dark-theme .input-wrapper input { background: rgba(0, 0, 0, 0.3); border: 1
 #ws-url-input { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--glass-border); font-size: 12px; width: 220px; background: transparent; color: var(--text-main); transition: 0.2s; }
 #ws-url-input:focus { border-color: #3b82f6; background: rgba(255,255,255,0.1); }
 
-/* --- TOGGLE SWITCH --- */
+
+/* ======================================================================== */
+/*  TOGGLE SWITCH                                                       */
+/* ======================================================================== */
+
 .toggle-switch {
     position: relative;
     display: inline-block;
@@ -450,10 +606,14 @@ body.dark-theme .slider { background-color: rgba(0, 0, 0, 0.4); }
 #btn-clear-keylog:hover { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2); transform: translateY(-1px); }
 #btn-clear-keylog i { width: 14px; height: 14px; }
 
-/* --- PREMIUM GLASS BUTTONS (Connect & Clear) --- */
+
+/* ======================================================================== */
+/*  PREMIUM GLASS BUTTONS (CONNECT & CLEAR)                             */
+/* ======================================================================== */
+
 
 /* Chung cho các nút kính đặc biệt */
-#btn-connect, #btn-clear-keylog {
+#btn-clear-keylog {
     height: 36px;
     padding: 0 20px;
     border-radius: 99px;
@@ -468,15 +628,6 @@ body.dark-theme .slider { background-color: rgba(0, 0, 0, 0.4); }
     display: inline-flex; align-items: center; gap: 8px;
 }
 
-/* Hiệu ứng khi Connect (Màu Xanh) */
-#btn-connect:hover {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: #3b82f6;
-    color: #3b82f6;
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
-    transform: translateY(-2px);
-}
-
 /* Hiệu ứng khi Clear (Màu Đỏ) */
 #btn-clear-keylog:hover {
     background: rgba(239, 68, 68, 0.15);
@@ -487,13 +638,13 @@ body.dark-theme .slider { background-color: rgba(0, 0, 0, 0.4); }
 }
 
 /* Icon bên trong nút */
-#btn-connect i, #btn-clear-keylog i {
+#btn-clear-keylog i {
     width: 16px; height: 16px;
     transition: transform 0.3s ease;
 }
 
 /* Icon xoay nhẹ khi hover */
-#btn-connect:hover i, #btn-clear-keylog:hover i {
+#btn-clear-keylog:hover i {
     transform: scale(1.1);
 }
 
@@ -520,17 +671,21 @@ body.dark-theme .slider { background-color: rgba(0, 0, 0, 0.4); }
 .theme-switcher:hover .feather-sun {
     color: #f59e0b !important;
     transform: rotate(90deg) scale(1.2);
-    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6)); 
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
 }
 
 /* Hiệu ứng Mặt trăng (Moon) khi di chuột vào */
 .theme-switcher:hover .feather-moon {
     color: #8b5cf6 !important;
-    transform: rotate(-25deg) scale(1.2); 
+    transform: rotate(-25deg) scale(1.2);
     filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.6));
 }
 
-/* --- STATUS BAR & INPUT --- */
+
+/* ======================================================================== */
+/*  STATUS BAR & INPUT                                                  */
+/* ======================================================================== */
+
 
 /* 1. Status Pill (Thẻ trạng thái) */
 .status-pill {
@@ -623,7 +778,11 @@ body.dark-theme .slider { background-color: rgba(0, 0, 0, 0.4); }
     gap: 16px;
 }
 
-/* --- CUSTOM LIST IN MODAL (Kill List) --- */
+
+/* ======================================================================== */
+/*  CUSTOM LIST IN MODAL (KILL LIST)                                    */
+/* ======================================================================== */
+
 .custom-list-container {
     max-height: 300px;
     overflow-y: auto;
@@ -681,107 +840,116 @@ body.dark-theme .list-item:hover { background: rgba(255, 255, 255, 0.1); }
 }
 .btn-kill-sm i { width: 16px; height: 16px; }
 
-/* --- RADAR SCAN BUTTON --- */
-#btn-scan-lan {
+
+/* ======================================================================== */
+/*  RADAR SCAN BUTTON (THEME-CONSISTENT + FIX FOCUS SQUARE)             */
+/* ======================================================================== */
+
+#btn-scan-lan{
     width: 36px;
     height: 36px;
-    border-radius: 50%; /* Tròn hoàn hảo */
+    border-radius: 50%;
     padding: 0;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    
-    /* Màu Cyan Neon - Khác biệt với các nút khác */
-    background: rgba(6, 182, 212, 0.1); 
-    border: 1px solid rgba(6, 182, 212, 0.3);
-    color: #06b6d4;
-    
+
     position: relative;
-    overflow: visible; /* Để sóng radar lan ra ngoài nút */
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1; /* Để nổi lên trên sóng */
+    overflow: visible;
+
+    background: var(--scan-primary-soft, rgba(59,130,246,0.12));
+    border: 1px solid rgba(59,130,246,0.35);
+    color: var(--scan-primary, #3b82f6);
+
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
 
 /* Icon bên trong */
-#btn-scan-lan i {
-    width: 18px; height: 18px;
-    transition: transform 0.3s ease;
+#btn-scan-lan i,
+#btn-scan-lan svg{
+    width: 18px;
+    height: 18px;
+    transition: transform .3s ease;
 }
 
-/* Kích hoạt trạng thái "Đang quét" */
+/* Hover + Active scan */
 #btn-scan-lan:hover,
-#btn-scan-lan.active-scan {
-    background: rgba(6, 182, 212, 0.25);
-    border-color: #06b6d4;
-    box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
-    transform: scale(1.05);
-    cursor: pointer;
-    z-index: 100; /* Đảm bảo nó nổi lên trên */
+#btn-scan-lan.active-scan{
+    background: rgba(59,130,246,0.18);
+    border-color: var(--scan-primary, #3b82f6);
+    box-shadow:
+        0 0 0 4px rgba(59,130,246,0.12),
+        0 0 22px var(--scan-glow, rgba(59,130,246,0.35));
+    transform: translateY(-1px);
 }
 
-/* Icon xoay khi đang quét */
+/* Active (click) */
+#btn-scan-lan:active{
+    transform: scale(0.95);
+}
+
+/* Focus ring đẹp, không bị “vuông” */
+#btn-scan-lan:focus{
+    outline: none;
+}
+#btn-scan-lan:focus-visible{
+    box-shadow:
+        0 0 0 4px rgba(59,130,246,0.18),
+        0 0 22px var(--scan-glow, rgba(59,130,246,0.35));
+}
+
 #btn-scan-lan:hover i,
-#btn-scan-lan.active-scan i {
-    transform: rotate(-10deg) scale(1.1);
+#btn-scan-lan.active-scan i,
+#btn-scan-lan:hover svg,
+#btn-scan-lan.active-scan svg{
+    transform: scale(1.1);
 }
 
-/* Kích hoạt sóng Radar */
-#btn-scan-lan:hover::before,
-#btn-scan-lan.active-scan::before {
-    animation: radar-ping 1.5s infinite;
-}
-
-#btn-scan-lan:hover::after,
-#btn-scan-lan.active-scan::after {
-    animation: radar-ping 1.5s infinite 0.4s;
-}
-
-/* --- TẠO SÓNG RADAR (PULSE) --- */
+/* Radar pulse (dùng transform scale để không lệch tâm/không méo) */
 #btn-scan-lan::before,
-#btn-scan-lan::after {
-    content: '';
+#btn-scan-lan::after{
+    content: "";
     position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%; height: 100%;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
-    border: 1px solid #06b6d4;
+    border: 2px solid rgba(59,130,246,0.85);
+    transform: translate(-50%, -50%) scale(1);
     opacity: 0;
-    z-index: -1; /* Nằm dưới nút */
     pointer-events: none;
+    z-index: -1;
 }
 
-/* Kích hoạt sóng khi Hover */
-#btn-scan-lan:hover::before {
-    animation: radar-ping 1.5s infinite;
+#btn-scan-lan:hover::before,
+#btn-scan-lan.active-scan::before{
+    animation: radar-ping 1.5s ease-out infinite;
 }
-#btn-scan-lan:hover::after {
-    animation: radar-ping 1.5s infinite 0.4s; /* Trễ một chút để tạo sóng thứ 2 */
+#btn-scan-lan:hover::after,
+#btn-scan-lan.active-scan::after{
+    animation: radar-ping 1.5s ease-out infinite .4s;
 }
 
-@keyframes radar-ping {
-    0% {
-        width: 100%;
-        height: 100%;
-        opacity: 0.8;
-        border-width: 2px;
-    }
-    100% {
-        width: 260%; /* Lan rộng ra gấp 2.6 lần */
-        height: 260%;
-        opacity: 0;
-        border-width: 0px;
-    }
+@keyframes radar-ping{
+    0%   { transform: translate(-50%, -50%) scale(1);   opacity: .65; }
+    100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
 }
 
 /* Dark mode tinh chỉnh */
-body.dark-theme #btn-scan-lan {
-    background: rgba(6, 182, 212, 0.15);
-    color: #22d3ee; /* Sáng hơn chút trong nền tối */
-    border-color: rgba(34, 211, 238, 0.3);
+body.dark-theme #btn-scan-lan{
+    background: rgba(59,130,246,0.16);
+    border-color: rgba(59,130,246,0.35);
+    color: #60a5fa;
 }
 
-/* --- DISCOVERY SCAN PANEL --- */
+
+/* ======================================================================== */
+/*  DISCOVERY SCAN PANEL                                                */
+/* ======================================================================== */
+
 
 /* Chuyển container sang dạng lưới */
 #scan-list {
@@ -791,9 +959,20 @@ body.dark-theme #btn-scan-lan {
     padding: 8px;
 }
 
-/* --- DEVICE CARD --- */
+#modal-scan-lan #scan-list {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-theme #modal-scan-lan #scan-list {
+    background: rgba(2, 6, 23, 0.85);
+}
+
+
+/* ======================================================================== */
+/*  DEVICE CARD                                                         */
+/* ======================================================================== */
+
 .device-card {
-    background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px; /* Bo góc tròn hơn chút */
     padding: 24px 16px; /* Tăng padding trên dưới */
@@ -804,8 +983,18 @@ body.dark-theme #btn-scan-lan {
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    transform: translateZ(0); 
+    transform: translateZ(0);
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+#modal-scan-lan .device-card {
+    background: rgba(255,255,255,0.55);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+body.dark-theme #modal-scan-lan .device-card {
+    background: rgba(17, 24, 39, 0.65);
 }
 
 .device-card::before {
@@ -818,59 +1007,35 @@ body.dark-theme #btn-scan-lan {
     z-index: 0;
 }
 
-.device-card:hover {
-    transform: translateY(-5px); /* Nổi lên nhẹ nhàng */
-    border-color: #06b6d4;
-    box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.3); /* Bóng sâu hơn */
+body.dark-theme .device-card::before {
+    opacity: 1;
 }
 
+.device-card:hover {
+    border-color: var(--scan-primary);
+    box-shadow:
+        0 15px 40px rgba(59,130,246,0.25);
+}
 .device-card:hover::before {
     opacity: 1;
 }
 
 /* Agent được chọn */
 .device-card.selected-agent {
-    background: rgba(6, 182, 212, 0.15);
-    border-color: #06b6d4;
-    box-shadow: 0 0 30px rgba(6, 182, 212, 0.3);
+    background: linear-gradient(
+        135deg,
+        rgba(59,130,246,0.25),
+        rgba(59,130,246,0.08)
+    );
+    border-color: var(--scan-primary);
+    box-shadow:
+        0 0 0 2px rgba(59,130,246,0.25),
+        0 0 35px rgba(59,130,246,0.4);
 }
 
 .device-card.selected-agent::before {
     opacity: 1;
     background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
-}
-
-.device-card.selected-agent .device-icon-large {
-    background: rgba(6, 182, 212, 0.2);
-    border-color: #06b6d4;
-    color: #06b6d4;
-}
-
-/* Icon OS */
-.device-icon-large {
-    width: 64px; /* Icon to hơn cho đẹp */
-    height: 64px;
-    border-radius: 18px;
-    display: flex; align-items: center; justify-content: center;
-    z-index: 1;
-    transition: transform 0.4s ease;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: var(--text-muted);
-}
-
-/* Icon bên trong SVG */
-.device-icon-large svg {
-    width: 32px;
-    height: 32px;
-}
-
-.device-card[data-os*="Windows"] .device-icon-large { color: #38bdf8; background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.2); }
-.device-card[data-os*="Linux"] .device-icon-large { color: #fbbf24; background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.2); }
-
-.device-card:hover .device-icon-large {
-    transform: scale(1.1);
-    box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
 }
 
 /* Thông tin Text */
@@ -885,17 +1050,17 @@ body.dark-theme #btn-scan-lan {
     padding: 0 8px;
 }
 .device-ip {
-    font-family: 'Fira Code', monospace; font-size: 12px; color: var(--text-muted);
-    background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 99px;
-    align-self: center;
-    border: 1px solid transparent;
-    transition: 0.3s;
+    background: rgba(59,130,246,0.12);
+    border: 1px solid rgba(59,130,246,0.25);
+    color: var(--scan-primary);
+    border-radius: 999px;
+    padding: 4px 10px;
 }
 /* Khi hover thẻ thì IP sáng lên */
 .device-card:hover .device-ip {
-    background: rgba(6, 182, 212, 0.15);
-    color: #06b6d4;
-    border-color: rgba(6, 182, 212, 0.3);
+    background: var(--scan-primary-soft);
+    color: var(--scan-primary);
+    border-color: rgba(59,130,246,0.35);
 }
 
 /* Dấu chấm trạng thái: Góc TRÁI trên */
@@ -907,38 +1072,11 @@ body.dark-theme #btn-scan-lan {
     z-index: 2;
 }
 
-/* Nút Connect: Góc PHẢI trên */
-.btn-connect-action {
-    position: absolute;
-    top: 12px; /* Đặt lên trên */
-    right: 12px;
-    width: 36px; height: 36px;
-    border-radius: 12px; /* Vuông bo góc thay vì tròn */
-    background: #06b6d4;
-    color: white;
-    border: none;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
-    
-    opacity: 0;
-    transform: translateX(10px); /* Trượt từ phải sang */
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    z-index: 2;
-    cursor: pointer;
-}
 
-/* Khi hover vào thẻ thì nút hiện ra */
-.device-card:hover .btn-connect-action {
-    opacity: 1;
-    transform: translateX(0);
-}
+/* ======================================================================== */
+/*  CLOSE BUTTON                                                        */
+/* ======================================================================== */
 
-.btn-connect-action:hover {
-    background: #22d3ee;
-    transform: scale(1.1);
-}
-
-/* --- CLOSE BUTTON --- */
 .btn-scan-close {
     padding: 10px 24px;
     border-radius: 99px; /* Bo tròn hoàn toàn */
@@ -979,17 +1117,17 @@ body.dark-theme #btn-scan-lan {
     transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Hiệu ứng xoay nảy */
 }
 
-/* Khi hover thì xoay icon X 90 độ */
-.btn-scan-close:hover i {
-    transform: rotate(90deg) scale(1.2);
-}
 
 /* Active (Click) */
 .btn-scan-close:active {
     transform: scale(0.95);
 }
 
-/* --- FILE MANAGER LAYOUT --- */
+
+/* ======================================================================== */
+/*  FILE MANAGER LAYOUT                                                 */
+/* ======================================================================== */
+
 .fs-container {
     display: flex; flex: 1; overflow: hidden;
     height: 100%; border-top: 1px solid var(--glass-border);
@@ -1009,7 +1147,11 @@ body.dark-theme #btn-scan-lan {
     background: rgba(255,255,255,0.01);
 }
 
-/* --- TREE VIEW --- */
+
+/* ======================================================================== */
+/*  TREE VIEW                                                           */
+/* ======================================================================== */
+
 .tree-node { margin-left: 14px; position: relative; }
 .tree-item {
     display: flex; align-items: center; gap: 6px;
@@ -1031,7 +1173,11 @@ body.dark-theme #btn-scan-lan {
 .tree-children { display: none; margin-top: 2px; }
 .tree-children.show { display: block; }
 
-/* --- GRID VIEW --- */
+
+/* ======================================================================== */
+/*  GRID VIEW                                                           */
+/* ======================================================================== */
+
 .file-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 16px;
 }
@@ -1095,11 +1241,11 @@ body.dark-theme #btn-scan-lan {
     width: 100%;
     font-size: 13px;
     margin-top: 4px;
-    
+
     /* Xử lý text quá dài */
-    white-space: nowrap; 
+    white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; 
+    text-overflow: ellipsis;
     text-align: center;
 }
 
@@ -1133,7 +1279,11 @@ body.dark-theme #btn-scan-lan {
 .btn-fs-action:hover { transform: scale(1.1); }
 
 
-/* --- AUTH SCREEN --- */
+
+/* ======================================================================== */
+/*  AUTH SCREEN                                                         */
+/* ======================================================================== */
+
 #auth-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.6);
@@ -1220,7 +1370,11 @@ body.dark-theme .input-wrapper input {
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
 
-/* --- SIDEBAR LOGOUT BUTTON --- */
+
+/* ======================================================================== */
+/*  SIDEBAR LOGOUT BUTTON                                               */
+/* ======================================================================== */
+
 .logout-item {
     color: #ef4444 !important; /* Màu đỏ */
     transition: all 0.3s ease;
@@ -1238,13 +1392,19 @@ body.dark-theme .input-wrapper input {
 
 /* Chỉnh lại icon logout khi hover để nó động đậy chút cho đẹp */
 .logout-item:hover i {
-    transform: translateX(-2px); 
+    transform: translateX(-2px);
 }
+
 /* ================================================================= */
 /* 6. PASSWORD MANAGER UI (MODAL & TABLE FIXED)                      */
+
 /* ================================================================= */
 
-/* --- Modal Overlay (Nền tối) --- */
+
+/* ======================================================================== */
+/*  MODAL OVERLAY (NỀN TỐI)                                             */
+/* ======================================================================== */
+
 .modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.85);
@@ -1258,7 +1418,11 @@ body.dark-theme .input-wrapper input {
     opacity: 1; pointer-events: auto;
 }
 
-/* --- Modal Container (Hộp thoại chính) --- */
+
+/* ======================================================================== */
+/*  MODAL CONTAINER (HỘP THOẠI CHÍNH)                                   */
+/* ======================================================================== */
+
 .modal-container {
     background: #1a1a1d;
     width: 900px; max-width: 95%; height: 85vh; /* Chiều cao cố định */
@@ -1274,13 +1438,19 @@ body.dark-theme .input-wrapper input {
     transform: translateY(0);
 }
 
-/* --- Header --- */
-.modal-header {
-    padding: 15px 20px;
-    background: #202025;
-    border-bottom: 1px solid #333;
-    display: flex; justify-content: space-between; align-items: center;
-    flex-shrink: 0; /* Không bị co lại */
+
+/* ======================================================================== */
+/*  HEADER                                                              */
+/* ======================================================================== */
+
+#password-modal .modal-header {
+  padding: 15px 20px;
+  background: #202025;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .header-title {
@@ -1294,19 +1464,27 @@ body.dark-theme .input-wrapper input {
 }
 .close-btn:hover { color: #fff; }
 
-/* --- Body (Vùng chứa bảng) --- */
-.modal-body {
-    flex: 1; /* Chiếm hết không gian còn lại */
-    overflow-y: auto; /* Cuộn dọc */
-    background: #161618;
-    position: relative;
-    padding: 0;
+
+/* ======================================================================== */
+/*  BODY (VÙNG CHỨA BẢNG)                                               */
+/* ======================================================================== */
+
+#password-modal .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  background: #161618;
+  position: relative;
+  padding: 0;
 }
 
-/* --- TABLE STYLES (SỬA LỖI TRÔI HEADER) --- */
+
+/* ======================================================================== */
+/*  TABLE STYLES (SỬA LỖI TRÔI HEADER)                                  */
+/* ======================================================================== */
+
 .pass-table {
     width: 100%;
-    border-collapse: separate; 
+    border-collapse: separate;
     border-spacing: 0;
     table-layout: fixed; /* Quan trọng: Cố định cột */
     font-size: 13px;
@@ -1346,7 +1524,11 @@ body.dark-theme .input-wrapper input {
 .pass-table th:nth-child(3), .pass-table td:nth-child(3) { width: 25%; } /* Pass */
 .pass-table th:nth-child(4), .pass-table td:nth-child(4) { width: 10%; text-align: center; } /* Action */
 
-/* --- Styling Text Cell (Cắt chữ thừa) --- */
+
+/* ======================================================================== */
+/*  STYLING TEXT CELL (CẮT CHỮ THỪA)                                    */
+/* ======================================================================== */
+
 .url-cell, .user-cell, .pass-cell {
     display: block; width: 100%;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -1354,31 +1536,41 @@ body.dark-theme .input-wrapper input {
 
 .url-cell { color: #4da6ff; font-family: 'Segoe UI', sans-serif; cursor: help; }
 .user-cell { color: #ffca28; font-weight: 500; }
-.pass-cell { 
-    color: #00ff88; font-family: 'Consolas', monospace; 
+.pass-cell {
+    color: #00ff88; font-family: 'Consolas', monospace;
     background: rgba(0, 255, 136, 0.08);
     padding: 4px 8px; border-radius: 4px;
 }
 
-/* --- Custom Scrollbar --- */
+
+/* ======================================================================== */
+/*  CUSTOM SCROLLBAR                                                    */
+/* ======================================================================== */
+
 .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: #555 #1a1a1d;
 }
 .custom-scrollbar::-webkit-scrollbar { width: 8px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: #1a1a1d; }
-.custom-scrollbar::-webkit-scrollbar-thumb { 
-    background: #444; border-radius: 4px; 
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #444; border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00ff88; }
 
-/* --- Footer & Buttons --- */
-.modal-footer {
-    padding: 15px 20px;
-    background: #202025;
-    border-top: 1px solid #333;
-    display: flex; justify-content: space-between; align-items: center;
-    flex-shrink: 0;
+
+/* ======================================================================== */
+/*  FOOTER & BUTTONS                                                    */
+/* ======================================================================== */
+
+#password-modal .modal-footer {
+  padding: 15px 20px;
+  background: #202025;
+  border-top: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .footer-info { display: flex; align-items: center; gap: 8px; color: #888; font-size: 13px; }
@@ -1402,3 +1594,23 @@ body.dark-theme .input-wrapper input {
 }
 .btn-copy:hover { background: #00ff88; color: #000; border-color: #00ff88; }
 .btn-copy.copied { background: #4caf50; color: #fff; border-color: #4caf50; pointer-events: none; }
+
+/* ======================================================================== */
+/*  SCAN LAN - UI TWEAKS (REMOVE CARD ICONS + SYNC BACKGROUND)              */
+/* ======================================================================== */
+
+/* 2) Đồng bộ nền phần list scan với nền kính của modal */
+#modal-scan-lan .modal-body {
+    background: transparent; /* để nền glass của modal xuyên qua */
+}
+
+#modal-scan-lan #scan-list {
+    border: 1px dashed var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: 18px;
+}
+
+/* Dark theme: giữ đồng bộ, chỉ tăng tương phản viền nhẹ */
+body.dark-theme #modal-scan-lan #scan-list {
+    border-color: rgba(148, 163, 184, 0.18);
+}
