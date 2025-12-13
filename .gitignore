@@ -8,6 +8,8 @@ node_modules/
 *.lib
 *.obj
 
+!gateway/cloudflared.exe
+
 # Build dirs
 dist/
 build/
