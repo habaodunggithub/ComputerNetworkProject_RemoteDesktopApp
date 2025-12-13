@@ -60,6 +60,9 @@
                 <span class="dot yellow" title="Toggle Theme"></span>
                 <span class="dot green" title="Fullscreen"></span>
             </div>
+            <button id="btn-toggle-sidebar" class="btn-icon-only" title="Toggle Menu">
+                <i data-feather="sidebar"></i>
+            </button>
             <div class="title-drag-area">
                 <i data-feather="cpu" class="app-icon"></i>
                 <span class="title-text">Advanced RAT Controller</span>
@@ -107,7 +110,7 @@
                     </ul>
                 </div>
 
-                <div class="nav-group mt-auto" style="padding-top: 20px;">
+                <div class="nav-group" style="padding-top: 20px;">
                     <ul class="nav-list">
                         <li class="nav-item" data-view="power-control">
                             <i data-feather="power"></i> <span>Power</span>
@@ -155,10 +158,10 @@
                             
                             <div style="display: flex; align-items: center; gap: 8px; margin-left: 12px;">
                                 <label class="toggle-switch">
-                                    <input type="checkbox" id="toggle-mouse-control">
+                                    <input type="checkbox" id="toggle-control">
                                     <span class="slider"></span>
                                 </label>
-                                <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Mouse</span>
+                                <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Control</span>
                             </div>
                         </div>
                     </div>
@@ -388,28 +391,34 @@
                     </div>
                     
                     <div class="content-toolbar">
-                        <div class="file-toolbar-group">
-                            <button class="btn btn-round-refresh" id="btn-fs-refresh" title="Refresh">
-                                <i data-feather="refresh-cw"></i>
-                            </button>
-                            <button class="btn btn-outline" id="btn-fs-up" title="Up One Level">
-                                <i data-feather="corner-left-up"></i>
-                            </button>
-                        </div>
-
-                        <div class="input-wrapper file-address-bar">
-                            <i data-feather="hard-drive"></i>
-                            <input type="text" id="fs-path-input" placeholder="Path..." class="path-input">
-                            <button class="btn btn-sm btn-glass" id="btn-fs-go">Go</button>
-                        </div>
+                        <input
+                        type="file"
+                        id="fileInput"
+                        style="display:none"
+                        />
 
                         <div class="file-toolbar-group">
+                            <button class="btn btn-outline" id="btn-fs-upload" title="Upload File to Agent" onclick="triggerFileUpload()">
+                                <i data-feather="upload-cloud"></i>
+                            </button>
                             <button class="btn btn-outline" id="btn-fs-new-folder" title="New Folder">
                                 <i data-feather="folder-plus"></i>
                             </button>
                             <button class="btn btn-outline" id="btn-fs-new-file" title="New File">
                                 <i data-feather="file-plus"></i>
                             </button>
+                            
+                            <div class="divider-vertical" style="height: 20px; margin: 0 4px;"></div>
+                            <button class="btn btn-outline" id="btn-fs-up" title="Up Level">
+                                <i data-feather="arrow-up"></i>
+                            </button>
+                            <input type="file" id="hidden-file-input" style="display: none;">
+                        </div>
+
+                        <div class="input-wrapper file-address-bar">
+                            <i data-feather="hard-drive"></i>
+                            <input type="text" id="fs-path-input" placeholder="Path..." class="path-input">
+                            <button class="btn btn-sm btn-glass" id="btn-fs-go">Go</button>
                         </div>
                     </div>
 

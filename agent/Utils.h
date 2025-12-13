@@ -62,6 +62,46 @@ inline std::string base64_encode(const std::vector<unsigned char> &vec)
     return base64_encode(vec.data(), vec.size());
 }
 
+inline std::string base64_decode(const std::string &in)
+{
+    std::string out;
+    std::vector<int> T(256, -1);
+    static const char *code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    for (int i = 0; i < 64; i++)
+        T[code[i]] = i;
+
+    int val = 0, valb = -8;
+    for (unsigned char c : in)
+    {
+        if (c == '=')
+            break; // ✅ chỉ dừng khi padding
+        if (T[c] == -1)
+            continue; // ✅ bỏ qua ký tự lạ (newline, space)
+
+        val = (val << 6) + T[c];
+        valb += 6;
+        if (valb >= 0)
+        {
+            out.push_back(char((val >> valb) & 0xFF));
+            valb -= 8;
+        }
+    }
+    return out;
+}
+
+// Hàm chuyển đổi std::string (UTF-8) sang std::wstring (Unicode)
+inline std::wstring ToWide(const std::string &str)
+{
+    if (str.empty())
+        return std::wstring();
+    // Tính độ dài buffer cần thiết
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+    std::wstring wstrTo(size_needed, 0);
+    // Chuyển đổi
+    MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+    return wstrTo;
+}
+
 // Helper Functions (Converted to inline for header-only usage)
 
 inline std::string ToUtf8(const std::wstring &wstr)

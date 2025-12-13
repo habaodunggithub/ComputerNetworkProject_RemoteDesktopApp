@@ -81,10 +81,15 @@ body.dark-theme #desktop-background { filter: blur(30px) brightness(0.4); }
 
 #app-window {
     width: 95vw; max-width: 1400px; height: 90vh;
-    background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.3); border-radius: var(--radius-lg);
+    background: var(--glass-bg); 
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.3); 
+    border-radius: var(--radius-lg);
     box-shadow: var(--glass-shadow);
-    display: flex; flex-direction: column; overflow: hidden; transition: all 0.3s ease;
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+    transition: all 0.3s ease;
 }
 body.dark-theme #app-window { border-color: rgba(255,255,255,0.1); }
 
@@ -105,7 +110,14 @@ body.dark-theme #app-window { border-color: rgba(255,255,255,0.1); }
 .title-drag-area { display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-weight: 600; font-size: 14px; }
 .app-icon { width: 16px; height: 16px; }
 
-.app-body { display: flex; flex: 1; overflow: hidden; }
+.btn-icon-only {
+    background: transparent; border: none; color: var(--text-muted);
+    cursor: pointer; margin-right: 15px; display: flex; align-items: center;
+    transition: 0.2s; padding: 4px; border-radius: 4px;
+}
+.btn-icon-only:hover { background: rgba(255,255,255,0.1); color: var(--text-main); }
+
+.app-body { display: flex; flex: 1; overflow: hidden; min-height: 0;}
 
 
 /* ======================================================================== */
@@ -113,12 +125,53 @@ body.dark-theme #app-window { border-color: rgba(255,255,255,0.1); }
 /* ======================================================================== */
 
 #sidebar {
-    width: var(--sidebar-width); background: rgba(255,255,255,0.03);
-    border-right: 1px solid var(--glass-border); padding: 24px 16px;
-    display: flex; flex-direction: column; gap: 24px;
+    width: var(--sidebar-width);
+    background: rgba(255, 255, 255, 0.03);
+    border-right: 1px solid var(--glass-border);
+    padding: 24px 16px;
+    
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    height: 100%;
+    max-height: 100%; 
+    min-height: 0; 
+    overflow-y: auto;
+    scrollbar-width: none;
+
+    padding-bottom: 80px; 
+    flex-shrink: 0; 
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
-.nav-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); padding: 0 16px; margin-bottom: 8px; display: block; }
-.nav-list { list-style: none; display: flex; flex-direction: column; gap: 4px;}
+#sidebar::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+#sidebar.collapsed {
+    width: 0;
+    min-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    overflow: hidden;
+    border-right: none;
+    opacity: 0;
+}
+.nav-label { 
+    font-size: 11px; 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+    color: var(--text-muted); 
+    padding: 0 16px; 
+    margin-bottom: 8px; 
+    display: block; 
+}
+.nav-list { 
+    list-style: none; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4px;
+}
 
 .nav-item {
     padding: 12px 16px;
@@ -1613,4 +1666,63 @@ body.dark-theme .input-wrapper input {
 /* Dark theme: giữ đồng bộ, chỉ tăng tương phản viền nhẹ */
 body.dark-theme #modal-scan-lan #scan-list {
     border-color: rgba(148, 163, 184, 0.18);
+}
+
+/* ======================================================================== */
+/* FILE VIEWER & UPLOAD STYLES                                         */
+/* ======================================================================== */
+
+/* Vùng hiển thị nội dung File */
+#viewer-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #0d0d0f; /* Nền tối để nổi bật ảnh/video */
+    padding: 0;
+    overflow: hidden; /* Tránh thanh cuộn kép */
+    position: relative;
+}
+
+/* Định dạng cho Ảnh và Video */
+#viewer-content img, 
+#viewer-content video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain; /* Giữ tỉ lệ khung hình */
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+    border-radius: 4px;
+}
+
+/* Định dạng cho Text (Code, Log...) */
+#viewer-content pre {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    padding: 24px;
+    margin: 0;
+    
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-wrap; /* Tự động xuống dòng */
+    border: none;
+    text-align: left;
+}
+
+/* Tùy chỉnh thanh cuộn cho Text Viewer */
+#viewer-content pre::-webkit-scrollbar { width: 10px; height: 10px; }
+#viewer-content pre::-webkit-scrollbar-track { background: #1e1e1e; }
+#viewer-content pre::-webkit-scrollbar-thumb { background: #444; border-radius: 5px; }
+#viewer-content pre::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+
+/* Icon Upload trên Toolbar */
+#btn-fs-upload i {
+    color: #3b82f6; /* Màu xanh nổi bật cho nút Upload */
+}
+#btn-fs-upload:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: #3b82f6;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
 }

