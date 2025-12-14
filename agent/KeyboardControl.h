@@ -1,6 +1,7 @@
 #pragma once
 #include <windows.h>
 #include <string>
+#include <vector>
 
 class KeyboardControl
 {
@@ -59,6 +60,30 @@ public:
         if (vk != 0)
         {
             SimulateKey(vk);
+        }
+    }
+
+    // Gửi chuỗi Unicode (Hỗ trợ tiếng Việt)
+    static void SendUnicodeString(const std::wstring &text)
+    {
+        for (wchar_t ch : text)
+        {
+            INPUT inputs[2] = {};
+
+            // 1. Sự kiện Nhấn xuống (KeyDown)
+            inputs[0].type = INPUT_KEYBOARD;
+            inputs[0].ki.wVk = 0;    // Phải để 0 khi dùng UNICODE
+            inputs[0].ki.wScan = ch; // Mã Unicode của ký tự (ví dụ: 'â', 'đ')
+            inputs[0].ki.dwFlags = KEYEVENTF_UNICODE;
+
+            // 2. Sự kiện Nhả ra (KeyUp)
+            inputs[1].type = INPUT_KEYBOARD;
+            inputs[1].ki.wVk = 0;
+            inputs[1].ki.wScan = ch;
+            inputs[1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+
+            // Gửi cả cặp nhấn/nhả
+            SendInput(2, inputs, sizeof(INPUT));
         }
     }
 };
