@@ -73,7 +73,12 @@ export function initAuth() {
             const data = await res.json();
             if (data.success) {
                 sessionStorage.setItem('rcc_user', data.username);
-                authOverlay.classList.add('hidden');
+                const authOverlay = $('#auth-overlay');
+                authOverlay.classList.add('auth-exit');
+                setTimeout(() => {
+                    authOverlay.classList.add('hidden');
+                    authOverlay.classList.remove('auth-exit'); 
+                }, 600);
             } else showAuthMsg(data.message, "error");
         } catch (e) {
             showAuthMsg("Network error", "error");
@@ -83,7 +88,20 @@ export function initAuth() {
 
 // Xử lý Đăng xuất
 export function performLogout() {
-    sessionStorage.removeItem('rcc_user');
-    disconnectWs();
-    location.reload();
+    const authOverlay = $('#auth-overlay');
+
+    authOverlay.classList.add('auth-exit');
+    authOverlay.classList.remove('hidden');
+
+    setTimeout(() => {
+        authOverlay.classList.remove('auth-exit');
+    }, 10);
+
+    setTimeout(() => {
+        sessionStorage.removeItem('rcc_user');
+        
+        disconnectWs();
+        
+        location.reload();
+    }, 600);
 }
