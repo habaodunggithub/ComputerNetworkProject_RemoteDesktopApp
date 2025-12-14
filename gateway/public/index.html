@@ -71,60 +71,84 @@
 
         <div class="app-body">
             <nav id="sidebar">
-                <div class="nav-group">
-                    <span class="nav-label">Surveillance</span>
-                    <ul class="nav-list">
-                        <li class="nav-item active" data-view="capture">
-                            <i data-feather="monitor"></i> <span>Desktop View</span>
-                        </li>
-                        <li class="nav-item" data-view="webcam">
-                            <i data-feather="video"></i> <span>Webcam</span>
-                        </li>
-                        <li class="nav-item" data-view="keylogger">
-                            <i data-feather="terminal"></i> <span>Keylogger</span>
-                        </li>
-                    </ul>
+
+                <!-- ========================= -->
+                <!-- PHẦN TRÊN: MENU (SCROLL) -->
+                <!-- ========================= -->
+                <div class="sidebar-main">
+
+                    <div class="nav-group">
+                        <span class="nav-label">Surveillance</span>
+                        <ul class="nav-list">
+                            <li class="nav-item active" data-view="capture">
+                                <i data-feather="monitor"></i>
+                                <span>Desktop View</span>
+                            </li>
+                            <li class="nav-item" data-view="webcam">
+                                <i data-feather="video"></i>
+                                <span>Webcam</span>
+                            </li>
+                            <li class="nav-item" data-view="keylogger">
+                                <i data-feather="terminal"></i>
+                                <span>Keylogger</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-group">
+                        <span class="nav-label">System Manager</span>
+                        <ul class="nav-list">
+                            <li class="nav-item" data-view="applications">
+                                <i data-feather="grid"></i>
+                                <span>Applications</span>
+                            </li>
+                            <li class="nav-item" data-view="processes">
+                                <i data-feather="cpu"></i>
+                                <span>Processes</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-group">
+                        <span class="nav-label">Red Team Ops</span>
+                        <ul class="nav-list">
+                            <li class="nav-item" data-view="data-theft">
+                                <i data-feather="shield-off"></i>
+                                <span>Data Extraction</span>
+                            </li>
+                            <li class="nav-item" data-view="files">
+                                <i data-feather="folder"></i>
+                                <span>File Explorer</span>
+                            </li>
+                        </ul>
+                    </div>
+
                 </div>
 
-                <div class="nav-group">
-                    <span class="nav-label">System Manager</span>
-                    <ul class="nav-list">
-                        <li class="nav-item" data-view="applications">
-                            <i data-feather="grid"></i> <span>Applications</span>
-                        </li>
-                        <li class="nav-item" data-view="processes">
-                            <i data-feather="cpu"></i> <span>Processes</span>
-                        </li>
-                    </ul>
-                </div>
+                <!-- ========================= -->
+                <!-- PHẦN DƯỚI: FOOTER FIXED  -->
+                <!-- ========================= -->
+                <div class="sidebar-footer">
 
-                <div class="nav-group">
-                    <span class="nav-label">Red Team Ops</span>
                     <ul class="nav-list">
-                        <li class="nav-item" data-view="data-theft">
-                            <i data-feather="shield-off"></i> <span>Data Extraction</span>
-                        </li>
-                        <li class="nav-item" data-view="files">
-                            <i data-feather="folder"></i> <span>File Explorer</span>
-                        </li>
-                    </ul>
-                </div>
 
-                <div class="nav-group" style="padding-top: 20px;">
-                    <ul class="nav-list">
                         <li class="nav-item" data-view="power-control">
-                            <i data-feather="power"></i> <span>Power</span>
+                            <i data-feather="power"></i>
+                            <span>Power</span>
                         </li>
 
-                        <li style="border-top: 1px solid var(--glass-border); margin: 8px 0;"></li>
+                        <li class="nav-divider"></li>
 
                         <li class="nav-item logout-item" id="btn-logout-sidebar">
-                            <i data-feather="log-out"></i> <span>Log out</span>
+                            <i data-feather="log-out"></i>
+                            <span>Log out</span>
                         </li>
-                    </ul>
-                </div>
-            </nav>
 
+                    </ul>
+
+                </div>
+
+            </nav>
 
 
             <section id="main-content">
@@ -450,7 +474,6 @@
                 </button>
 
                 <input type="text" id="ws-url-input" placeholder="ws://localhost:8080/ws">
-                <button class="btn btn-sm btn-glass" id="btn-connect">Connect</button>
                 <button class="btn btn-sm btn-danger hidden" id="btn-disconnect">Disconnect</button>
             </div>
             <div class="theme-switcher">

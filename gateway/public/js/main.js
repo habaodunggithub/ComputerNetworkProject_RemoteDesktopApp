@@ -59,6 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         state.currentAgentId = agentId;
         console.log('[App] Selected agent:', agentId, hostname);
+
+        document.getElementById('scan-list')?.classList.add('has-selected');
         
         const proto = location.protocol === 'https:' ? 'wss' : 'ws';
         const url = `${proto}://${location.host}/ws`;
@@ -307,7 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Core Connection
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     $('#ws-url-input').value = `${proto}://${location.host}/ws`;
-    $('#btn-connect').onclick = connectWs;
     $('#btn-disconnect').onclick = disconnectWs;
 
     if ($('#btn-logout-sidebar')) {

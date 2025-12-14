@@ -89,7 +89,6 @@ export function isWsConnected() {
 export function setConnectedState(isConnected, agentName = null) {
     const statusPill = $('#status-pill');
     const statusText = $('#status-pill .status-text');
-    const btnConnect = $('#btn-connect');
     const btnDisconnect = $('#btn-disconnect');
     const wsUrlInput = $('#ws-url-input');
 
@@ -99,17 +98,14 @@ export function setConnectedState(isConnected, agentName = null) {
         statusPill.classList.remove('disconnected');
         statusPill.classList.add('connected');
         if (statusText) statusText.textContent = agentName ? `Connected: ${agentName}` : 'Connected';
-        if (btnConnect) btnConnect.classList.add('hidden');
         if (btnDisconnect) btnDisconnect.classList.remove('hidden');
         if (wsUrlInput) wsUrlInput.disabled = true;
     } else {
         statusPill.classList.remove('connected');
         statusPill.classList.add('disconnected');
         if (statusText) statusText.textContent = 'Disconnected';
-        if (btnConnect) btnConnect.classList.remove('hidden');
         if (btnDisconnect) btnDisconnect.classList.add('hidden');
         if (wsUrlInput) wsUrlInput.disabled = false;
-        // state.currentAgentId = null;
     }
 }
 
