@@ -129,6 +129,7 @@ body.dark-theme #app-window { border-color: rgba(255,255,255,0.1); }
     background: rgba(255, 255, 255, 0.03);
     border-right: 1px solid var(--glass-border);
     padding: 24px 16px;
+    padding-bottom: 0;
 
     display: flex;
     flex-direction: column;
@@ -172,23 +173,104 @@ body.dark-theme #app-window { border-color: rgba(255,255,255,0.1); }
 }
 
 /* ======================================================================== */
-/*  PHẦN DƯỚI – FOOTER FIXED                                                */
+/*  SIDEBAR FOOTER – COMPACT & QUIET                                        */
 /* ======================================================================== */
 
 .sidebar-footer {
     flex-shrink: 0;
-    padding-top: 16px;
-    margin-top: 12px;
+    margin-top: auto;            /* sát đáy */
+    padding: 8px 12px 6px;       /* gọn */
 
-    border-top: 1px solid var(--glass-border);
-    background: rgba(0, 0, 0, 0.04);
+    border-top: none;            /* ❌ bỏ viền */
+    background: transparent;     /* ❌ bỏ nền */
+
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
-/* Divider */
-.nav-divider {
-    height: 1px;
-    background: var(--glass-border);
-    margin: 8px 0;
+/* ======================================================================== */
+/*  SIDEBAR FOOTER ACTIONS – SYSTEM & DANGER (SAME BEHAVIOR)               */
+/* ======================================================================== */
+
+/* ===== BASE (Power + Logout giống nhau hoàn toàn) ===== */
+.sidebar-footer .nav-item.action-system,
+.sidebar-footer .nav-item.action-danger {
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 8px 14px;
+    border-radius: 14px;
+
+    transition:
+        transform .25s ease,
+        background .25s ease,
+        border-color .25s ease,
+        box-shadow .25s ease,
+        color .25s ease;
+}
+
+/* Hover – DỊCH CHUYỂN GIỐNG NHAU */
+.sidebar-footer .nav-item.action-system:hover,
+.sidebar-footer .nav-item.action-danger:hover {
+    transform: translateX(5px); /* 🔥 GIỐNG LOGOUT CŨ */
+}
+
+/* Active */
+.sidebar-footer .nav-item.action-system:active,
+.sidebar-footer .nav-item.action-danger:active {
+    transform: scale(0.96);
+}
+
+/* ======================================================================== */
+/*  SYSTEM (POWER – BLUE)                                                  */
+/* ======================================================================== */
+
+.sidebar-footer .nav-item.action-system {
+    color: #3b82f6;
+}
+.sidebar-footer .nav-item.action-system svg {
+    stroke: #3b82f6;
+}
+
+.sidebar-footer .nav-item.action-system:hover {
+    background: rgba(59,130,246,0.12);
+    border-color: rgba(59,130,246,0.28);
+    box-shadow: 0 4px 12px rgba(59,130,246,0.18);
+}
+
+/* Dark */
+body.dark-theme .sidebar-footer .nav-item.action-system {
+    color: #60a5fa;
+}
+body.dark-theme .sidebar-footer .nav-item.action-system:hover {
+    background: rgba(59,130,246,0.18);
+    border-color: rgba(96,165,250,0.32);
+}
+
+/* ======================================================================== */
+/*  DANGER (LOGOUT – RED)                                                  */
+/* ======================================================================== */
+
+.sidebar-footer .nav-item.action-danger {
+    color: #ef4444;
+}
+.sidebar-footer .nav-item.action-danger svg {
+    stroke: #ef4444;
+}
+
+.sidebar-footer .nav-item.action-danger:hover {
+    background: rgba(239,68,68,0.12);
+    border-color: rgba(239,68,68,0.28);
+    box-shadow: 0 4px 12px rgba(239,68,68,0.18);
+}
+
+/* Dark */
+body.dark-theme .sidebar-footer .nav-item.action-danger {
+    color: #f87171;
+}
+body.dark-theme .sidebar-footer .nav-item.action-danger:hover {
+    background: rgba(239,68,68,0.18);
+    border-color: rgba(248,113,113,0.32);
 }
 
 /* ======================================================================== */
