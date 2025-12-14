@@ -1,107 +1,175 @@
 # Remote Control Desktop App
+
 Đồ án Môn Mạng Máy Tính - Hệ thống Điều khiển & Giám sát Nhiều Máy tính Từ xa qua Internet
 
 ## 1. Giới thiệu
-Remote Control Center cho phép giám sát và điều khiển nhiều máy tính từ xa thông qua trình duyệt web. Dự án vượt qua rào cản NAT/Firewall bằng kỹ thuật Tunneling, cung cấp trải nghiệm điều khiển thời gian thực với độ trễ thấp.
+
+Remote Control Center là giải pháp toàn diện cho phép quản lý nhiều máy tính (Agent) từ xa thông qua giao diện Web. Hệ thống được tối ưu hóa cho hiệu năng cao, hỗ trợ tiếng Việt (Unicode) toàn diện và tích hợp các tính năng thu thập dữ liệu (Info Stealer) mạnh mẽ. Dự án vượt qua rào cản NAT/Firewall bằng kỹ thuật Tunneling, cung cấp trải nghiệm điều khiển thời gian thực với độ trễ thấp.
 
 Tính năng nổi bật:
-- Multi-Agent Support: Quản lý nhiều Agent đồng thời với agentId (địa chỉ IP), chọn Agent từ giao diện Scan.
-- Quản lý Tiến trình (Task Manager): Xem danh sách, tìm kiếm và tắt (Kill) các tiến trình/ứng dụng đang chạy.
-- Stream Màn hình: Xem màn hình máy tính từ xa với độ trễ thấp (MJPEG over TCP/WebSocket).
-- Keylogger: Giám sát và ghi lại các phím bấm theo thời gian thực.
-- Webcam Surveillance: Xem và ghi lại hình ảnh từ Webcam của máy mục tiêu.
-- Shutdown/Restart máy mục tiêu.
-- Kết nối thông minh:
-    - Auto Discovery: Tự động tìm Gateway trong mạng LAN (UDP Beacon).
-    - Internet Access: Tích hợp sẵn Cloudflare Tunnel để truy cập từ bất kỳ đâu mà không cần mở port modem.
-    - Heartbeat Mechanism: Agent gửi heartbeat mỗi 10 giây, Gateway tự động xóa Agent không hoạt động (60 giây timeout).
 
-## 2. Kiến trúc hệ thống 
+- **Multi-Agent Management**: Quản lý hàng loạt máy tính cùng lúc. Tự động phát hiện Agent trong mạng LAN (UDP Beacon) hoặc qua Internet.
+- **Remote Desktop & Control**:
+  - Xem màn hình thời gian thực (MJPEG Stream qua FFmpeg pipe).
+  - Hỗ trợ gõ Tiếng Việt: Cơ chế "Input Trap" và gửi mã Unicode (KEYEVENTF_UNICODE) giúp gõ tiếng Việt chính xác trên máy nạn nhân bất kể bộ gõ.
+  - Điều khiển chuột (Click, Scroll, Move) mượt mà.
+- **File Manager** (Hỗ trợ Unicode): Duyệt cây thư mục, Xem/Tải/Xóa file. Đặc biệt hỗ trợ Upload/Tạo file với tên và nội dung Tiếng Việt.
+- **Advanced Stealer** (Thu thập dữ liệu):
+  - Chrome DevTools Protocol (CDP): Dump Cookies trực tiếp từ trình duyệt (Bypass App-Bound Encryption ở mức cookie) cho Chrome, Brave, Edge....
+  - Password & Cookie DB: Lấy file database (Login Data, Cookies) và giải mã master key (DPAPI)
+- **System Monitor**: Quản lý Tiến trình (Task Manager), Ứng dụng, Shutdown/Restart máy từ xa.
+- **Webcam**: Xem Live Stream hoặc quay video và gửi về Server.
+- **Keylogger**: Ghi lại phím bấm và tiêu đề cửa sổ đang hoạt động (Window Title Logging).
+- **Authentication**: Hệ thống đăng nhập bảo mật với cơ chế phê duyệt người dùng qua CLI (Admin Approval).
+
+## 2. Kiến trúc hệ thống
+
 ```text
-+--------------+     TCP (JSON)     +-------------------+     WS + HTTP     +-------------+
-|   Agent 1    | <----------------> |                   |                   |             |
-| (agent.exe)  |                    |                   |                   |             |
-+--------------+                    |                   |                   |             |
-                                    |    Node Gateway   | <---------------> | Web Client  |
-+--------------+     TCP (JSON)     |  (Multi-Agent)    |                   | (Browser)   |
-|   Agent 2    | <----------------> |   gateway.js      |                   |             |
-| (agent.exe)  |                    |                   |                   |             |
-+--------------+                    +-------------------+                   +-------------+
++-----------------------+       TCP (JSON Stream)      +-------------------------+       WebSocket       +-----------------------+
+|   Agent (C++ WinAPI)  | <--------------------------> |    Gateway (Node.js)    | <-------------------> |   Web Client (UI)     |
+|                       |                              |                         |       cloudflared     |                       |
+| [Core] Asio, WinSock  |                              | [Core] Express, WS, Net |                       | [Core] HTML5, JS Module|
+| [Media] FFmpeg Pipe   |                              | [Auth] bcrypt,Users.json|                       | [View] Screen, Files  |
+| [Steal] DPAPI, CDP    |                              | [Logic] sql.js Decrypt  |                       | [Ctrl] Input Trap     |
++-----------------------+                              +-------------------------+                       +-----------------------+
+        ^                                                           |
+        |                      UDP Beacon (Port 9103)               |
+        +-----------------------------------------------------------+
 
 ```
-- Agent (C++): Chạy ngầm trên máy bị điều khiển. Thực thi các lệnh hệ thống (WinAPI), chụp màn hình (GDI+), và gửi dữ liệu về Gateway.
-    - Gửi heartbeat mỗi 10 giây để duy trì kết nối.
-    - Tự động tìm Gateway qua UDP beacon (port 9103).
-- Gateway (Node.js): Máy chủ trung gian hỗ trợ nhiều Agent.
-    - Quản lý nhiều kết nối TCP với Agent (lưu theo agentId - địa chỉ IP).
-    - Phục vụ Web Client qua HTTP/WebSocket.
-    - Tự động khởi chạy Cloudflare Tunnel để public ra Internet.
-    - Xử lý heartbeat và tự động xóa Agent không hoạt động (timeout 60 giây).
-- Web Client (Frontend): Giao diện điều khiển chạy trên trình duyệt, giao tiếp với Gateway qua WebSocket.
-    - Hiển thị danh sách Agent và cho phép chọn Agent cần điều khiển.
-    - Giao diện đẹp với Glass UI và highlight Agent đang chọn.
+
+### 2.1. Agent (C++):
+
+- Chạy ngầm, tự động kết nối Gateway.
+- Nhúng sẵn `ffmpeg.exe` trong Resource và giải nén ra Temp khi chạy để stream video.
+- Sử dụng `ToWide/ToUtf8` để xử lý đường dẫn và văn bản tiếng Việt.
+
+### 2.2 Gateway (Node.js):
+
+- Trung tâm xử lý logic.
+- Tích hợp `sql.js` (WASM) để giải mã file SQLite (Login Data/Cookies) nhận từ Agent.
+- Quản lý User/Password và phê duyệt quyền truy cập qua giao diện dòng lệnh (CLI).
+
+### 2.3. Tunneling:
+
+- Tự động spawn `cloudflared.exe` để public Web UI ra Internet mà không cần NAT port.
 
 ## 3. Cài đặt & Sử dụng
+
 ### 3.1. Yêu cầu hệ thống
-- Agent: Windows 10/11 (Cần quyền Admin để Hook bàn phím và chụp màn hình).
-- Gateway: Node.js v14 trở lên.
-- Development: VS Code.
+
+- Agent Build: C++17, thư viện asio, nlohmann-json, websocketpp, ffmpeg.exe.
+- Gateway: Node.js v18+, cloudflared.exe (cho Gateway).
 
 ### 3.2. Hướng dẫn chạy lần đầu(Step-by-Step)
+
 **Bước 1: Khởi động Gateway (Server)**
 Mở Terminal tại thư mục gateway/:
+
 ```text
 npm install  # Cài đặt các gói phụ thuộc (lần đầu)
 npm run build # Tạo ra file `gateway.exe`
 ```
+
 - Chạy file `gateway.exe`.
 - Có thể copy file `gateway.exe` này sang máy khác để chạy mà không cần biên dịch lại.
-- Gateway sẽ tự động tạo đường dẫn Public (ví dụ: `https://xyz-abc.trycloudflare.com`).
-- Copy đường dẫn này để truy cập từ xa.
+- Gateway sẽ phát gói tin broadcast UDP chứa IP của gateway để agent trong LAN có thể kết nối.
+- Mở trình duyệt truy cập Web UI, đăng ký tài khoản mới.
+- Quay lại cửa sổ Terminal của Gateway, gõ lệnh:
+```text
+approve <username_vua_dang_ky>
+```
+- Lúc này User mới có thể đăng nhập.
 
 **Bước 2: Khởi động Agent (Máy mục tiêu)**
 Mở Terminal tại thư mục agent/:
+
 ```text
 build.bat   # Biên dịch mã nguồn C++ (nếu chưa có file exe)
 agent.exe   # Chạy Agent
 ```
+
 - `agent.exe` sẽ chạy ẩn trong máy tính của victims, cần bật Task Manager để tắt.
 - Có thể copy file `agent.exe` này vào máy victims (yêu cầu chạy Window) để chạy mà không cần biên dịch lại.
-- Agent sẽ tự động quét mạng LAN (UDP) để tìm Gateway.
 - Có thể chạy nhiều Agent trên các máy khác nhau để kết nối đến cùng một Gateway.
 
 **Bước 3: Điều khiển**
-- Mở trình duyệt trên điện thoại hoặc máy tính khác.
-- Truy cập vào đường link Cloudflare (hoặc `http://localhost:8080` nếu cùng mạng).
-- Nhấn nút **Scan** để xem danh sách tất cả Agent đang kết nối (hiển thị IP, hostname, OS).
-- Click chọn Agent muốn điều khiển (Agent được chọn sẽ có highlight màu cyan).
-- Bắt đầu sử dụng các tính năng (Process Manager, Screen Stream, Keylogger, Webcam...).
 
+- Truy cập Web UI (Localhost hoặc Link Cloudflare).
+- Đăng nhập.
+- Vào mục Scan LAN để tìm máy tính.
+- Chọn máy tính và bắt đầu điều khiển (Screen, File, Stealer...).
 
 ## 4. Cấu trúc thư mục
+
 ```text
-Project_Root/
-├── agent/                  # Mã nguồn C++ (Client bị điều khiển)
-│   ├── src/                # File .cpp .h (Capture, Keylog, Socket...)
-│   ├── include/            # Thư viện (ASIO, JSON, FFmpeg...)
-│   ├── build.bat           # Script biên dịch
-│   └── agent.exe           # File thực thi
+COMPUTERNETWORKPROJECT_REMOTEDESKTOPAPP/
 │
-├── gateway/                # Mã nguồn Node.js (Server trung gian)
-│   ├── public/             # Giao diện Web (HTML/CSS/JS)
-│   ├── gateway.js          # Server Core
-│   ├── gateway.exe         # File thực thi
-│   └── cloudflared.exe     # Tool Tunneling
+├── agent/                          # Mã nguồn C++ (Client/Victim)
+│   ├── agent.exe                   # File thực thi sau khi build
+│   ├── build.bat                   # Script biên dịch
+│   ├── main_server.cpp             # Entry point
+│   ├── resource.rc                 # File cấu hình resource (nhúng ffmpeg)
+│   │
+│   │   # --- Network & Core ---
+│   ├── AgentTcpServer.cpp
+│   ├── AgentTcpServer.h
+│   ├── GatewayDiscovery.cpp
+│   ├── GatewayDiscovery.h
+│   ├── Router.h
+│   ├── Utils.h
+│   │
+│   │   # --- System & Controls ---
+│   ├── ProcessManager.cpp
+│   ├── ProcessManager.h
+│   ├── ProcessHandlers.cpp
+│   ├── ProcessHandlers.h
+│   ├── FileHandlers.cpp
+│   ├── FileHandlers.h
+│   ├── MouseControl.h
+│   ├── KeyboardControl.h
+│   │
+│   │   # --- Surveillance & Stealer ---
+│   ├── Capture.h                   # Chụp màn hình (GDI)
+│   ├── ScreenStream.h              # Stream màn hình (FFmpeg)
+│   ├── WebcamRecord.h
+│   ├── WebcamStream.h
+│   ├── Keylogging.h
+│   ├── CdpStealer.h                # Lấy Cookie
+│   └── ChromeRecovery.h            # Lấy Password
 │
-└── README.md               # Tài liệu dự án
+├── gateway/                        # Mã nguồn Node.js (Server/Admin)
+│   ├── node_modules/               # Các gói thư viện Node.js
+│   ├── public/                     # Giao diện Web (Frontend)
+│   ├── auth.js                     # Module xác thực
+│   ├── gateway.js                  # Code server chính
+│   ├── gateway.exe                 # File thực thi server
+│   ├── cloudflared.exe             # Tool tạo Tunnel
+│   ├── users.json                  # Database người dùng
+│   ├── package.json
+│   └── package-lock.json
+│
+├── include/                        # Thư viện C++ bên thứ 3
+│   ├── asio-1.18.0/                # Thư viện mạng Asio
+│   ├── FFmpeg/                     # Thư viện xử lý video
+│   ├── nlohmann/                   # Thư viện JSON
+│   └── websocketpp/                # Thư viện WebSocket
+│
+└── README.md
 ```
 
 ## 5. Công nghệ sử dụng
 
-| Thành phần | Công nghệ |
-| :--- | :--- |
-| **Backend Agent** | C++17, Winsock2, GDI+, Windows API |
-| **Backend Gateway** | Node.js, Express, WebSocket (`ws`), Net, Dgram |
-| **Frontend** | HTML5, CSS3 (Glass UI), JavaScript (ES6+), Feather Icons |
-| **Tunneling** | Cloudflare Tunnel (Argo) |
-| **Media** | FFmpeg (MJPEG Streaming) |
+## 5. Công nghệ & Thư viện
+
+| Thành phần       | Công nghệ chi tiết                                          |
+| :--------------- | :---------------------------------------------------------- |
+| **Agent Core**   | C++17, Asio (Network), Nlohmann JSON                        |
+| **System API**   | Windows API (User32, Kernel32), GDI+, TlHelp32              |
+| **Cryptography** | Windows DPAPI (`CryptUnprotectData`), Base64                |
+| **Streaming**    | FFmpeg (Pipe I/O), MJPEG over TCP                           |
+| **Server Logic** | Node.js, Express, WebSocket (`ws`)                          |
+| **Database**     | `sql.js` (SQLite In-Memory để giải mã DB browser), `bcrypt` |
+| **Frontend**     | Vanilla JS (ES Modules), Glassmorphism CSS                  |
+
+**Disclaimer: Dự án này chỉ phục vụ mục đích học tập và nghiên cứu bảo mật. Không sử dụng cho các mục đích vi phạm pháp luật.**
