@@ -53,7 +53,6 @@ export function connectWs() {
     }
 
     ws.onopen = () => {
-        if (!state.currentAgentId) state.currentAgentId = "MANUAL_CONN";
         setConnectedState(true, state.currentAgentId);
         if (state.currentAgentId) loadDataForCurrentView();
     };
@@ -80,8 +79,6 @@ export function sendWsMessage(payload) {
         } else {
             alert('Please select an agent first (Scan LAN)');
         }
-    } else {
-        alert('Not connected.');
     }
 }
 
@@ -112,7 +109,7 @@ export function setConnectedState(isConnected, agentName = null) {
         if (btnConnect) btnConnect.classList.remove('hidden');
         if (btnDisconnect) btnDisconnect.classList.add('hidden');
         if (wsUrlInput) wsUrlInput.disabled = false;
-        state.currentAgentId = null;
+        // state.currentAgentId = null;
     }
 }
 

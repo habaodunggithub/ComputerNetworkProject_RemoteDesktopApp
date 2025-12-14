@@ -84,6 +84,26 @@ export function initAuth() {
             showAuthMsg("Network error", "error");
         }
     };
+
+    // ===============================
+    // ENTER TO SUBMIT (LOGIN / REGISTER)
+    // ===============================
+
+    // Login: Enter trong password -> Login
+    $('#login-pass').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            $('#btn-do-login').click();
+        }
+    });
+
+    // Register: Enter trong password -> Register
+    $('#reg-pass').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            $('#btn-do-register').click();
+        }
+    });
 }
 
 // Xử lý Đăng xuất

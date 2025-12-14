@@ -168,6 +168,8 @@ export function sendNextChunk() {
 }
 
 export function resetUploadState() {
+    if (!state.uploadState.active) return;
+
     state.uploadState = {
         active: false,
         file: null,
