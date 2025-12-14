@@ -182,6 +182,21 @@ export function resetUploadState() {
     if (realFileInput) realFileInput.value = '';
 }
 
+export function cancelFileUpload() {
+    if (!state.uploadState.active) return;
+
+    const statusPill = document.getElementById('status-pill');
+    if(statusPill) {
+        statusPill.innerText = "Upload Cancelled";
+        setTimeout(() => {
+            statusPill.innerText = document.getElementById('status-text')?.textContent || "Connected";
+        }, 2000);
+    }
+
+    resetUploadState();
+    alert("Đã hủy upload hiện tại. Bạn có thể chọn file khác.");
+}
+
 // --- Render Logic ---
 export function renderDriveTree(drives) {
     const container = document.getElementById('fs-tree-container');
