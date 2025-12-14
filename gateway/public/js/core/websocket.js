@@ -163,7 +163,13 @@ function onWsMessage(event) {
             break;
         case 'status':
             if (state.currentView === 'files') unlockFileUI();
-            if (msg.success && msg.message === "Chunk received" && state.uploadState.active) sendNextChunk(); 
+            if (msg.success && msg.message === "Chunk received") {
+                if (state.uploadState.active) {
+                    sendNextChunk();
+                } else {
+                    console.warn("Nhận được tín hiệu chunk từ server nhưng client đã hủy upload.");
+                }
+            }
             if (msg.success) {
                 if (isStopAppOpen) sendWsMessage({ command: 'list_applications' });
                 if (isStopProcOpen) sendWsMessage({ command: 'list_processes' });
@@ -171,6 +177,11 @@ function onWsMessage(event) {
                 if (state.currentView.includes('app')) sendWsMessage({ command: 'list_applications' });
                 if (state.currentView === 'files') sendWsMessage({ command: 'fs_list', path: state.currentPath, context: 'view' });
             } else {
+                if (state.uploadState.active) {
+                    console.error("Upload error form server:", msg.message);
+                    resetUploadState(); 
+                    alert('Lỗi Upload: ' + msg.message + '. Đã reset trạng thái.');
+                }
                 if (state.uploadState.active) resetUploadState(); 
                 if (state.currentView === 'files') {
                     const grid = document.getElementById('file-grid');

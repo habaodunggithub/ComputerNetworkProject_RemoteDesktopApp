@@ -200,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
+
     // =================================================================
     // 2. HELPER LOCAL FUNCTIONS
     // =================================================================
@@ -707,7 +708,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if ($('#btn-fs-upload')) {
         $('#btn-fs-upload').onclick = () => {
             if (state.uploadState.active) {
-                alert("Please wait for the current upload to finish.");
+                const confirmCancel = confirm(
+                    "Đang có file upload dở dang (có thể bị treo).\n\n" +
+                    "Bạn có muốn HỦY tiến trình cũ để upload file mới không?"
+                );
+
+                if (confirmCancel) {
+                    cancelFileUpload();
+                }
                 return;
             }
             if (realFileInput) realFileInput.click();
