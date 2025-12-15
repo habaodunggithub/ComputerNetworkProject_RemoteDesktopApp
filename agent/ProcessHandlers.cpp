@@ -89,7 +89,7 @@ json ProcessHandlers::captureScreen(const json &)
 
 json ProcessHandlers::startScreenStream(const json &req)
 {
-    ScreenStream::start(req.value("fps", 15));
+    ScreenStream::start(req.value("fps", 30));
     return makeStatus(true, "Screen streaming started");
 }
 
@@ -174,34 +174,60 @@ json ProcessHandlers::systemRestart(const json &)
     return makeStatus(true, "Restart command sent");
 }
 
-// === MOUSE CONTROL (Thêm section này vào cuối file hoặc chỗ phù hợp) ===
+// === MOUSE CONTROL  ===
 json ProcessHandlers::handleMouseInput(const json &req)
 {
-    std::string action = req.value("action", "");
-
-    // 1. Di chuyển chuột
-    if (action == "move")
+    // 1. Lấy action
+    std::string action = req.contains("a") ? req["a"].get<std::string>() : req.value("action", "");
+    if (action == "batch")
     {
-        // Client gửi x, y dưới dạng float (0.0 -> 1.0)
+        if (req.contains("data") && req["data"].is_array())
+        {
+            for (const auto &point : req["data"])
+            {
+                double x = point.value("x", 0.0);
+                double y = point.value("y", 0.0);
+
+                // Di chuyển tới từng điểm trong gói
+                MouseControl::Move(x, y);
+
+                // (Tùy chọn) Sleep cực ngắn để Windows kịp render con trỏ,
+                // giúp mắt nhìn thấy hành trình chuột mượt hơn.
+                // Nếu thấy lag thì comment dòng này lại.
+                // std::this_thread::sleep_for(std::chrono::microseconds(200));
+            }
+        }
+        return {};
+    }
+
+    // 2. Click (Hỗ trợ cả 'cl' và 'click')
+    if (action == "cl" || action == "click")
+    {
+        std::string btn = req.contains("b") ? req["b"].get<std::string>() : req.value("button", "left");
+        std::string state = req.contains("s") ? req["s"].get<std::string>() : req.value("state", "down");
+
+        // Cập nhật vị trí chuột ngay trước khi click để đảm bảo chính xác
+        if (req.contains("x") && req.contains("y"))
+        {
+            MouseControl::Move(req.value("x", 0.0), req.value("y", 0.0));
+        }
+
+        MouseControl::Action(btn, state);
+    }
+    // 3. Scroll (Hỗ trợ cả 'sc' và 'scroll')
+    else if (action == "sc" || action == "scroll")
+    {
+        int delta = req.contains("d") ? req["d"].get<int>() : req.value("delta", 0);
+        MouseControl::Scroll(delta);
+    }
+    // 4. Move đơn lẻ (Hỗ trợ 'mv' hoặc 'move' - phòng hờ)
+    else if (action == "mv" || action == "move")
+    {
         double x = req.value("x", 0.0);
         double y = req.value("y", 0.0);
         MouseControl::Move(x, y);
     }
-    // 2. Click chuột (mousedown/mouseup)
-    else if (action == "click")
-    {
-        std::string btn = req.value("button", "left");
-        std::string state = req.value("state", "down"); // down hoặc up
-        MouseControl::Action(btn, state);
-    }
-    // 3. Cuộn chuột
-    else if (action == "scroll")
-    {
-        int delta = req.value("delta", 0);
-        MouseControl::Scroll(delta);
-    }
 
-    // Không cần phản hồi JSON để tối ưu tốc độ, hoặc trả về null
     return {};
 }
 

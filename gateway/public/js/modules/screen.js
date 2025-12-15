@@ -5,13 +5,31 @@
 
 import { $ } from '../core/utils.js';
 
-let pendingFrame = null;
-let isRenderPending = false;
+let jmuxer = null;
+
+// Khởi tạo Player
+function initMuxer() {
+    if (jmuxer) return;
+    const videoEl = document.getElementById('stream-video');
+    
+    // Reset video element
+    if (videoEl) {
+        videoEl.classList.remove('hidden');
+    }
+
+    jmuxer = new JMuxer({
+        node: 'stream-video',
+        mode: 'video',
+        flushingTime: 0,
+        fps: 30,
+        debug: false
+    });
+}
 
 export function handleScreenshotResult(base64) {
     $('#capture-spinner').classList.add('hidden');
-    $('#stream-img').classList.add('hidden');
-    $('#stream-img').src = "";
+    $('#stream-video').classList.add('hidden');
+    $('#stream-video').src = "";
     $('#capture-placeholder').parentElement.classList.add('hidden');
     
     const captureImg = $('#capture-img');
@@ -20,47 +38,54 @@ export function handleScreenshotResult(base64) {
     
     $('#btn-copy-screenshot').classList.remove('hidden');
     $('#btn-save-screenshot').classList.remove('hidden');
+    $('#stream-video').classList.add('hidden');
 }
 
-export function handleScreenFrame(base64) {
-    pendingFrame = base64;
+export function handleVideoChunk(base64) {
+    // 1. Ẩn các thành phần thừa
+    const emptyState = $('#capture-display-area .empty-state');
+    const captureImg = $('#capture-img');
+    const streamVideo = $('#stream-video');
+    
+    if (emptyState && !emptyState.classList.contains('hidden')) emptyState.classList.add('hidden');
+    if (captureImg && !captureImg.classList.contains('hidden')) captureImg.classList.add('hidden');
+    if (streamVideo.classList.contains('hidden')) streamVideo.classList.remove('hidden');
+    // 2. Khởi tạo Muxer nếu chưa có
+    if (!jmuxer) initMuxer();
 
-    if (!isRenderPending) {
-        isRenderPending = true;
-        requestAnimationFrame(renderLoop);
-    }
-}
-
-function renderLoop() {
-    if (!pendingFrame) {
-        isRenderPending = false;
-        return;
-    }
-
-    const streamImg = $('#stream-img');
-    const startStreamBtn = $('#btn-start-stream');
-
-    // Chỉ vẽ nếu đang ở chế độ xem
-    if (startStreamBtn && startStreamBtn.classList.contains('hidden')) {
-        const emptyState = $('#capture-display-area .empty-state');
-        const captureImg = $('#capture-img');
-        
-        if (emptyState && !emptyState.classList.contains('hidden')) emptyState.classList.add('hidden');
-        if (captureImg && !captureImg.classList.contains('hidden')) captureImg.classList.add('hidden');
-        if (streamImg.classList.contains('hidden')) streamImg.classList.remove('hidden');
-
-        // Cập nhật ảnh
-        streamImg.src = "data:image/jpeg;base64," + pendingFrame;
+    // 3. Decode Base64 -> Uint8Array
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
     }
 
-    // Reset cờ
-    pendingFrame = null;
-    isRenderPending = false;
+    // 4. Đẩy dữ liệu vào Player
+    try {
+        if (jmuxer) {
+            jmuxer.feed({
+                video: bytes
+            });
+        }
+    } catch (e) {
+        console.error("Lỗi feed video:", e);
+        jmuxer = null;
+    }
 }
 
 export function resetScreenUI() {
-    $('#stream-img').classList.add('hidden');
-    $('#stream-img').src = "";
+    if (jmuxer) {
+        try {
+            jmuxer.destroy();
+        } catch (e) {
+            console.log("Jmuxer destroy error", e);
+        }
+        jmuxer = null; 
+    }
+
+    $('#stream-video').classList.add('hidden');
+    $('#stream-video').src = "";
     $('#capture-img').classList.add('hidden');
     $('#capture-spinner').classList.add('hidden');
     $('#capture-display-area .empty-state').classList.remove('hidden');

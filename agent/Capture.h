@@ -7,8 +7,8 @@
 #include <cstring>
 
 #include <windows.h>
-#include <objbase.h> 
-#include <objidl.h>  
+#include <objbase.h>
+#include <objidl.h>
 #include <gdiplus.h>
 #include "Utils.h"
 
@@ -19,18 +19,22 @@
 #pragma comment(lib, "User32.lib")
 
 // Helper: Lấy CLSID của encoder
-inline int GetEncoderClsid(const WCHAR* format, CLSID* pClsid) {
+inline int GetEncoderClsid(const WCHAR *format, CLSID *pClsid)
+{
     using namespace Gdiplus;
     UINT num = 0, size = 0;
     GetImageEncodersSize(&num, &size);
-    if (size == 0) return -1;
+    if (size == 0)
+        return -1;
 
     std::unique_ptr<char[]> pImageCodecInfo(new char[size]);
-    GetImageEncoders(num, size, (ImageCodecInfo*)pImageCodecInfo.get());
+    GetImageEncoders(num, size, (ImageCodecInfo *)pImageCodecInfo.get());
 
-    ImageCodecInfo* pImageCodecInfoCast = (ImageCodecInfo*)pImageCodecInfo.get();
-    for (UINT j = 0; j < num; ++j) {
-        if (wcscmp(pImageCodecInfoCast[j].MimeType, format) == 0) {
+    ImageCodecInfo *pImageCodecInfoCast = (ImageCodecInfo *)pImageCodecInfo.get();
+    for (UINT j = 0; j < num; ++j)
+    {
+        if (wcscmp(pImageCodecInfoCast[j].MimeType, format) == 0)
+        {
             *pClsid = pImageCodecInfoCast[j].Clsid;
             return j;
         }
@@ -38,7 +42,8 @@ inline int GetEncoderClsid(const WCHAR* format, CLSID* pClsid) {
     return -1;
 }
 
-inline std::string capture_screenshot_base64() {
+inline std::string capture_screenshot_base64()
+{
     using namespace Gdiplus;
 
     // 1. Chuẩn bị GDI
@@ -52,40 +57,36 @@ inline std::string capture_screenshot_base64() {
     // 2. Chụp màn hình (BitBlt)
     BitBlt(hDC, 0, 0, width, height, hScreen, 0, 0, SRCCOPY);
 
-    // 3. Chuẩn bị Encoder (JPEG) 
-    static CLSID jpegClsid;
+    // 3. Chuẩn bị Encoder (PNG)
+    static CLSID pngClsid;
     static bool clsidFound = false;
-    if (!clsidFound) {
-        GetEncoderClsid(L"image/jpeg", &jpegClsid);
+    if (!clsidFound)
+    {
+        GetEncoderClsid(L"image/png", &pngClsid);
         clsidFound = true;
     }
 
-    // 4. Lưu vào MEMORY 
-    IStream* pStream = nullptr;
+    // 4. Lưu vào MEMORY
+    IStream *pStream = nullptr;
     std::string resultBase64;
 
-    if (CreateStreamOnHGlobal(nullptr, TRUE, &pStream) == S_OK) {
+    if (CreateStreamOnHGlobal(nullptr, TRUE, &pStream) == S_OK)
+    {
         Bitmap bmp(hBitmap, nullptr);
-        
-        EncoderParameters encoderParameters;
-        encoderParameters.Count = 1;
-        encoderParameters.Parameter[0].Guid = EncoderQuality;
-        encoderParameters.Parameter[0].Type = EncoderParameterValueTypeLong;
-        encoderParameters.Parameter[0].NumberOfValues = 1;
-        ULONG quality = 50; 
-        encoderParameters.Parameter[0].Value = &quality;
 
         // Lưu ảnh vào Stream
-        if (bmp.Save(pStream, &jpegClsid, &encoderParameters) == Ok) {
+        if (bmp.Save(pStream, &pngClsid, nullptr) == Ok)
+        {
             // Đọc dữ liệu từ Stream ra buffer
             HGLOBAL hMem = nullptr;
             GetHGlobalFromStream(pStream, &hMem);
-            void* pData = GlobalLock(hMem);
+            void *pData = GlobalLock(hMem);
             size_t len = GlobalSize(hMem);
 
             // Encode Base64 trực tiếp
-            if (pData) {
-                resultBase64 = base64_encode(static_cast<unsigned char*>(pData), len);
+            if (pData)
+            {
+                resultBase64 = base64_encode(static_cast<unsigned char *>(pData), len);
                 GlobalUnlock(hMem);
             }
         }

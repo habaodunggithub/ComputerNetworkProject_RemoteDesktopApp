@@ -6,11 +6,12 @@
 import { state } from './core/state.js';
 import { $, $$ } from './core/utils.js';
 import { connectWs, disconnectWs, sendWsMessage, setConnectedState, loadDataForCurrentView, isWsConnected } from './core/websocket.js';
-import { downloadBase64File } from './core/utils.js';
+import { downloadBase64File, getCorrectCoordinates } from './core/utils.js';
 
 // Import Init Functions
 import { initAuth, performLogout } from './modules/auth.js';
 import { resetScreenUI, resetScreenUI as resetScreenLogic } from './modules/screen.js'; // Alias để tránh trùng tên nếu cần
+import { initMouseControl } from './modules/mouseControl.js';
 import { startFileUpload } from './modules/fileManager.js';
 import { renderScanList } from './modules/scanner.js';
 import { clearWebcamStreamUI } from './modules/webcam.js';
@@ -462,10 +463,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Mouse & Keyboard Control
-    let lastSent = 0;
-    const THROTTLE_MS = 12;
     const controlToggle = $('#toggle-control');
-    const streamImg = $('#stream-img');
+    const streamImg = $('#stream-video');
 
     streamImg.addEventListener('dragstart', (e) => {
         e.preventDefault();
@@ -489,39 +488,15 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function sendMouse(payload) {
-        if (isWsConnected() && !streamImg.classList.contains('hidden') && controlToggle && controlToggle.checked) {
-            payload.command = 'mouse_input';
-            sendWsMessage(payload);
-        }
+    // Khởi tạo module MouseControl
+    if (streamImg && controlToggle) {
+        initMouseControl({
+            videoElement: streamImg,       // Thẻ video/img hiển thị stream
+            controlToggle: controlToggle,  // Checkbox bật tắt quyền điều khiển
+            sendFunction: sendWsMessage,   // Hàm gửi WebSocket
+            checkConnFunction: isWsConnected // Hàm kiểm tra kết nối
+        });
     }
-
-    streamImg.addEventListener('mousemove', (e) => {
-        if (Date.now() - lastSent < THROTTLE_MS) return;
-        lastSent = Date.now();
-        const rect = streamImg.getBoundingClientRect();
-        sendMouse({ action: 'move', x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height });
-    });
-
-    streamImg.addEventListener('mousedown', (e) => {
-        sendMouse({ action: 'click', button: e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left'), state: 'down' });
-    });
-
-    streamImg.addEventListener('mouseup', (e) => {
-        sendMouse({ action: 'click', button: e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left'), state: 'up' });
-    });
-
-    streamImg.addEventListener('contextmenu', e => {
-        if (controlToggle && controlToggle.checked) e.preventDefault();
-    });
-
-    streamImg.addEventListener('wheel', (e) => {
-        if (controlToggle && controlToggle.checked) {
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? -120 : 120;
-            sendMouse({ action: 'scroll', delta: delta });
-        }
-    }, { passive: false });
 
     // 1. Tạo Input ẩn để hứng bộ gõ
     let hiddenInput = document.getElementById('remote-input-trap');

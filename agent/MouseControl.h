@@ -25,6 +25,12 @@ public:
         INPUT input = {0};
         input.type = INPUT_MOUSE;
 
+        input.mi.dx = 0;
+        input.mi.dy = 0;
+        input.mi.mouseData = 0;
+        input.mi.time = 0;
+        input.mi.dwExtraInfo = 0;
+
         DWORD flags = 0;
 
         if (button == "left")
@@ -53,6 +59,7 @@ public:
         INPUT input = {0};
         input.type = INPUT_MOUSE;
         input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+        input.mi.time = 0;
         input.mi.mouseData = static_cast<DWORD>(delta);
         SendInput(1, &input, sizeof(INPUT));
     }

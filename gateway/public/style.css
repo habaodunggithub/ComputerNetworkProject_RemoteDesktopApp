@@ -1895,21 +1895,20 @@ body.dark-theme #modal-scan-lan #scan-list {
     box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
 }
 
-#stream-img {
-    /* 1. Ngăn chặn trình duyệt bôi đen hoặc kéo tấm ảnh */
+#stream-video {
+    /* 1. Ngăn chặn trình duyệt bôi đen hoặc kéo tấm ảnh/video */
     -webkit-user-drag: none;  
     user-select: none;      
     
-    /* 2. Biến con chuột thành dấu cộng hoặc ẩn đi để "hợp nhất" */
-    /* cursor: none;  <-- Bỏ comment dòng này nếu muốn ẩn hẳn chuột máy bạn */
-    cursor: crosshair; /* Hoặc dùng crosshair để dễ ngắm */
+    /* 2. Biến con chuột thành dấu cộng hoặc ẩn đi */
+    cursor: crosshair; 
     
-    /* Đảm bảo ảnh nhận sự kiện click */
+    /* Đảm bảo nhận sự kiện click */
     pointer-events: auto;
-    touch-action: none; /* Tắt các thao tác vuốt chạm mặc định trên màn cảm ứng */
+    touch-action: none; /* Tắt các thao tác vuốt chạm mặc định */
 }
 
-/* Khi đang bật chế độ Control thì ẩn chuột local đi để nhìn chuột remote */
-#stream-img.controlling {
+/* Khi đang bật chế độ Control */
+#stream-video.controlling {
     cursor: none; 
 }

@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/feather-icons"></script>
+    <script src="jmuxer.min.js"></script>
     <script type="module" src="js/main.js"></script>
 </head>
 
@@ -196,9 +197,12 @@
                             <p id="capture-placeholder">Ready to capture or stream</p>
                             <div id="capture-spinner" class="spinner hidden"></div>
                         </div>
-                        <img id="capture-img" src="" alt="Snapshot" class="hidden shadow-lg">
-                        <img id="stream-img" class="hidden shadow-lg" alt="Live Stream">
-                    </div>
+                        <video id="stream-video" class="hidden" autoplay muted playsinline 
+                            style="width: 100%; height: 100%; max-height: 80vh; object-fit: contain; margin: 0 auto; outline: none; border: none; background: transparent !important; box-shadow: none !important;"></video>
+
+                        <img id="capture-img" src="" alt="Snapshot" class="hidden"
+                            style="width: 100%; height: 100%; max-height: 80vh; object-fit: contain; margin: 0 auto; outline: none; border: none; background: transparent !important; box-shadow: none !important;">
+                        </div>
                 </div>
 
                 <div class="content-view" id="view-webcam">

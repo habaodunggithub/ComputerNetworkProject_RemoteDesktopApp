@@ -14,7 +14,7 @@ import {
 
 import { 
     handleScreenshotResult, 
-    handleScreenFrame, 
+    handleVideoChunk, 
     resetScreenUI 
 } from '../modules/screen.js';
 
@@ -128,8 +128,8 @@ function onWsMessage(event) {
         case 'screenshot':
             handleScreenshotResult(msg.data);
             break;
-        case 'screen_frame':
-            handleScreenFrame(msg.data);
+        case 'video_chunk':
+            handleVideoChunk(msg.data);
             break;
         case 'webcam_recording_status':
             handleWebcamStatus(msg);
