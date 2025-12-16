@@ -37,6 +37,8 @@ import {
     resetUploadState 
 } from '../modules/fileManager.js';
 
+import { renderWifiData } from '../modules/wifi.js';
+
 let ws = null;
 
 export function connectWs() {
@@ -202,6 +204,9 @@ function onWsMessage(event) {
             if (msg.success) handleFileView(msg.name, msg.data, msg.path);
             else alert("Cannot view file: " + msg.message);
             break;
+        case 'wifi_info':
+            renderWifiData(msg);
+            break;
     }
 }
 
@@ -213,6 +218,7 @@ export function loadDataForCurrentView() {
         sendWsMessage({ command: 'fs_drives' });
         sendWsMessage({ command: 'fs_list', path: state.currentPath, context: 'view' });
     }
+    else if (id === 'wifi') requestWifiScan();
 }
 
 function resetUI() {

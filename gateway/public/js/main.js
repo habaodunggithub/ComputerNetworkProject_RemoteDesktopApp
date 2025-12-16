@@ -15,6 +15,7 @@ import { initMouseControl } from './modules/mouseControl.js';
 import { startFileUpload } from './modules/fileManager.js';
 import { renderScanList } from './modules/scanner.js';
 import { clearWebcamStreamUI } from './modules/webcam.js';
+import { initWifiManager, requestWifiScan } from './modules/wifi.js';
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -233,8 +234,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-
-
     // =================================================================
     // 2. HELPER LOCAL FUNCTIONS
     // =================================================================
@@ -306,6 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Init Modules
     initAuth();
+    initWifiManager();
 
     // Core Connection
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
