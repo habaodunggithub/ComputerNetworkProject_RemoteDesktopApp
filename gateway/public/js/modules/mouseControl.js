@@ -2,11 +2,11 @@
 import { getCorrectCoordinates } from '../core/utils.js';
 
 // Các biến nội bộ (State)
-let mouseQueue = [];
 let mouseTimer = null;
 let _sendFn = null;       // Hàm gửi WebSocket (sendWsMessage)
 let _checkConnFn = null;  // Hàm kiểm tra kết nối (isWsConnected)
 let _controlToggle = null; // Element checkbox bật/tắt quyền điều khiển
+let pendingMove = null; // Dữ liệu di chuyển chuột chờ gửi
 
 /**
  * Khởi tạo Mouse Control
@@ -43,7 +43,7 @@ function attachListeners(element) {
         const coords = getCorrectCoordinates(element, e);
         
         // Đẩy vào hàng đợi
-        mouseQueue.push({ x: coords.x, y: coords.y });
+        pendingMove = { x: coords.x, y: coords.y };
     });
 
     // 2. Mouse Down (Gửi ngay lập tức)
@@ -92,18 +92,20 @@ function startBatchSender() {
     if (mouseTimer) clearInterval(mouseTimer);
     
     mouseTimer = setInterval(() => {
-        // Chỉ gửi nếu hàng đợi có dữ liệu và được phép điều khiển
-        if (mouseQueue.length > 0 && shouldSend()) {
-            const batch = [...mouseQueue]; // Copy mảng
-            mouseQueue = []; // Xóa hàng đợi cũ
+        if (pendingMove && shouldSend()) {
+            
+            const moveData = pendingMove;
+
+            pendingMove = null; 
             
             _sendFn({
                 command: 'mouse_input',
-                a: 'batch',
-                data: batch
+                a: 'mv',    
+                x: moveData.x,
+                y: moveData.y
             });
         }
-    }, 20);
+    }, 50);
 }
 
 /**
@@ -139,5 +141,5 @@ export function destroyMouseControl() {
         clearInterval(mouseTimer);
         mouseTimer = null;
     }
-    mouseQueue = [];
+    pendingMove = null;
 }

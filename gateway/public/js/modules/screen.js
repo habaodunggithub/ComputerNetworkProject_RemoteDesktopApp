@@ -21,7 +21,7 @@ function initMuxer() {
         node: 'stream-video',
         mode: 'video',
         flushingTime: 0,
-        fps: 30,
+        fps: 20,
         debug: false
     });
 }

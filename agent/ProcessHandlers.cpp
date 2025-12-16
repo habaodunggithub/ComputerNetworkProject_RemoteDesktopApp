@@ -91,7 +91,7 @@ json ProcessHandlers::captureScreen(const json &)
 
 json ProcessHandlers::startScreenStream(const json &req)
 {
-    ScreenStream::start(req.value("fps", 30));
+    ScreenStream::start(req.value("fps", 20));
     return makeStatus(true, "Screen streaming started");
 }
 
@@ -181,35 +181,6 @@ json ProcessHandlers::handleMouseInput(const json &req)
 {
     // 1. Lấy action
     std::string action = req.contains("a") ? req["a"].get<std::string>() : req.value("action", "");
-    if (action == "batch")
-    {
-        if (req.contains("data") && req["data"].is_array())
-        {
-            auto &points = req["data"];
-            size_t count = points.size();
-
-            int totalDurationMs = 20;
-            int delayPerPoint = 0;
-
-            if (count > 1)
-            {
-                delayPerPoint = totalDurationMs / count;
-            }
-
-            for (const auto &point : points)
-            {
-                double x = point.value("x", 0.0);
-                double y = point.value("y", 0.0);
-                MouseControl::Move(x, y);
-
-                if (delayPerPoint > 0)
-                {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(delayPerPoint));
-                }
-            }
-        }
-        return {};
-    }
 
     // 2. Click (Hỗ trợ cả 'cl' và 'click')
     if (action == "cl" || action == "click")
