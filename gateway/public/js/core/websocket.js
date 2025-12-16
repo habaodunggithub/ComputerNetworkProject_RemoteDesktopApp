@@ -37,11 +37,8 @@ import {
     resetUploadState 
 } from '../modules/fileManager.js';
 
-<<<<<<< HEAD
 import { handleIncomingChat, resetChat } from '../modules/chat.js';
-=======
 import { renderWifiData } from '../modules/wifi.js';
->>>>>>> 02068f77e864c983d0dc5376b02d306313613b60
 
 let ws = null;
 
@@ -208,13 +205,10 @@ function onWsMessage(event) {
             if (msg.success) handleFileView(msg.name, msg.data, msg.path);
             else alert("Cannot view file: " + msg.message);
             break;
-<<<<<<< HEAD
         case 'chat_message':
             handleIncomingChat(msg.text);
-=======
         case 'wifi_info':
             renderWifiData(msg);
->>>>>>> 02068f77e864c983d0dc5376b02d306313613b60
             break;
     }
 }

