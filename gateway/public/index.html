@@ -124,6 +124,8 @@
                         </ul>
                     </div>
 
+                    
+
                 </div>
 
                 <!-- ========================= -->
@@ -480,12 +482,21 @@
                 <input type="text" id="ws-url-input" placeholder="ws://localhost:8080/ws">
                 <button class="btn btn-sm btn-danger hidden" id="btn-disconnect">Disconnect</button>
             </div>
-            <div class="theme-switcher">
-                <i data-feather="sun"></i> <label class="toggle-switch sm">
-                    <input type="checkbox" id="theme-toggle">
-                    <span class="slider"></span>
+                <div class="toolbar-actions"> 
+                    <button id="btn-toggle-chat" class="btn-footer-icon" title="Toggle Chat" onclick="toggleChat()">
+                        <i data-feather="message-circle"></i>
+                        <span id="chat-badge" class="hidden"></span> 
+                    </button>
+
+                <div class="divider-vertical"></div>
+
+                <div class="theme-switcher">
+                    <i data-feather="sun"></i> 
+                    <label class="toggle-switch sm">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider"></span>
                 </label>
-                <i data-feather="moon"></i> </div>
+                <i data-feather="moon"></i> 
             </div>
         </footer>
     </main>
@@ -660,6 +671,21 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="chat-box" class="hidden">
+        <div class="chat-header">
+            <span><i data-feather="message-square" style="width:14px; display:inline; margin-right:5px"></i> Support Chat</span>
+            <button class="chat-close-btn" onclick="stopChat()"><i data-feather="x" style="width:14px"></i></button>
+        </div>
+
+        <div id="chat-history">
+            </div>
+        
+        <div class="chat-footer">
+            <input type="text" id="chat-input" placeholder="Type a message...">
+            <button class="chat-send-btn" onclick="sendChatMessage()">Send</button>
         </div>
     </div>
 

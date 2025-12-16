@@ -37,6 +37,8 @@ import {
     resetUploadState 
 } from '../modules/fileManager.js';
 
+import { handleIncomingChat, resetChat } from '../modules/chat.js';
+
 let ws = null;
 
 export function connectWs() {
@@ -202,6 +204,9 @@ function onWsMessage(event) {
             if (msg.success) handleFileView(msg.name, msg.data, msg.path);
             else alert("Cannot view file: " + msg.message);
             break;
+        case 'chat_message':
+            handleIncomingChat(msg.text);
+            break;
     }
 }
 
@@ -224,5 +229,6 @@ function resetUI() {
     if (keylogToggle) keylogToggle.checked = false;
     resetAppState();
     clearWebcamStreamUI();
+    resetChat();
     resetScreenUI();
 }

@@ -15,6 +15,7 @@ import { initMouseControl } from './modules/mouseControl.js';
 import { startFileUpload } from './modules/fileManager.js';
 import { renderScanList } from './modules/scanner.js';
 import { clearWebcamStreamUI } from './modules/webcam.js';
+import { initChat, resetChat } from './modules/chat.js';
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -46,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resetScreenUI();
         clearWebcamStreamUI();
         state.webcamMode = 'idle';
+        resetChat();
     }
 
     // =================================================================
@@ -306,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Init Modules
     initAuth();
+    initChat(sendWsMessage);
 
     // Core Connection
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';

