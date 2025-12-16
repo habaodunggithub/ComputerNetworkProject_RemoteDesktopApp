@@ -103,7 +103,7 @@ function startBatchSender() {
                 data: batch
             });
         }
-    }, 5);
+    }, 20);
 }
 
 /**

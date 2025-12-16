@@ -183,18 +183,27 @@ json ProcessHandlers::handleMouseInput(const json &req)
     {
         if (req.contains("data") && req["data"].is_array())
         {
-            for (const auto &point : req["data"])
+            auto &points = req["data"];
+            size_t count = points.size();
+
+            int totalDurationMs = 20;
+            int delayPerPoint = 0;
+
+            if (count > 1)
+            {
+                delayPerPoint = totalDurationMs / count;
+            }
+
+            for (const auto &point : points)
             {
                 double x = point.value("x", 0.0);
                 double y = point.value("y", 0.0);
-
-                // Di chuyển tới từng điểm trong gói
                 MouseControl::Move(x, y);
 
-                // (Tùy chọn) Sleep cực ngắn để Windows kịp render con trỏ,
-                // giúp mắt nhìn thấy hành trình chuột mượt hơn.
-                // Nếu thấy lag thì comment dòng này lại.
-                // std::this_thread::sleep_for(std::chrono::microseconds(200));
+                if (delayPerPoint > 0)
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(delayPerPoint));
+                }
             }
         }
         return {};
