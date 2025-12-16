@@ -9,19 +9,20 @@ let _sendFn = null; // Biến lưu hàm gửi WebSocket
 export function initChat(sendFunction) {
     _sendFn = sendFunction;
 
-    // 1. Gán các hàm vào window để các nút HTML onclick="..." gọi được
-    window.toggleChat = toggleChat;
-    window.startChat = startChat;
-    window.stopChat = toggleChat;
+    // 1. Gán các hàm vào window để gọi từ HTML
+    window.toggleChat = toggleChat;      
+    window.minimizeChat = minimizeChat;  
+    window.killChatSession = killChatSession; 
     window.sendChatMessage = sendChatMessage;
 
-    // 2. Thêm sự kiện nhấn Enter để gửi
+    // 2. Thêm sự kiện nhấn Enter để gửi và Focus để tắt badge
     const chatInput = $('#chat-input');
     if (chatInput) {
         chatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendChatMessage();
         });
 
+        // Khi bấm vào ô nhập liệu thì tắt thông báo đỏ ngay
         chatInput.addEventListener('focus', hideBadge);
     }
 }
@@ -33,43 +34,67 @@ function hideBadge() {
     const badge = $('#chat-badge');
     const btn = $('#btn-toggle-chat');
     
-    // Thêm class hidden để ẩn chấm đỏ
     if (badge) badge.classList.add('hidden');
-    
-    // Tắt hiệu ứng rung/sáng của nút icon nếu có
     if (btn) btn.classList.remove('alert-pulse'); 
 }
 
-// Hàm Bật/Tắt Chat (Gắn vào nút Footer)
-function toggleChat() {
+// Hàm Nút Trừ (-): Chỉ thu nhỏ UI, KHÔNG gửi lệnh stop
+function minimizeChat() {
     const chatBox = $('#chat-box');
     const btn = $('#btn-toggle-chat');
+    
+    if (chatBox) chatBox.classList.add('hidden');
+    if (btn) btn.classList.remove('active');
+}
+
+// Hàm Nút X: Tắt hẳn session
+function killChatSession() {
+    minimizeChat(); 
+    
+    // Gửi lệnh chat_stop qua WebSocket để Agent tắt cửa sổ
+    if (_sendFn) {
+        _sendFn({ command: 'chat_stop' });
+        console.log("Sent chat_stop to agent");
+    }
+
+    // Xóa lịch sử chat để lần sau mở lên như mới
+    const history = $('#chat-history');
+    if (history) history.innerHTML = '';
+}
+
+// Hàm Bật/Tắt Chat (Nút tròn ở Footer)
+function toggleChat() {
+    const chatBox = $('#chat-box');
     
     if (chatBox.classList.contains('hidden')) {
         // ĐANG ĐÓNG -> MỞ
         startChat();
-        if (btn) btn.classList.add('active'); // Nút sáng lên
-        hideBadge();
     } else {
-        // ĐANG MỞ -> ĐÓNG
-        chatBox.classList.add('hidden');
-        if (btn) btn.classList.remove('active'); // Nút tắt sáng
+        // ĐANG MỞ -> THU NHỎ (Giống nút -)
+        minimizeChat();
     }
 }
 
+// Hàm logic mở chat
 function startChat() {
     const chatBox = $('#chat-box');
+    const btn = $('#btn-toggle-chat');
+
     if (chatBox) {
         chatBox.classList.remove('hidden');
+        // Focus vào ô nhập liệu sau khi mở
         setTimeout(() => $('#chat-input')?.focus(), 100);
     }
-        
     
+    if (btn) btn.classList.add('active'); // Sáng nút footer
+    
+    // Gửi lệnh mở/đảm bảo cửa sổ bên Agent hiển thị
     if (_sendFn) _sendFn({ command: 'chat_start' });
 
     hideBadge();
 }
 
+// Hàm reset toàn bộ (Dùng khi logout hoặc mất kết nối)
 export function resetChat() {
     const chatBox = $('#chat-box');
     if (chatBox) chatBox.classList.add('hidden');
@@ -91,6 +116,7 @@ function sendChatMessage() {
     if (!text) return;
 
     hideBadge();
+    
     // Hiển thị tin nhắn của mình (Me)
     appendLog("Me", text, true);
     
@@ -107,17 +133,15 @@ function sendChatMessage() {
 export function handleIncomingChat(text) {
     appendLog("Agent", text, false);
     
-    // Nếu chat đang ĐÓNG thì mới hiện chấm đỏ
+    // Nếu chat đang ĐÓNG (Minimize) thì mới hiện chấm đỏ
     const chatBox = $('#chat-box');
     if (chatBox && chatBox.classList.contains('hidden')) {
         const badge = $('#chat-badge');
         if (badge) badge.classList.remove('hidden'); // Hiện chấm đỏ
         
-        // (Tùy chọn) Hiệu ứng rung nút chat
+        // Hiệu ứng rung nút chat ở footer
         const btn = $('#btn-toggle-chat');
-        if (btn) {
-            btn.classList.add('alert-pulse'); 
-        }
+        if (btn) btn.classList.add('alert-pulse'); 
     }
 }
 

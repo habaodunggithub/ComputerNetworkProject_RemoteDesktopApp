@@ -712,7 +712,16 @@
     <div id="chat-box" class="hidden">
         <div class="chat-header">
             <span><i data-feather="message-square" style="width:14px; display:inline; margin-right:5px"></i> Support Chat</span>
-            <button class="chat-close-btn" onclick="stopChat()"><i data-feather="x" style="width:14px"></i></button>
+    
+            <div class="window-controls">
+                <button class="chat-control-btn minimize" onclick="minimizeChat()" title="Minimize">
+                    <i data-feather="minus" style="width:14px"></i>
+                </button>
+                
+                <button class="chat-control-btn close" onclick="killChatSession()" title="Close Session">
+                    <i data-feather="x" style="width:14px"></i>
+                </button>
+            </div>
         </div>
 
         <div id="chat-history">
