@@ -1927,7 +1927,6 @@ body.dark-theme #modal-scan-lan #scan-list {
     gap: 12px;
     position: relative;
     transition: all 0.3s ease;
-    overflow: hidden;
 }
 
 body.dark-theme .wifi-card {
@@ -2050,25 +2049,16 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 /* ======================================================================== */
 
 #wifi-grid {
-    /* 1. CƠ CHẾ FLEX: Tự động lấp đầy khoảng trống còn lại */
-    /* Không dùng max-height: calc(...) nữa vì nó không chính xác tuyệt đối */
-    flex: 1;       
-    min-height: 0; /* Quan trọng: Giúp scroll hoạt động bên trong flex item */
-    max-height: none; /* Reset giá trị cũ */
+    flex: 1;
+    min-height: 0;
 
-    /* 2. CẤU HÌNH CUỘN */
-    overflow-y: auto;      /* Chỉ cuộn vùng này */
+    overflow-y: auto;
     overflow-x: hidden;
 
-    /* 3. PADDING & SPACING */
-    /* Padding-left/right 32px để thẳng hàng với Header/Toolbar */
-    padding: 24px 32px; 
-    
-    /* [QUAN TRỌNG] Tăng padding đáy thật lớn để đảm bảo card cuối cùng 
-       luôn nằm hẳn lên trên mép dưới màn hình khi cuộn hết cỡ */
-    padding-bottom: 80px; 
+    scrollbar-gutter: stable; /* 🔥 QUAN TRỌNG */
 
-    /* 4. GRID LAYOUT */
+    padding: 24px 32px 80px;
+
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 20px;
@@ -2086,4 +2076,20 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     #wifi-grid {
         max-height: calc(100vh - 160px);
     }
+}
+
+#wifi-grid .empty-state, 
+#wifi-grid .list-loading {
+    grid-column: 1 / -1;      /* [QUAN TRỌNG] Chiếm toàn bộ chiều ngang của Grid */
+    width: 100%;
+    
+    /* Thiết lập lại Flexbox để căn giữa tuyệt đối theo chiều dọc và ngang */
+    display: flex;
+    flex-direction: column; 
+    justify-content: center;  /* Căn giữa dọc */
+    align-items: center;      /* Căn giữa ngang */
+    
+    height: 100%;             /* Chiếm toàn bộ chiều cao của Grid */
+    min-height: 200px;        /* Đảm bảo có chiều cao tối thiểu để căn giữa */
+    padding-top: 0;           /* Reset padding-top không cần thiết */
 }

@@ -91,6 +91,7 @@ export function renderWifiData(data) {
 
     // 4. Sắp xếp: Mạng đang kết nối lên đầu
     data.networks.sort((a, b) => (b.connected === true) - (a.connected === true));
+    const statusStrings = ["Open", "Enterprise", "Protected/No Permission", "Absent"];
 
     // 5. Render từng Card
     data.networks.forEach(net => {
@@ -99,9 +100,17 @@ export function renderWifiData(data) {
         card.className = `wifi-card ${isConnected ? 'is-current' : ''}`;
         
         // Xử lý hiển thị mật khẩu (nếu trống hoặc Absent)
-        const passDisplay = net.password && net.password !== 'Absent' 
-            ? net.password 
-            : '<span style="color:var(--text-muted); font-style:italic">No Password</span>';
+        let passValue = net.password || "No Password";
+        let passDisplay;
+        
+        // Kiểm tra nếu mật khẩu nằm trong danh sách chuỗi trạng thái (hoặc rỗng)
+        if (!net.password || statusStrings.includes(net.password)) {
+            // Sử dụng CSS giống như No Password: Màu xám, chữ nghiêng
+            passDisplay = `<span style="color:var(--text-muted); font-style:italic">${passValue}</span>`;
+        } else {
+            // Mật khẩu hợp lệ: Hiển thị bằng màu xanh #3b82f6 (màu default của .wifi-pass)
+            passDisplay = passValue;
+        }
         
         // Escape SSID để tránh XSS đơn giản
         const safeSsid = net.ssid.replace(/"/g, '&quot;');

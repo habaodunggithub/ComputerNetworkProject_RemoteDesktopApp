@@ -136,7 +136,7 @@ private:
         // (Kiểm tra lỏng hơn chút để bắt được nhiều trường hợp)
         if (out.find("Authentication") != std::string::npos &&
             out.find("Open") != std::string::npos)
-            return "Open";
+            return "Free Wifi";
 
         // Có bảo mật nhưng không lưu key (hoặc permission denied)
         if (out.find("Security key") != std::string::npos && 
