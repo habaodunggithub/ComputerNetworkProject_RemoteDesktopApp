@@ -15,7 +15,11 @@ import { initMouseControl } from './modules/mouseControl.js';
 import { startFileUpload } from './modules/fileManager.js';
 import { renderScanList } from './modules/scanner.js';
 import { clearWebcamStreamUI } from './modules/webcam.js';
+<<<<<<< HEAD
 import { initChat, resetChat } from './modules/chat.js';
+=======
+import { initWifiManager, requestWifiScan } from './modules/wifi.js';
+>>>>>>> 02068f77e864c983d0dc5376b02d306313613b60
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -235,8 +239,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-
-
     // =================================================================
     // 2. HELPER LOCAL FUNCTIONS
     // =================================================================
@@ -308,7 +310,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Init Modules
     initAuth();
+<<<<<<< HEAD
     initChat(sendWsMessage);
+=======
+    initWifiManager();
+>>>>>>> 02068f77e864c983d0dc5376b02d306313613b60
 
     // Core Connection
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
