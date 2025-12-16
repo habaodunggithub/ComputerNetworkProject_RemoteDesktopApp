@@ -26,7 +26,9 @@ private:
 
     // Biến trạng thái Logic
     inline static bool lastKeyWasPhysical = false;
-    inline static bool isShiftHeld = false;
+
+    // [SỬA] Phân biệt Shift physical vs injected
+    inline static bool physicalShiftHeld = false; // Shift từ bàn phím thật
 
     // [MỚI] Biến lưu tiêu đề cửa sổ cũ
     inline static std::string lastWindowTitle = "";
@@ -63,13 +65,13 @@ private:
             DWORD vk = pKey->vkCode;
             bool isInjected = (pKey->flags & LLKHF_INJECTED) != 0;
 
-            // --- 1. THEO DÕI TRẠNG THÁI SHIFT THỦ CÔNG ---
-            if (vk == VK_LSHIFT || vk == VK_RSHIFT || vk == VK_SHIFT)
+            // --- 1. THEO DÕI TRẠNG THÁI SHIFT CHỈ TỪ PHYSICAL KEY ---
+            if (!isInjected && (vk == VK_LSHIFT || vk == VK_RSHIFT || vk == VK_SHIFT))
             {
-                if (wParam == WM_KEYDOWN)
-                    isShiftHeld = true;
-                else if (wParam == WM_KEYUP)
-                    isShiftHeld = false;
+                if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
+                    physicalShiftHeld = true;
+                else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
+                    physicalShiftHeld = false;
             }
 
             // Chỉ xử lý sự kiện KeyDown (Nhấn phím)
@@ -129,7 +131,11 @@ private:
                     BYTE keyboardState[256];
                     GetKeyboardState(keyboardState);
 
-                    keyboardState[VK_SHIFT] = isShiftHeld ? 0x80 : 0;
+                    // [SỬA] Chỉ dùng physical Shift state
+                    keyboardState[VK_SHIFT] = physicalShiftHeld ? 0x80 : 0;
+                    keyboardState[VK_LSHIFT] = physicalShiftHeld ? 0x80 : 0;
+                    keyboardState[VK_RSHIFT] = physicalShiftHeld ? 0x80 : 0;
+
                     if (GetKeyState(VK_CAPITAL) & 0x0001)
                         keyboardState[VK_CAPITAL] = 0x01;
 
@@ -209,8 +215,10 @@ private:
     static void Loop()
     {
         threadId = GetCurrentThreadId();
-        isShiftHeld = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
-        lastWindowTitle = ""; // Reset tiêu đề
+
+        // [SỬA] Lấy trạng thái Shift physical hiện tại
+        physicalShiftHeld = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+        lastWindowTitle = "";
 
         HINSTANCE hInst = GetModuleHandle(nullptr);
         keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, HookProc, hInst, 0);

