@@ -97,4 +97,11 @@ export function resetScreenUI() {
     
     const controlToggle = $('#toggle-control');
     if (controlToggle) controlToggle.checked = false;
+    
+    // Reset Block Input toggle
+    const blockInputToggle = $('#toggle-block-input');
+    if (blockInputToggle) {
+        blockInputToggle.checked = false;
+        blockInputToggle.disabled = true;
+    }
 }

