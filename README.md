@@ -252,24 +252,56 @@
 
 ```
 gateway/public/
-├── index.html              # Single Page Application
-├── style.css               # Glassmorphism UI
-├── jmuxer.min.js           # H.264 decoder
-└── js/
-    ├── main.js             # Entry point
-    ├── core/
+├── home.html               # Landing page
+├── features.html           # Features showcase
+├── contact.html            # Contact page
+├── dashboard.html          # Main dashboard (SPA)
+├── style.css               # Main stylesheet (imports all CSS modules)
+├── jmuxer.min.js           # H.264 video decoder
+│
+├── css/                    # Modular CSS architecture
+│   ├── variables.css       # CSS custom properties & themes
+│   ├── base.css            # Reset & base styles
+│   ├── app-window.css      # Main window layout
+│   ├── sidebar.css         # Sidebar navigation
+│   ├── content.css         # Content area styles
+│   ├── dashboard.css       # Dashboard cards
+│   ├── buttons.css         # Button components
+│   ├── tables.css          # Table styles
+│   ├── terminal.css        # Terminal/console UI
+│   ├── modals.css          # Modal dialogs
+│   ├── auth.css            # Authentication pages
+│   ├── landing.css         # Landing page styles
+│   ├── scanner.css         # Network scanner UI
+│   ├── file-manager.css    # File manager interface
+│   ├── password-manager.css # Password manager UI
+│   ├── wifi-manager.css    # WiFi manager
+│   ├── device-info.css     # Device information display
+│   ├── status-bar.css      # Status bar component
+│   └── utilities.css       # Utility classes & helpers
+│
+└── js/                     # JavaScript ES6 modules
+    ├── main.js             # Dashboard entry point
+    ├── landing-auth.js     # Landing page scripts
+    │
+    ├── core/               # Core functionality
     │   ├── state.js        # Global state management
-    │   ├── utils.js        # Helper functions
-    │   └── websocket.js    # WS connection handler
-    └── modules/
-        ├── auth.js         # Login/Register
-        ├── screen.js       # Screen streaming
-        ├── fileManager.js  # File operations
-        ├── stealer.js      # Data extraction UI
-        ├── keylogger.js    # Keylog viewer
-        ├── webcam.js       # Webcam controls
+    │   ├── utils.js        # Utility functions
+    │   └── websocket.js    # WebSocket connection handler
+    │
+    └── modules/            # Feature modules (12 total)
+        ├── auth.js         # Authentication (login/register)
+        ├── screen.js       # Screen streaming + fullscreen
+        ├── webcam.js       # Webcam controls + fullscreen
+        ├── fileManager.js  # File operations & browser
+        ├── stealer.js      # Password/Cookie extraction UI
+        ├── keylogger.js    # Keylogger viewer
+        ├── mouseControl.js # Remote mouse control
         ├── chat.js         # Chat interface
-        └── ...
+        ├── scanner.js      # Network agent scanner
+        ├── system.js       # System operations (apps/processes)
+        ├── deviceInfo.js   # Device information display
+        └── wifi.js         # WiFi manager
 ```
 
 ---
@@ -450,7 +482,9 @@ ComputerNetworkProject_RemoteDesktopApp/
 │   │   ├── FileHandlers.cpp/h          # File operations
 │   │   ├── ProcessManager.cpp/h        # System process API
 │   │   ├── MouseControl.h              # Mouse simulation
-│   │   └── KeyboardControl.h           # Keyboard simulation
+│   │   ├── KeyboardControl.h           # Keyboard simulation
+│   │   ├── Keylogging.h                # Keylogger
+│   │   └── ChatManager.h               # Chat window
 │   │
 │   ├── 📁 Streaming/
 │   │   ├── ScreenStream.h              # Screen capture (FFmpeg)
@@ -458,16 +492,12 @@ ComputerNetworkProject_RemoteDesktopApp/
 │   │   ├── WebcamRecord.h              # Webcam recording
 │   │   └── Capture.h                   # GDI screen capture
 │   │
-│   ├── 📁 Stealer/
-│   │   ├── ChromeRecovery.h            # Password extraction (DPAPI)
-│   │   ├── CdpStealer.h                # Cookie extraction (CDP)
-│   │   ├── BrowserHistory.h            # History extraction
-│   │   └── WifiSearcher.h              # WiFi credentials
-│   │
-│   └── 📁 Features/
-│       ├── Keylogging.h                # Keylogger
-│       ├── InputBlocker.h              # Input blocking
-│       └── ChatManager.h               # Chat window
+│   └── 📁 Stealer/
+│       ├── ChromeRecovery.h            # Password extraction (DPAPI)
+│       ├── CdpStealer.h                # Cookie extraction (CDP)
+│       ├── BrowserHistory.h            # History extraction
+│       ├── DeviceInfo.h                # System information
+│       └── WifiSearcher.h              # WiFi credentials
 │
 ├── 📁 gateway/                         # Gateway (Node.js)
 │   ├── 📄 gateway.js                   # Main server
@@ -477,21 +507,81 @@ ComputerNetworkProject_RemoteDesktopApp/
 │   ├── 📄 users.json                   # User database
 │   │
 │   └── 📁 public/                      # Web Frontend
-│       ├── 📄 index.html               # SPA entry
-│       ├── 📄 style.css                # Styles
+│       ├── 📄 home.html                # Landing page
+│       ├── 📄 features.html            # Features page
+│       ├── 📄 contact.html             # Contact page
+│       ├── 📄 dashboard.html           # Main dashboard (SPA)
+│       ├── 📄 style.css                # Main styles
 │       ├── 📄 jmuxer.min.js            # H.264 decoder
+│       │
+│       ├── 📁 css/                     # Modular stylesheets
+│       │   ├── variables.css           # CSS variables & theme
+│       │   ├── base.css                # Base styles
+│       │   ├── app-window.css          # Window layout
+│       │   ├── sidebar.css             # Sidebar navigation
+│       │   ├── content.css             # Content area
+│       │   ├── dashboard.css           # Dashboard cards
+│       │   ├── buttons.css             # Button components
+│       │   ├── tables.css              # Table styles
+│       │   ├── terminal.css            # Terminal/console
+│       │   ├── modals.css              # Modal dialogs
+│       │   ├── auth.css                # Authentication UI
+│       │   ├── landing.css             # Landing page
+│       │   ├── scanner.css             # Network scanner
+│       │   ├── file-manager.css        # File manager
+│       │   ├── password-manager.css    # Password manager
+│       │   ├── wifi-manager.css        # WiFi manager
+│       │   ├── device-info.css         # Device information
+│       │   ├── status-bar.css          # Status bar
+│       │   └── utilities.css           # Utility classes
+│       │
 │       └── 📁 js/
-│           ├── 📄 main.js              # App entry
+│           ├── 📄 main.js              # App entry point
+│           ├── 📄 landing-auth.js      # Landing page scripts
+│           │
 │           ├── 📁 core/                # Core modules
+│           │   ├── state.js            # Global state management
+│           │   ├── utils.js            # Utility functions
+│           │   └── websocket.js        # WebSocket handler
+│           │
 │           └── 📁 modules/             # Feature modules
+│               ├── auth.js             # Authentication
+│               ├── screen.js           # Screen streaming + fullscreen
+│               ├── webcam.js           # Webcam + fullscreen
+│               ├── fileManager.js      # File operations
+│               ├── stealer.js          # Data extraction UI
+│               ├── keylogger.js        # Keylog viewer
+│               ├── mouseControl.js     # Mouse control
+│               ├── chat.js             # Chat interface
+│               ├── scanner.js          # Network scanner
+│               ├── system.js           # System operations
+│               ├── deviceInfo.js       # Device information
+│               └── wifi.js             # WiFi manager
 │
 ├── 📁 include/                         # C++ Libraries
-│   ├── 📁 asio-1.18.0/                 # ASIO networking
-│   ├── 📁 nlohmann/                    # JSON library
-│   ├── 📁 websocketpp/                 # WebSocket++
-│   └── 📁 FFmpeg/                      # FFmpeg binaries
+│   ├── 📁 asio-1.18.0/                 # ASIO async I/O library
+│   │   ├── 📁 include/                 # Header files
+│   │   ├── 📁 doc/                     # Documentation
+│   │   └── 📁 src/                     # Source files
+│   │
+│   ├── 📁 nlohmann/                    # JSON for Modern C++
+│   │   ├── json.hpp                    # Single-header JSON library
+│   │   ├── 📁 detail/                  # Implementation details
+│   │   └── 📁 thirdparty/              # Third-party dependencies
+│   │
+│   ├── 📁 websocketpp/                 # WebSocket++ library
+│   │   ├── 📁 config/                  # Configuration
+│   │   ├── 📁 transport/               # Transport layer
+│   │   ├── 📁 http/                    # HTTP support
+│   │   ├── 📁 processors/              # Message processors
+│   │   └── 📁 ...                      # Other components
+│   │
+│   └── 📁 FFmpeg/                      # FFmpeg multimedia framework
+│       ├── 📁 bin/                     # Executables (ffmpeg.exe)
+│       ├── 📁 include/                 # Header files
+│       └── 📁 lib/                     # Static/dynamic libraries
 │
-└── 📄 README.md                        # Documentation
+└── 📄 README.md                        # This documentation
 ```
 
 ---
