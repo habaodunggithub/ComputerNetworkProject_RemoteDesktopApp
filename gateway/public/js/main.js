@@ -10,11 +10,11 @@ import { downloadBase64File, getCorrectCoordinates } from './core/utils.js';
 
 // Import Init Functions
 import { initAuth, performLogout } from './modules/auth.js';
-import { resetScreenUI, resetScreenUI as resetScreenLogic } from './modules/screen.js'; // Alias để tránh trùng tên nếu cần
+import { resetScreenUI, resetScreenUI as resetScreenLogic, toggleScreenFullscreen } from './modules/screen.js'; // Alias để tránh trùng tên nếu cần
 import { initMouseControl } from './modules/mouseControl.js';
 import { startFileUpload } from './modules/fileManager.js';
 import { renderScanList } from './modules/scanner.js';
-import { clearWebcamStreamUI } from './modules/webcam.js';
+import { clearWebcamStreamUI, toggleWebcamFullscreen } from './modules/webcam.js';
 import { initChat, resetChat } from './modules/chat.js';
 import { initWifiManager, requestWifiScan } from './modules/wifi.js';
 import { closeHistoryModal, exportHistoryCSV } from './modules/stealer.js';
@@ -637,6 +637,12 @@ document.addEventListener('DOMContentLoaded', () => {
             resetScreenUI();
         };
     }
+    
+    if ($('#btn-fullscreen-screen')) {
+        $('#btn-fullscreen-screen').onclick = () => {
+            toggleScreenFullscreen();
+        };
+    }
 
     // Mouse & Keyboard Control
     const controlToggle = $('#toggle-control');
@@ -815,6 +821,13 @@ document.addEventListener('DOMContentLoaded', () => {
         $('#btn-stop-webcam-stream').classList.add('hidden');
         $('#btn-save-video').classList.add('hidden');
     };
+    
+    if ($('#btn-fullscreen-webcam')) {
+        $('#btn-fullscreen-webcam').onclick = () => {
+            toggleWebcamFullscreen();
+        };
+    }
+    
     $('#btn-save-video').onclick = () => {
         if (state.currentVideoBlob) {
             const a = document.createElement('a');

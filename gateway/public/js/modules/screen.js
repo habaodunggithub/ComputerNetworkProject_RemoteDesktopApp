@@ -97,4 +97,43 @@ export function resetScreenUI() {
     
     const controlToggle = $('#toggle-control');
     if (controlToggle) controlToggle.checked = false;
+    
+    // Exit fullscreen if active
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    }
 }
+
+// Toggle fullscreen for screen display
+export function toggleScreenFullscreen() {
+    const displayArea = $('#capture-display-area');
+    
+    if (!document.fullscreenElement) {
+        displayArea.requestFullscreen().catch(err => {
+            console.error('Error enabling fullscreen:', err);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+// Update fullscreen button icon
+function updateFullscreenIcon() {
+    const btn = $('#btn-fullscreen-screen');
+    if (btn) {
+        const icon = btn.querySelector('i');
+        if (icon) {
+            if (document.fullscreenElement) {
+                icon.setAttribute('data-feather', 'minimize');
+            } else {
+                icon.setAttribute('data-feather', 'maximize');
+            }
+            if (window.feather) feather.replace();
+        }
+    }
+}
+
+// Listen for fullscreen changes
+document.addEventListener('fullscreenchange', () => {
+    updateFullscreenIcon();
+});

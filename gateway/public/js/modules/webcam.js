@@ -101,4 +101,43 @@ export function clearWebcamStreamUI() {
     if (empty) empty.classList.remove('hidden');
     const display = $('#webcam-display-area');
     if (display) display.style.background = 'transparent';
+    
+    // Exit fullscreen if active
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    }
 }
+
+// Toggle fullscreen for webcam display
+export function toggleWebcamFullscreen() {
+    const displayArea = $('#webcam-display-area');
+    
+    if (!document.fullscreenElement) {
+        displayArea.requestFullscreen().catch(err => {
+            console.error('Error enabling fullscreen:', err);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+// Update fullscreen button icon
+function updateFullscreenIcon() {
+    const btn = $('#btn-fullscreen-webcam');
+    if (btn) {
+        const icon = btn.querySelector('i');
+        if (icon) {
+            if (document.fullscreenElement) {
+                icon.setAttribute('data-feather', 'minimize');
+            } else {
+                icon.setAttribute('data-feather', 'maximize');
+            }
+            if (window.feather) feather.replace();
+        }
+    }
+}
+
+// Listen for fullscreen changes
+document.addEventListener('fullscreenchange', () => {
+    updateFullscreenIcon();
+});
