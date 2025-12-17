@@ -12,9 +12,9 @@
 #pragma comment(lib, "Gdiplus.lib")
 #pragma comment(lib, "Shcore.lib") // Cho SetProcessDpiAwareness
 
-#include "AgentTcpServer.h"
-#include "GatewayDiscovery.h"
-#include "Utils.h" // Chứa getFFmpegPath, ExtractResource
+#include "Core/AgentTcpServer.h"
+#include "Core/GatewayDiscovery.h"
+#include "Core/Utils.h" // Chứa getFFmpegPath, ExtractResource
 
 using namespace Gdiplus;
 

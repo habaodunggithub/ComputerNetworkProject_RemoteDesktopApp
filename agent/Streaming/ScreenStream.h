@@ -9,8 +9,8 @@
 #include <algorithm>
 #include <nlohmann/json.hpp>
 
-#include "AgentTcpServer.h"
-#include "Utils.h"
+#include "../Core/AgentTcpServer.h"
+#include "../Core/Utils.h"
 
 class ScreenStream
 {

@@ -3,7 +3,7 @@
 #include <string>
 #include <thread>
 #include <vector>
-#include "AgentTcpServer.h"
+#include "../Core/AgentTcpServer.h"
 
 // ID các control
 #define IDC_CHAT_HISTORY 101

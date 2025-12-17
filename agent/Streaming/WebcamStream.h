@@ -9,24 +9,28 @@
 #include <algorithm>
 #include <nlohmann/json.hpp>
 
-#include "AgentTcpServer.h"
-#include "WebcamRecord.h"  
-#include "Utils.h"       
+#include "../Core/AgentTcpServer.h"
+#include "WebcamRecord.h"
+#include "../Core/Utils.h"
 
 using json = nlohmann::json;
 
-class WebcamStream {
+class WebcamStream
+{
 private:
     inline static std::atomic<bool> m_running = false;
     inline static std::thread m_thread;
     inline static std::string m_deviceName;
 
 public:
-    static void start(int fps) {
-        if (m_running.load()) return;
+    static void start(int fps)
+    {
+        if (m_running.load())
+            return;
         m_running.store(true);
 
-        m_thread = std::thread([fps]() {
+        m_thread = std::thread([fps]()
+                               {
             // 1. Tìm thiết bị 
             std::string list = WebcamRecord::listDevices();
             m_deviceName = WebcamRecord::findDefaultDevice(list);
@@ -84,12 +88,13 @@ public:
                 }
             }
             fclose(pipe);
-            m_running.store(false);
-        });
+            m_running.store(false); });
     }
 
-    static void stop() {
+    static void stop()
+    {
         m_running.store(false);
-        if (m_thread.joinable()) m_thread.join();
+        if (m_thread.joinable())
+            m_thread.join();
     }
 };

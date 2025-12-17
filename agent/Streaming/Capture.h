@@ -10,7 +10,7 @@
 #include <objbase.h>
 #include <objidl.h>
 #include <gdiplus.h>
-#include "Utils.h"
+#include "../Core/Utils.h"
 
 // Link thư viện tự động
 #pragma comment(lib, "Gdiplus.lib")

