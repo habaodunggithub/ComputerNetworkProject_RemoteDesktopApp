@@ -1,0 +1,292 @@
+/* ======================================================================== */
+/*  MODALS.CSS - MODAL DIALOGS & INPUT STYLES                           */
+/* ======================================================================== */
+
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 50; }
+.styled-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    width: 500px;
+    max-width: 90vw;
+    overflow: hidden;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+
+    z-index: 100;
+    animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Dark theme default */
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(148, 163, 184, 0.15);
+    box-shadow: 0 40px 100px rgba(2, 6, 23, 0.9);
+}
+
+body.light-theme .styled-modal {
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+}
+@keyframes modalPop { from { transform: translate(-50%, -40%) scale(0.9); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+
+/* Modal Scan nền kính đúng theme */
+#modal-scan-lan.styled-modal {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(22px) saturate(160%);
+}
+body.light-theme #modal-scan-lan.styled-modal {
+    background: var(--glass-bg);
+}
+
+/* Header */
+#modal-scan-lan .modal-header {
+    background: rgba(0,0,0,0.3);
+}
+body.light-theme #modal-scan-lan .modal-header {
+    background: rgba(255,255,255,0.04);
+}
+
+.modal.styled-modal > .modal-header {
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    background: rgba(15, 23, 42, 0.6);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+body.light-theme .modal.styled-modal > .modal-header {
+    background: rgba(255, 255, 255, 0.55);
+    border-bottom: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.modal-header { padding: 24px; display: flex; gap: 16px; border-bottom: 1px solid var(--glass-border); }
+.icon-box { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+.icon-box.blue {
+    background: linear-gradient(
+        135deg,
+        rgba(59,130,246,0.15),
+        rgba(59,130,246,0.05)
+    );
+    color: #2563eb; /* xanh đậm, không bị chìm */
+    border: 1px solid rgba(59,130,246,0.25);
+    box-shadow: 0 6px 16px rgba(59,130,246,0.25);
+}
+
+.header-text h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.header-text p { font-size: 13px; color: var(--text-muted); }
+
+.modal-body { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+#modal-scan-lan .modal-body {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+body.light-theme #modal-scan-lan .modal-body {
+    background: transparent;
+}
+
+.input-group label { font-size: 12px; font-weight: 600; margin-bottom: 8px; display: block; color: var(--text-muted); letter-spacing: 0.5px; }
+.input-wrapper { position: relative; }
+.input-wrapper i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; color: var(--text-muted); pointer-events: none; }
+
+.input-wrapper input {
+    width: 100%;
+    padding: 12px 12px 12px 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0, 0, 0, 0.3);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    color: var(--text-main);
+    font-family: var(--font-main); font-size: 14px;
+    transition: all 0.3s ease;
+}
+body.light-theme .input-wrapper input { background: rgba(255,255,255,0.5); border: 2px solid transparent; }
+
+.input-wrapper input:focus {
+    background: var(--color-bg);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+.modal-actions { padding: 16px 24px; display: flex; justify-content: flex-end; gap: 12px; background: rgba(255,255,255,0.04); border-top: 1px solid var(--glass-border); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+
+body.light-theme .modal-actions {
+  background: rgba(0,0,0,0.02);
+}
+
+/* ======================================================================== */
+/*  CUSTOM LIST IN MODAL (KILL LIST)                                    */
+/* ======================================================================== */
+
+.custom-list-container {
+    max-height: 300px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 4px;
+}
+
+.custom-list-container::-webkit-scrollbar { width: 6px; }
+.custom-list-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 4px; }
+.custom-list-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+
+.list-loading { text-align: center; color: var(--text-muted); padding: 20px; font-size: 13px; font-style: italic; }
+
+.list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+body.light-theme .list-item { background: rgba(255, 255, 255, 0.4); }
+
+.list-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(4px);
+    border-color: #ef4444;
+}
+body.light-theme .list-item:hover { background: rgba(255, 255, 255, 0.8); }
+
+.item-info { display: flex; flex-direction: column; gap: 2px; }
+.item-name { font-weight: 600; font-size: 14px; color: var(--text-main); }
+.item-sub { font-size: 11px; color: var(--text-muted); font-family: monospace; }
+
+.window-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.chat-control-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.chat-control-btn:hover {
+    background: rgba(255,255,255,0.4);
+    transform: scale(1.1);
+}
+
+.chat-control-btn.close:hover {
+    background: #ef4444;
+}
+
+/* ======================================================================== */
+/*  MODAL OVERLAY (NỀN TỐI)                                             */
+/* ======================================================================== */
+
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.9);
+    z-index: 10000;
+    display: flex; justify-content: center; align-items: center;
+    backdrop-filter: blur(8px);
+    opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+}
+
+.modal-overlay:not(.hidden) {
+    opacity: 1; pointer-events: auto;
+}
+
+
+/* ======================================================================== */
+/*  MODAL CONTAINER (HỘP THOẠI CHÍNH)                                   */
+/* ======================================================================== */
+
+.modal-container {
+    background: #1a1a1d;
+    width: 900px; max-width: 95%; height: 85vh; /* Chiều cao cố định */
+    border-radius: 12px;
+    border: 1px solid #333;
+    box-shadow: 0 0 30px rgba(0, 255, 136, 0.15);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    transform: translateY(20px); transition: transform 0.3s ease;
+}
+
+.modal-overlay:not(.hidden) .modal-container {
+    transform: translateY(0);
+}
+
+
+/* ======================================================================== */
+/*  HEADER                                                              */
+/* ======================================================================== */
+
+#password-modal .modal-header {
+  padding: 15px 20px;
+  background: #202025;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.header-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 18px; font-weight: bold; color: #00ff88;
+}
+
+.close-btn {
+    background: none; border: none; color: #666; cursor: pointer;
+    transition: color 0.2s; padding: 5px;
+}
+.close-btn:hover { color: #fff; }
+
+
+/* ======================================================================== */
+/*  BODY (VÙNG CHỨA BẢNG)                                               */
+/* ======================================================================== */
+
+#password-modal .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  background: #161618;
+  position: relative;
+  padding: 0;
+}
+
+
+/* ======================================================================== */
+/*  FOOTER & BUTTONS                                                    */
+/* ======================================================================== */
+
+#password-modal .modal-footer {
+  padding: 15px 20px;
+  background: #202025;
+  border-top: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.footer-info { display: flex; align-items: center; gap: 8px; color: #888; font-size: 13px; }

@@ -1,0 +1,338 @@
+/* ======================================================================== */
+/*  DASHBOARD.CSS - DASHBOARD CARDS & DATA EXTRACTION                    */
+/* ======================================================================== */
+
+.dashboard-grid { padding: 24px 32px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; }
+
+/* ======================================================================== */
+/*  DATA EXTRACTION CARDS                                                   */
+/* ======================================================================== */
+
+.extraction-grid {
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 700px;
+}
+
+.extraction-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 24px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.extraction-card:hover {
+    transform: translateX(8px);
+    border-color: var(--accent);
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+}
+
+.extraction-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.extraction-icon svg {
+    width: 26px;
+    height: 26px;
+    color: white;
+}
+
+.extraction-info h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+}
+
+.extraction-info p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* ======================================================================== */
+/*  BROWSER HISTORY PANEL                                                   */
+/* ======================================================================== */
+
+.history-panel {
+    background: #1a1a1d;
+    width: 1000px;
+    max-width: 95vw;
+    max-height: 85vh;
+    border-radius: 16px;
+    border: 1px solid #333;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.history-header {
+    padding: 16px 24px;
+    background: #202025;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 17px;
+    font-weight: 600;
+    color: #8b5cf6;
+}
+
+.history-title svg {
+    width: 20px;
+    height: 20px;
+}
+
+.history-badge {
+    font-size: 12px;
+    font-weight: 500;
+    color: #888;
+    background: rgba(255,255,255,0.1);
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.history-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-export {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-export:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.btn-export svg {
+    width: 16px;
+    height: 16px;
+}
+
+.btn-close-history {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: 8px;
+    color: #888;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-close-history:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.history-body {
+    overflow: auto;
+    flex: 1;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.history-table thead {
+    position: sticky;
+    top: 0;
+    background: #1a1a1d;
+    z-index: 1;
+}
+
+.history-table th {
+    padding: 14px 16px;
+    text-align: left;
+    color: #666;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #333;
+}
+
+.history-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #2a2a2d;
+    font-size: 13px;
+}
+
+.history-table tbody tr:hover {
+    background: rgba(139, 92, 246, 0.05);
+}
+
+.history-table .url-link {
+    color: #60a5fa;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.history-table .url-link:hover {
+    color: #93c5fd;
+    text-decoration: underline;
+}
+
+/* Browser Selector Grid */
+.browser-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.browser-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.browser-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.browser-card .browser-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.browser-card .browser-icon svg {
+    width: 24px;
+    height: 24px;
+    color: white;
+}
+
+.browser-card .browser-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.browser-card.auto-detect {
+    grid-column: span 3;
+    flex-direction: row;
+    gap: 16px;
+    padding: 16px 24px;
+}
+
+.browser-card.auto-detect .browser-icon {
+    margin-bottom: 0;
+}
+
+.browser-card.auto-detect .browser-info {
+    text-align: left;
+}
+
+.browser-card.auto-detect .browser-name {
+    font-size: 15px;
+}
+
+.browser-card.auto-detect .browser-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.dash-card {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--glass-border);
+    padding: 24px;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: relative;
+    overflow: hidden;
+}
+
+.dash-card {
+    background: rgba(30, 41, 59, 0.4);
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+body.light-theme .dash-card {
+    background: rgba(255, 255, 255, 0.6);
+    border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+.dash-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    background: rgba(30, 41, 59, 0.8);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+    border-color: #3b82f6;
+}
+body.light-theme .dash-card:hover {
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+    border-color: #3b82f6;
+}
+
+.card-icon {
+    width: 56px; height: 56px; border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px; color: white;
+    box-shadow: 0 8px 20px -5px rgba(0,0,0,0.3);
+    transition: transform 0.3s ease;
+}
+
+.dash-card:hover .card-icon { transform: scale(1.1) rotate(5deg); }
+
+.card-icon.blue { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+.card-icon.green { background: linear-gradient(135deg, #34d399, #10b981); }
+.card-icon.purple { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
+.card-icon.red { background: linear-gradient(135deg, #f87171, #ef4444); }
+
+.dash-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: var(--text-main); }
+.dash-card p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }

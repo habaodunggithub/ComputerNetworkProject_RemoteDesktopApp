@@ -1,0 +1,18 @@
+/* ======================================================================== */
+/*  CONTENT.CSS - MAIN CONTENT (VIEWS / HEADERS / TOOLBARS)              */
+/* ======================================================================== */
+
+#main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;}
+.content-view { display: none; flex-direction: column; height: 100%; padding: 0; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+.content-view.active { display: flex; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.content-header { padding: 32px; padding-bottom: 10px;}
+.content-header h1 { font-size: 32px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px; }
+.subtitle { color: var(--text-muted); font-size: 15px; }
+
+.content-toolbar {
+    padding: 16px 32px; border-bottom: 1px solid var(--glass-border);
+    display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02);
+}
+.content-toolbar h2 { font-size: 18px; font-weight: 600; display: flex; gap: 10px; align-items: center; }

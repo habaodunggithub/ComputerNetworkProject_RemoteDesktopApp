@@ -1,0 +1,258 @@
+/* ======================================================================== */
+/*  SIDEBAR.CSS - NAVIGATION SIDEBAR                                       */
+/* ======================================================================== */
+
+#sidebar {
+    width: var(--sidebar-width);
+    background: rgba(255, 255, 255, 0.03);
+    border-right: 1px solid var(--glass-border);
+    padding: 24px 16px;
+    padding-bottom: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+
+    height: 100%;
+    min-height: 0;
+
+    overflow: hidden;
+    flex-shrink: 0;
+
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Collapse giữ nguyên */
+#sidebar.collapsed {
+    width: 0;
+    min-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    overflow: hidden;
+    border-right: none;
+    opacity: 0;
+}
+
+/* ======================================================================== */
+/*  PHẦN TRÊN – MENU SCROLL                                                 */
+/* ======================================================================== */
+
+.sidebar-main {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+    scrollbar-width: none;
+}
+
+.sidebar-main::-webkit-scrollbar {
+    width: 0;
+    background: transparent;
+}
+
+/* ======================================================================== */
+/*  SIDEBAR FOOTER – COMPACT & QUIET                                        */
+/* ======================================================================== */
+
+.sidebar-footer {
+    flex-shrink: 0;
+    margin-top: auto;            /* sát đáy */
+    padding: 8px 12px 6px;       /* gọn */
+
+    border-top: none;            /* ❌ bỏ viền */
+    background: transparent;     /* ❌ bỏ nền */
+
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* ======================================================================== */
+/*  SIDEBAR FOOTER ACTIONS – SYSTEM & DANGER (SAME BEHAVIOR)               */
+/* ======================================================================== */
+
+/* ===== BASE (Power + Logout giống nhau hoàn toàn) ===== */
+.sidebar-footer .nav-item.action-system,
+.sidebar-footer .nav-item.action-danger {
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 8px 14px;
+    border-radius: 14px;
+
+    transition:
+        transform .25s ease,
+        background .25s ease,
+        border-color .25s ease,
+        box-shadow .25s ease,
+        color .25s ease;
+}
+
+/* Hover – DỊCH CHUYỂN GIỐNG NHAU */
+.sidebar-footer .nav-item.action-system:hover,
+.sidebar-footer .nav-item.action-danger:hover {
+    transform: translateX(5px); /* 🔥 GIỐNG LOGOUT CŨ */
+}
+
+/* Active */
+.sidebar-footer .nav-item.action-system:active,
+.sidebar-footer .nav-item.action-danger:active {
+    transform: scale(0.96);
+}
+
+/* ======================================================================== */
+/*  SYSTEM (POWER – BLUE)                                                  */
+/* ======================================================================== */
+
+.sidebar-footer .nav-item.action-system {
+    color: #60a5fa;
+}
+.sidebar-footer .nav-item.action-system svg {
+    stroke: #60a5fa;
+}
+
+.sidebar-footer .nav-item.action-system:hover {
+    background: rgba(59,130,246,0.18);
+    border-color: rgba(96,165,250,0.32);
+    box-shadow: 0 4px 12px rgba(59,130,246,0.18);
+}
+
+/* Light theme */
+body.light-theme .sidebar-footer .nav-item.action-system {
+    color: #3b82f6;
+}
+body.light-theme .sidebar-footer .nav-item.action-system:hover {
+    background: rgba(59,130,246,0.12);
+    border-color: rgba(59,130,246,0.28);
+}
+
+/* ======================================================================== */
+/*  DANGER (LOGOUT – RED)                                                  */
+/* ======================================================================== */
+
+.sidebar-footer .nav-item.action-danger {
+    color: #f87171;
+}
+.sidebar-footer .nav-item.action-danger svg {
+    stroke: #f87171;
+}
+
+.sidebar-footer .nav-item.action-danger:hover {
+    background: rgba(239,68,68,0.18);
+    border-color: rgba(248,113,113,0.32);
+    box-shadow: 0 4px 12px rgba(239,68,68,0.18);
+}
+
+/* Light theme */
+body.light-theme .sidebar-footer .nav-item.action-danger {
+    color: #ef4444;
+}
+body.light-theme .sidebar-footer .nav-item.action-danger:hover {
+    background: rgba(239,68,68,0.12);
+    border-color: rgba(239,68,68,0.28);
+}
+
+/* ======================================================================== */
+/*  NAV GROUP / LIST / ITEM                                                 */
+/* ======================================================================== */
+
+.nav-group {
+    margin-bottom: 24px;
+}
+
+.nav-label { 
+    font-size: 11px; 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+    color: var(--text-muted); 
+    padding: 0 16px; 
+    margin-bottom: 8px; 
+    display: block; 
+}
+
+.nav-list { 
+    list-style: none; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4px;
+}
+
+.nav-item {
+    padding: 12px 16px;
+    border-radius: 16px;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.nav-item svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+    flex-shrink: 0;
+    transition: 0.3s;
+}
+
+/* Hover */
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+    transform: translateX(5px);
+}
+body.light-theme .nav-item:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+/* Active */
+.nav-item.active {
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.15), transparent);
+    color: #3b82f6;
+    border-left: 4px solid #3b82f6;
+    border-radius: 4px 16px 16px 4px;
+}
+
+.nav-item.active svg {
+    stroke: #3b82f6;
+    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
+}
+
+/* ======================================================================== */
+/*  SIDEBAR LOGOUT BUTTON                                               */
+/* ======================================================================== */
+
+.logout-item {
+    color: #f87171 !important;
+    transition: all 0.3s ease;
+}
+
+.logout-item:hover {
+    background: rgba(239, 68, 68, 0.15) !important;
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.logout-item i {
+    color: #f87171 !important;
+}
+
+/* Chỉnh lại icon logout khi hover để nó động đậy chút cho đẹp */
+.logout-item:hover i {
+    transform: translateX(-2px);
+}
+
+/* Light theme logout */
+body.light-theme .logout-item {
+    color: #ef4444 !important;
+}
+
+body.light-theme .logout-item i {
+    color: #ef4444 !important;
+}

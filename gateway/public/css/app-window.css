@@ -1,0 +1,46 @@
+/* ======================================================================== */
+/*  APP-WINDOW.CSS - MAIN APP WINDOW & TITLE BAR                         */
+/* ======================================================================== */
+
+#app-window {
+    width: 95vw; max-width: 1400px; height: 90vh;
+    background: var(--glass-bg); 
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border); 
+    border-radius: var(--radius-lg);
+    box-shadow: var(--glass-shadow), 0 0 80px rgba(59, 130, 246, 0.1);
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+    transition: all 0.3s ease;
+}
+
+body.light-theme #app-window { 
+    border-color: rgba(255,255,255,0.3); 
+    box-shadow: var(--glass-shadow);
+}
+
+/* ======================================================================== */
+/*  TITLE BAR                                                           */
+/* ======================================================================== */
+
+.title-bar {
+    height: 50px; display: flex; align-items: center; padding: 0 24px;
+    border-bottom: 1px solid var(--glass-border); background: rgba(255,255,255,0.05);
+}
+.traffic-lights { display: flex; gap: 8px; margin-right: 20px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; transition: 0.2s; position: relative;}
+.dot:hover { filter: brightness(0.8); transform: scale(1.1); }
+.dot.red { background: #ef4444; } .dot.yellow { background: #f59e0b; } .dot.green { background: #10b981; }
+
+.title-drag-area { display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-weight: 600; font-size: 14px; }
+.app-icon { width: 16px; height: 16px; }
+
+.btn-icon-only {
+    background: transparent; border: none; color: var(--text-muted);
+    cursor: pointer; margin-right: 15px; display: flex; align-items: center;
+    transition: 0.2s; padding: 4px; border-radius: 4px;
+}
+.btn-icon-only:hover { background: rgba(255,255,255,0.1); color: var(--text-main); }
+
+.app-body { display: flex; flex: 1; overflow: hidden; min-height: 0;}

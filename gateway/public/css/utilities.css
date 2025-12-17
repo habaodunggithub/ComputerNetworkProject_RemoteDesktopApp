@@ -1,0 +1,39 @@
+/* ======================================================================== */
+/*  UTILITIES.CSS - SCROLLBAR & HELPER CLASSES                          */
+/* ======================================================================== */
+
+/* ======================================================================== */
+/* SCROLLBAR CUSTOMIZATION & WIFI GRID FIX                             */
+/* ======================================================================== */
+
+/* 1. Tùy chỉnh thanh cuộn toàn cục (cho Chrome/Edge/Safari) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent; /* Nền trong suốt */
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.5); /* Màu xám kính mờ */
+    border-radius: 4px;
+    border: 2px solid transparent; /* Tạo khoảng hở giúp thanh cuộn đẹp hơn */
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scan-primary); /* Màu xanh khi di chuột vào */
+}
+
+/* Dark mode default: Thanh cuộn sáng hơn chút để dễ nhìn */
+::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+body.light-theme ::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+}
+body.light-theme ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scan-primary);
+}

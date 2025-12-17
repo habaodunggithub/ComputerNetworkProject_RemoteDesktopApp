@@ -1,0 +1,10 @@
+/* ======================================================================== */
+/*  TABLES.CSS - TABLE STYLES                                            */
+/* ======================================================================== */
+
+.table-container { flex: 1; overflow: auto; padding: 0; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 14px 32px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); background: rgba(0,0,0,0.02); position: sticky; top: 0; backdrop-filter: blur(5px); }
+td { padding: 14px 32px; border-bottom: 1px solid var(--glass-border); font-size: 14px; }
+tr:hover { background: rgba(0,0,0,0.02); }
+.text-right { text-align: right; }

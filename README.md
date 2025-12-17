@@ -86,7 +86,7 @@
 │  ─────────────────────  │  ────────────────────             │
 │  • Click (L/R/M)        │  • Block keyboard                 │
 │  • Scroll               │  • Block mouse                    │
-│  • Drag & Drop          │  • Bypass SendInput()             │
+│  • Drag & Drop          │  • Bypass SendInput()             |
 └─────────────────────────┴───────────────────────────────────┘
 ```
 
@@ -127,7 +127,7 @@
 │  ────────────────  │  ────────────────   │
 │  • MJPEG stream    │  • MP4 recording    │
 │  • 640x480         │  • Auto download    │
-│  • Configurable    │  • Timestamp        │
+│  • Configurable    │  • Timestamp        |
 └──────────────────────────────────────────┘
 ```
 

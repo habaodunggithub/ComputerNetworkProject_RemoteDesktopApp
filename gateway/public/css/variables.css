@@ -1,0 +1,48 @@
+/* ======================================================================== */
+/*  VARIABLES.CSS - ROOT VARIABLES & THEME                                */
+/* ======================================================================== */
+
+:root {
+    --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    --hue-blue: 210;
+    --hue-red: 0;
+    --hue-green: 145;
+    --hue-purple: 260;
+
+    /* Dark theme as default - matching landing pages */
+    --color-bg: #0f172a;
+    --glass-bg: rgba(15, 23, 42, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+
+    --sidebar-width: 240px;
+    --radius-lg: 24px;
+    --radius-md: 16px;
+    --radius-sm: 8px;
+
+    --scan-primary: #3b82f6;
+    --scan-primary-soft: rgba(59, 130, 246, 0.15);
+    --scan-glow: rgba(59, 130, 246, 0.45);
+    
+    /* Accent colors */
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --accent-cyan: #06b6d4;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+}
+
+/* Light theme override */
+body.light-theme,
+html.light-theme body {
+    --color-bg: #f3f4f6;
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+}

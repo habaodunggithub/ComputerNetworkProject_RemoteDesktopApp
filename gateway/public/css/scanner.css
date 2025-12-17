@@ -1,0 +1,288 @@
+/* ======================================================================== */
+/*  SCANNER.CSS - RADAR BUTTON & DEVICE DISCOVERY                       */
+/* ======================================================================== */
+
+/* ======================================================================== */
+/*  RADAR SCAN BUTTON (THEME-CONSISTENT + FIX FOCUS SQUARE)             */
+/* ======================================================================== */
+
+#btn-scan-lan{
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    position: relative;
+    overflow: visible;
+
+    background: var(--scan-primary-soft, rgba(59,130,246,0.12));
+    border: 1px solid rgba(59,130,246,0.35);
+    color: var(--scan-primary, #3b82f6);
+
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+/* Icon bên trong */
+#btn-scan-lan i,
+#btn-scan-lan svg{
+    width: 18px;
+    height: 18px;
+    transition: transform .3s ease;
+}
+
+/* Hover + Active scan */
+#btn-scan-lan:hover,
+#btn-scan-lan.active-scan{
+    background: rgba(59,130,246,0.18);
+    border-color: var(--scan-primary, #3b82f6);
+    box-shadow:
+        0 0 0 4px rgba(59,130,246,0.12),
+        0 0 22px var(--scan-glow, rgba(59,130,246,0.35));
+    transform: translateY(-1px);
+}
+
+/* Active (click) */
+#btn-scan-lan:active{
+    transform: scale(0.95);
+}
+
+/* Focus ring đẹp, không bị "vuông" */
+#btn-scan-lan:focus{
+    outline: none;
+}
+#btn-scan-lan:focus-visible{
+    box-shadow:
+        0 0 0 4px rgba(59,130,246,0.18),
+        0 0 22px var(--scan-glow, rgba(59,130,246,0.35));
+}
+
+#btn-scan-lan:hover i,
+#btn-scan-lan.active-scan i,
+#btn-scan-lan:hover svg,
+#btn-scan-lan.active-scan svg{
+    transform: scale(1.1);
+}
+
+/* Radar pulse (dùng transform scale để không lệch tâm/không méo) */
+#btn-scan-lan::before,
+#btn-scan-lan::after{
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid rgba(59,130,246,0.85);
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+}
+
+#btn-scan-lan:hover::before,
+#btn-scan-lan.active-scan::before{
+    animation: radar-ping 1.5s ease-out infinite;
+}
+#btn-scan-lan:hover::after,
+#btn-scan-lan.active-scan::after{
+    animation: radar-ping 1.5s ease-out infinite .4s;
+}
+
+@keyframes radar-ping{
+    0%   { transform: translate(-50%, -50%) scale(1);   opacity: .65; }
+    100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+}
+
+/* Dark mode default */
+#btn-scan-lan{
+    background: rgba(59,130,246,0.16);
+    border-color: rgba(59,130,246,0.35);
+    color: #60a5fa;
+}
+
+body.light-theme #btn-scan-lan {
+    background: rgba(59,130,246,0.1);
+    border-color: rgba(59,130,246,0.25);
+    color: #3b82f6;
+}
+
+
+/* ======================================================================== */
+/*  DISCOVERY SCAN PANEL                                                */
+/* ======================================================================== */
+
+
+/* Chuyển container sang dạng lưới */
+#scan-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* Tự động chia cột */
+    gap: 16px;
+    padding: 8px;
+}
+
+#modal-scan-lan #scan-list {
+    background: rgba(2, 6, 23, 0.85);
+    border-radius: 12px;
+}
+
+body.light-theme #modal-scan-lan #scan-list {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+
+/* ======================================================================== */
+/*  DEVICE CARD                                                         */
+/* ======================================================================== */
+
+.device-card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px; /* Bo góc tròn hơn chút */
+    padding: 24px 16px; /* Tăng padding trên dưới */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px; /* Tăng khoảng cách giữa icon và text */
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transform: translateZ(0);
+    transition:
+        transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1),
+        box-shadow 0.35s ease,
+        border-color 0.3s ease;
+}
+
+#modal-scan-lan .device-card {
+    background: rgba(17, 24, 39, 0.75);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+body.light-theme #modal-scan-lan .device-card {
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.device-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    z-index: 0;
+}
+
+body.light-theme .device-card::before {
+    opacity: 0;
+}
+
+.device-card:hover {
+    transform: translateY(-8px) scale(1.02);
+
+    border-color: var(--scan-primary);
+
+    box-shadow:
+        0 20px 45px rgba(59,130,246,0.35),
+        0 0 0 1px rgba(59,130,246,0.25),
+        0 0 35px rgba(59,130,246,0.45);
+}
+
+.device-card:hover::before {
+    opacity: 1;
+    background: linear-gradient(
+        135deg,
+        rgba(6,182,212,0.25),
+        rgba(59,130,246,0.15)
+    );
+}
+
+/* Agent được chọn */
+.device-card.selected-agent {
+    z-index: 10;
+    transform: translateY(-6px) scale(1.04);
+
+    box-shadow:
+        0 0 0 2px rgba(59,130,246,0.35),
+        0 0 45px rgba(59,130,246,0.55),
+        0 20px 40px rgba(59,130,246,0.35);
+}
+
+.device-card.selected-agent::before {
+    opacity: 1;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+}
+
+#scan-list.has-selected .device-card:not(.selected-agent) {
+    opacity: 0.45;
+    transform: scale(0.96);
+    filter: saturate(0.6) blur(0.3px);
+    transition: all 0.3s ease;
+}
+
+#scan-list.has-selected .device-card:not(.selected-agent):hover {
+    opacity: 0.75;
+    filter: saturate(1);
+    transform: scale(0.98);
+}
+
+/* Thông tin Text */
+.device-info {
+    text-align: center;
+    z-index: 1;
+    display: flex; flex-direction: column; gap: 6px; width: 100%;
+}
+.device-hostname {
+    font-weight: 700; font-size: 15px; color: var(--text-main);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    padding: 0 8px;
+}
+.device-ip {
+    background: rgba(59,130,246,0.12);
+    border: 1px solid rgba(59,130,246,0.25);
+    color: var(--scan-primary);
+    border-radius: 999px;
+    padding: 4px 10px;
+}
+/* Khi hover thẻ thì IP sáng lên */
+.device-card:hover .device-ip {
+    background: var(--scan-primary-soft);
+    color: var(--scan-primary);
+    border-color: rgba(59,130,246,0.35);
+}
+
+/* Dấu chấm trạng thái: Góc TRÁI trên */
+.device-status {
+    position: absolute; top: 16px; left: 16px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background-color: #10b981;
+    box-shadow: 0 0 10px #10b981;
+    z-index: 2;
+}
+
+/* ======================================================================== */
+/*  SCAN LAN - UI TWEAKS (REMOVE CARD ICONS + SYNC BACKGROUND)              */
+/* ======================================================================== */
+
+/* 2) Đồng bộ nền phần list scan với nền kính của modal */
+#modal-scan-lan .modal-body {
+    background: transparent; /* để nền glass của modal xuyên qua */
+}
+
+#modal-scan-lan #scan-list {
+    border: 1px dashed rgba(148, 163, 184, 0.18);
+    border-radius: var(--radius-md);
+    padding: 18px;
+}
+
+/* Light theme */
+body.light-theme #modal-scan-lan #scan-list {
+    border-color: var(--glass-border);
+}

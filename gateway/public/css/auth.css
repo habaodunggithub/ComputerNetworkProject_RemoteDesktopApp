@@ -1,0 +1,210 @@
+/* ======================================================================== */
+/*  AUTH.CSS - AUTHENTICATION SCREEN                                    */
+/* ======================================================================== */
+
+#auth-overlay {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 58, 95, 0.95) 100%);
+    backdrop-filter: blur(20px);
+    z-index: 9999;
+    display: flex; justify-content: center; align-items: center;
+
+    opacity: 1;
+    transform: scale(1);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Background gradient effects for auth */
+#auth-overlay::before {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 10%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+#auth-overlay::after {
+    content: '';
+    position: absolute;
+    bottom: 20%;
+    right: 10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+#auth-overlay.hidden { display: none; }
+
+#auth-overlay.auth-exit {
+    opacity: 0;               
+    transform: scale(1.15);     
+    backdrop-filter: blur(0px);  
+    pointer-events: none;       
+}
+
+.auth-card {
+    width: 400px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 40px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.4), 0 0 100px rgba(59, 130, 246, 0.1);
+    text-align: center;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    z-index: 1;
+}
+
+#auth-overlay.auth-exit .auth-card {
+    transform: scale(0.9); 
+}
+
+.auth-header { display: flex; flex-direction: column; align-items: center; margin-bottom: 32px; }
+.auth-header h2 { margin-top: 16px; font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #fff 0%, #94a3b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.auth-header p { color: #94a3b8; font-size: 14px; margin-top: 4px; }
+
+/* Icon box styling matching landing */
+.icon-box {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.icon-box svg, .icon-box i {
+    width: 28px;
+    height: 28px;
+    color: #3b82f6;
+}
+
+.w-100 { width: 100%; margin-top: 10px; }
+.auth-footer { margin-top: 20px; font-size: 14px; color: #94a3b8; }
+.auth-footer a { color: #3b82f6; text-decoration: none; font-weight: 600; transition: color 0.2s; }
+.auth-footer a:hover { color: #60a5fa; }
+
+#auth-msg {
+    margin-top: 16px; font-size: 13px; padding: 12px 16px; border-radius: 12px;
+}
+#auth-msg.error { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+#auth-msg.success { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+
+/* 1. Ẩn Label chữ phía trên đi */
+#form-login .input-group label,
+#form-register .input-group label {
+    display: none;
+}
+
+/* 2. Định vị wrapper để chứa icon */
+.input-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+/* 3. Style cho Icon (Căn giữa dọc, nằm bên trái) */
+.input-wrapper i,
+.input-wrapper svg {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: #64748b;
+    pointer-events: none;
+    z-index: 10;
+    transition: color 0.3s;
+}
+
+/* 4. Style ô Input matching landing theme */
+.input-wrapper input {
+    width: 100%;
+    padding: 14px 14px 14px 48px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.6);
+    color: #f1f5f9;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.input-wrapper input::placeholder {
+    color: #64748b;
+}
+
+/* Hiệu ứng khi bấm vào */
+.input-wrapper input:focus {
+    border-color: #3b82f6;
+    background: rgba(15, 23, 42, 0.8);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+.input-wrapper input:focus + svg,
+.input-wrapper:focus-within svg,
+.input-wrapper:focus-within i {
+    color: #3b82f6;
+}
+
+/* Auth buttons matching landing */
+#form-login .btn-primary,
+#form-register .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border: none;
+    padding: 14px 24px;
+    border-radius: 12px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+#form-login .btn-primary:hover,
+#form-register .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+}
+
+/* Light theme overrides for auth */
+body.light-theme #auth-overlay {
+    background: linear-gradient(135deg, rgba(224, 231, 255, 0.98) 0%, rgba(240, 249, 255, 0.98) 100%);
+}
+
+body.light-theme .auth-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+}
+
+body.light-theme .auth-header h2 {
+    background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+body.light-theme .auth-header p {
+    color: #64748b;
+}
+
+body.light-theme .input-wrapper input {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #1e293b;
+}
+
+body.light-theme .input-wrapper input:focus {
+    background: white;
+}

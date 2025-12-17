@@ -1,0 +1,101 @@
+/* ======================================================================== */
+/*  TERMINAL.CSS - TERMINAL WINDOW & MEDIA DISPLAY                      */
+/* ======================================================================== */
+
+.terminal-window {
+    background: #1e1e1e; color: #00ff00; font-family: 'Fira Code', monospace;
+    flex: 1; margin: 20px 32px; border-radius: var(--radius-md); display: flex; flex-direction: column;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5); border: 1px solid #333;
+}
+.terminal-header { background: #2d2d2d; padding: 8px 12px; display: flex; gap: 6px; border-bottom: 1px solid #333; border-radius: var(--radius-md) var(--radius-md) 0 0; }
+.terminal-header .dot { cursor: default; }
+pre { flex: 1; padding: 16px; overflow: auto; margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+
+#capture-display-area, #webcam-display-area {
+    flex: 1; display: flex; justify-content: center; align-items: center;
+    background: rgba(0,0,0,0.03); overflow: hidden; padding: 20px; margin: 0 32px 24px 32px;
+    border-radius: var(--radius-md); border: 1px dashed var(--glass-border);
+}
+img, video { max-width: 100%; max-height: 100%; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.empty-state { text-align: center; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.empty-icon { width: 80px; height: 80px; background: rgba(0,0,0,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.empty-icon i { width: 36px; height: 36px; opacity: 0.5; }
+.spinner { width: 24px; height: 24px; border: 3px solid rgba(59, 130, 246, 0.3); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ======================================================================== */
+/* FILE VIEWER & UPLOAD STYLES                                         */
+/* ======================================================================== */
+
+/* Vùng hiển thị nội dung File */
+#viewer-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #0d0d0f; /* Nền tối để nổi bật ảnh/video */
+    padding: 0;
+    overflow: hidden; /* Tránh thanh cuộn kép */
+    position: relative;
+}
+
+/* Định dạng cho Ảnh và Video */
+#viewer-content img, 
+#viewer-content video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain; /* Giữ tỉ lệ khung hình */
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+    border-radius: 4px;
+}
+
+/* Định dạng cho Text (Code, Log...) */
+#viewer-content pre {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    padding: 24px;
+    margin: 0;
+    
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-wrap; /* Tự động xuống dòng */
+    border: none;
+    text-align: left;
+}
+
+/* Tùy chỉnh thanh cuộn cho Text Viewer */
+#viewer-content pre::-webkit-scrollbar { width: 10px; height: 10px; }
+#viewer-content pre::-webkit-scrollbar-track { background: #1e1e1e; }
+#viewer-content pre::-webkit-scrollbar-thumb { background: #444; border-radius: 5px; }
+#viewer-content pre::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+
+/* Icon Upload trên Toolbar */
+#btn-fs-upload i {
+    color: #3b82f6; /* Màu xanh nổi bật cho nút Upload */
+}
+#btn-fs-upload:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: #3b82f6;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+#stream-video {
+    /* 1. Ngăn chặn trình duyệt bôi đen hoặc kéo tấm ảnh/video */
+    -webkit-user-drag: none;  
+    user-select: none;      
+    
+    /* 2. Biến con chuột thành dấu cộng hoặc ẩn đi */
+    cursor: crosshair; 
+    
+    /* Đảm bảo nhận sự kiện click */
+    pointer-events: auto;
+    touch-action: none; /* Tắt các thao tác vuốt chạm mặc định */
+}
+
+/* Khi đang bật chế độ Control */
+#stream-video.controlling {
+    cursor: none; 
+}

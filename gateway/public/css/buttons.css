@@ -1,0 +1,368 @@
+/* ======================================================================== */
+/*  BUTTONS.CSS - ALL BUTTON STYLES                                      */
+/* ======================================================================== */
+
+.btn {
+    padding: 10px 20px;
+    border-radius: 99px;
+    border: none;
+    font-family: var(--font-main);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.3px;
+}
+
+.btn:active { transform: scale(0.95); }
+
+/* Primary (Blue Gradient) */
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.btn-primary:hover {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
+}
+
+/* Danger (Red Gradient) */
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.btn-danger:hover {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.6);
+}
+
+/* Outline / Glass */
+.btn-outline {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-main);
+    backdrop-filter: blur(4px);
+}
+.btn-outline:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: white;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+body.light-theme .btn-outline:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--text-main);
+    color: var(--text-main);
+}
+
+.btn i { width: 16px; height: 16px; }
+.btn-text { background: transparent; color: var(--text-muted); }
+.btn-text:hover { color: var(--text-main); background: rgba(0,0,0,0.05); }
+.btn-glass { background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+
+
+/* ======================================================================== */
+/*  REFRESH BUTTON (CIRCULAR)                                           */
+/* ======================================================================== */
+
+.btn-round-refresh {
+    width: 40px; height: 40px; /* Lớn hơn một chút */
+    border-radius: 50%;
+    padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-left: 12px;
+    position: relative; overflow: hidden;
+}
+
+.btn-round-refresh:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border-color: #3b82f6;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    transform: rotate(180deg);
+}
+
+.btn-round-refresh i { width: 18px; height: 18px; }
+
+.btn-round-refresh { background: rgba(0, 0, 0, 0.2); }
+.btn-round-refresh:hover { background: rgba(59, 130, 246, 0.2); }
+body.light-theme .btn-round-refresh { background: rgba(255, 255, 255, 0.05); }
+body.light-theme .btn-round-refresh:hover { background: rgba(59, 130, 246, 0.1); }
+
+
+/* ======================================================================== */
+/*  BUTTON GROUP (FLEX FIX)                                             */
+/* ======================================================================== */
+
+.button-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+
+/* ======================================================================== */
+/*  PREMIUM GLASS BUTTONS (CONNECT & CLEAR)                             */
+/* ======================================================================== */
+
+
+/* Chung cho các nút kính đặc biệt */
+#btn-clear-keylog {
+    height: 36px;
+    padding: 0 20px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: 13px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex; align-items: center; gap: 8px;
+}
+
+/* Hiệu ứng khi Clear (Màu Đỏ) */
+#btn-clear-keylog:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+    color: #ef4444;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    transform: translateY(-2px);
+}
+
+/* Icon bên trong nút */
+#btn-clear-keylog i {
+    width: 16px; height: 16px;
+    transition: transform 0.3s ease;
+}
+
+/* Icon xoay nhẹ khi hover */
+#btn-clear-keylog:hover i {
+    transform: scale(1.1);
+}
+
+/* Trạng thái đã kết nối (Dành cho nút Disconnect nếu cần) */
+#btn-disconnect {
+    border-radius: 99px;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+    animation: pulseRed 2s infinite;
+}
+
+@keyframes pulseRed {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* ======================================================================== */
+/*  CLOSE BUTTON (SCAN MODAL)                                          */
+/* ======================================================================== */
+
+.btn-scan-close {
+    padding: 10px 24px;
+    border-radius: 99px; /* Bo tròn hoàn toàn */
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Viền mờ */
+    color: var(--text-muted);
+    font-family: var(--font-main);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex; align-items: center; gap: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Hiệu ứng nền kính mờ */
+.btn-scan-close::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: rgba(255, 255, 255, 0.05);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+/* HOVER STATE: Chuyển đỏ Neon */
+.btn-scan-close:hover {
+    border-color: #ef4444; /* Viền đỏ */
+    color: #ef4444;       /* Chữ đỏ */
+    background: rgba(239, 68, 68, 0.1); /* Nền đỏ nhạt */
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.25); /* Phát sáng */
+    transform: translateY(-2px); /* Bay lên nhẹ */
+}
+
+/* Icon bên trong */
+.btn-scan-close i {
+    width: 16px; height: 16px;
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Hiệu ứng xoay nảy */
+}
+
+
+/* Active (Click) */
+.btn-scan-close:active {
+    transform: scale(0.95);
+}
+
+/* File Explorer Toolbar */
+.file-explorer-toolbar {
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.file-toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.file-toolbar-group .divider-vertical {
+    height: 24px;
+    margin: 0 4px;
+}
+
+.file-address-bar {
+    flex: 1;
+    min-width: 250px;
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 0 6px 0 12px;
+    height: 42px;
+    gap: 10px;
+}
+
+.file-address-bar .address-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.file-address-bar input {
+    flex: 1;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    color: var(--text-main);
+    font-size: 14px;
+    padding: 0 !important;
+    height: 100%;
+}
+
+.file-address-bar input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.file-address-bar .btn-go {
+    flex-shrink: 0;
+    height: 30px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-download {
+    background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+    color: #000; border: none;
+    padding: 10px 20px; border-radius: 8px;
+    font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
+    transition: transform 0.2s;
+}
+
+.btn-download:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0, 255, 136, 0.3); }
+
+.btn-copy {
+    background: #2a2a30; border: 1px solid #444; color: #ccc;
+    padding: 6px 12px; border-radius: 6px; cursor: pointer;
+    font-size: 12px; transition: all 0.2s;
+}
+.btn-copy:hover { background: #00ff88; color: #000; border-color: #00ff88; }
+.btn-copy.copied { background: #4caf50; color: #fff; border-color: #4caf50; pointer-events: none; }
+
+.btn-footer-icon {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-footer-icon:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    transform: translateY(-2px);
+}
+
+.btn-footer-icon.active {
+    background: #3b82f6;
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.btn-footer-icon i { width: 20px; height: 20px; }
+
+.btn-kill-sm {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-kill-sm:hover {
+    background: #ef4444;
+    color: white;
+    transform: scale(1.1);
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+}
+.btn-kill-sm i { width: 16px; height: 16px; }
+
+.btn-fs-action {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.btn-fs-action.delete { background: #ef4444; }
+.btn-fs-action.download { background: #3b82f6; }
+.btn-fs-action:hover { transform: scale(1.1); }
