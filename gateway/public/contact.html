@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liên hệ - NetControl Pro</title>
+    <link rel="stylesheet" href="landing.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+
+<body>
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="hidden">
+        <div class="auth-modal-content">
+            <button class="auth-modal-close" id="auth-modal-close">
+                <i data-feather="x"></i>
+            </button>
+            
+            <div class="auth-header">
+                <div class="icon-box">
+                    <i data-feather="shield"></i>
+                </div>
+                <h2>NetControl Pro</h2>
+                <p>Đăng nhập để truy cập Dashboard</p>
+            </div>
+
+            <div class="auth-form" id="landing-form-login">
+                <div class="auth-input-group">
+                    <i data-feather="user"></i>
+                    <input type="text" id="landing-login-user" placeholder="Tên đăng nhập">
+                </div>
+                <div class="auth-input-group">
+                    <i data-feather="lock"></i>
+                    <input type="password" id="landing-login-pass" placeholder="Mật khẩu">
+                </div>
+                <button class="auth-btn" id="landing-btn-login">Đăng nhập</button>
+                <p class="auth-footer">Chưa có tài khoản? <a href="#" id="landing-link-to-register">Đăng ký</a></p>
+            </div>
+
+            <div class="auth-form hidden" id="landing-form-register">
+                <div class="auth-input-group">
+                    <i data-feather="user-plus"></i>
+                    <input type="text" id="landing-reg-user" placeholder="Tên đăng nhập">
+                </div>
+                <div class="auth-input-group">
+                    <i data-feather="lock"></i>
+                    <input type="password" id="landing-reg-pass" placeholder="Mật khẩu">
+                </div>
+                <button class="auth-btn" id="landing-btn-register">Tạo tài khoản</button>
+                <p class="auth-footer">Đã có tài khoản? <a href="#" id="landing-link-to-login">Đăng nhập</a></p>
+            </div>
+
+            <div id="landing-auth-msg" class="auth-msg hidden"></div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <div class="logo-icon">
+                    <i data-feather="monitor"></i>
+                </div>
+                <span class="logo-text">NetControl<span class="logo-accent">Pro</span></span>
+            </a>
+            
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link">Trang chủ</a></li>
+                <li><a href="/features" class="nav-link">Tính năng</a></li>
+                <li><a href="/contact" class="nav-link active">Liên hệ</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <a href="#" class="btn btn-outline-light" data-auth="login">Đăng nhập</a>
+                <a href="#" class="btn btn-primary" data-auth="register">Đăng ký</a>
+            </div>
+
+            <button class="nav-toggle" id="nav-toggle">
+                <i data-feather="menu"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Contact Hero -->
+    <section class="page-hero">
+        <div class="container">
+            <div class="page-hero-content">
+                <span class="section-badge">Liên hệ</span>
+                <h1>Thông tin liên hệ</h1>
+                <p>Đồ án Mạng Máy Tính - Đại học Khoa học Tự nhiên TP.HCM</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Content -->
+    <section class="contact-section">
+        <div class="container">
+            <div class="contact-grid">
+                <!-- Project Info -->
+                <div class="contact-info-card">
+                    <div class="info-header">
+                        <div class="info-icon blue">
+                            <i data-feather="book-open"></i>
+                        </div>
+                        <h3>Thông tin Đồ án</h3>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-item">
+                            <span class="info-label">Tên đồ án:</span>
+                            <span class="info-value">NetControl Pro - Remote Desktop Solution</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Môn học:</span>
+                            <span class="info-value">Mạng Máy Tính</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Trường:</span>
+                            <span class="info-value">Đại học Khoa học Tự nhiên TP.HCM</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Năm học:</span>
+                            <span class="info-value">2025 - 2026</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tech Stack -->
+                <div class="contact-info-card">
+                    <div class="info-header">
+                        <div class="info-icon purple">
+                            <i data-feather="code"></i>
+                        </div>
+                        <h3>Công nghệ sử dụng</h3>
+                    </div>
+                    <div class="info-content">
+                        <div class="tech-tags">
+                            <span class="tech-tag">C++ 17</span>
+                            <span class="tech-tag">Node.js</span>
+                            <span class="tech-tag">WebSocket</span>
+                            <span class="tech-tag">ASIO</span>
+                            <span class="tech-tag">FFmpeg</span>
+                            <span class="tech-tag">Express.js</span>
+                            <span class="tech-tag">sql.js</span>
+                            <span class="tech-tag">HTML5/CSS3</span>
+                            <span class="tech-tag">ES6 Modules</span>
+                            <span class="tech-tag">JMuxer</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Members -->
+            <div class="team-detail-section">
+                <h2 class="section-title-left">
+                    <i data-feather="users"></i>
+                    Nhóm phát triển
+                </h2>
+
+                <div class="team-detail-grid">
+                    <div class="team-detail-card">
+                        <div class="member-avatar">
+                            <img src="image/KimHuu.jpg" alt="Trần Kim Hữu" class="avatar-img">
+                        </div>
+                        <div class="member-info">
+                            <h4>Trần Kim Hữu</h4>
+                            <span class="member-role">Developer</span>
+                            <p class="member-desc">Không biết ghi gì.</p>
+                        </div>
+                        <div class="member-social">
+                            <a href="https://github.com/KimHuu2486" class="social-link"><i data-feather="github"></i></a>
+                            <a href="mailto:trankimhuu2006@gmail.com" class="social-link"><i data-feather="mail"></i></a>
+                        </div>
+                    </div>
+
+                    <div class="team-detail-card">
+                        <div class="member-avatar">
+                            <img src="image/ThienBao.jpg" alt="Hà Văn Thiên Bảo" class="avatar-img">
+                        </div>
+                        <div class="member-info">
+                            <h4>Hà Văn Thiên Bảo</h4>
+                            <span class="member-role">Developer</span>
+                            <p class="member-desc">Không biết ghi gì.</p>
+                        </div>
+                        <div class="member-social">
+                            <a href="https://github.com/habaodunggithub" class="social-link"><i data-feather="github"></i></a>
+                            <a href="mailto:habao26032006@gmail.com" class="social-link"><i data-feather="mail"></i></a>
+                        </div>
+                    </div>
+
+                    <div class="team-detail-card">
+                        <div class="member-avatar">
+                            <img src="image/QuyPhuc.jpg" alt="Lê Quý Phúc" class="avatar-img">
+                        </div>
+                        <div class="member-info">
+                            <h4>Lê Quý Phúc</h4>
+                            <span class="member-role">Developer</span>
+                            <p class="member-desc">Không biết ghi gì.</p>
+                        </div>
+                        <div class="member-social">
+                            <a href="https://github.com/Shinkiisme" class="social-link"><i data-feather="github"></i></a>
+                            <a href="mailto:quyphuc0306@gmail.com" class="social-link"><i data-feather="mail"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Repository Info -->
+            <div class="repo-section">
+                <div class="repo-card">
+                    <div class="repo-icon">
+                        <i data-feather="github"></i>
+                    </div>
+                    <div class="repo-info">
+                        <h3>Source Code</h3>
+                        <p>Mã nguồn của dự án được host trên GitHub</p>
+                        <a href="https://github.com/habaodunggithub/ComputerNetworkProject_RemoteDesktopApp" target="_blank" class="btn btn-outline">
+                            <i data-feather="external-link"></i>
+                            Xem trên GitHub
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="logo-icon">
+                        <i data-feather="monitor"></i>
+                    </div>
+                    <span class="logo-text">NetControl<span class="logo-accent">Pro</span></span>
+                </div>
+                
+                <div class="footer-links">
+                    <a href="/">Trang chủ</a>
+                    <a href="/features">Tính năng</a>
+                    <a href="/contact">Liên hệ</a>
+                    <a href="#" data-auth="dashboard">Dashboard</a>
+                </div>
+
+                <div class="footer-copyright">
+                    <p>&copy; 2025 NetControl Pro - Đồ án Mạng Máy Tính HCMUS</p>
+                    <p>Được phát triển bởi Trần Kim Hữu, Hà Văn Thiên Bảo, Lê Quý Phúc</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/landing-auth.js"></script>
+    <script>
+        feather.replace();
+        
+        document.getElementById('nav-toggle').addEventListener('click', () => {
+            document.querySelector('.nav-menu').classList.toggle('active');
+        });
+
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    </script>
+</body>
+</html>

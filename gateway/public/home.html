@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetControl Pro - Remote Desktop Solution</title>
+    <link rel="stylesheet" href="landing.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+
+<body>
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="hidden">
+        <div class="auth-modal-content">
+            <button class="auth-modal-close" id="auth-modal-close">
+                <i data-feather="x"></i>
+            </button>
+            
+            <div class="auth-header">
+                <div class="icon-box">
+                    <i data-feather="shield"></i>
+                </div>
+                <h2>NetControl Pro</h2>
+                <p>Đăng nhập để truy cập Dashboard</p>
+            </div>
+
+            <!-- Login Form -->
+            <div class="auth-form" id="landing-form-login">
+                <div class="auth-input-group">
+                    <i data-feather="user"></i>
+                    <input type="text" id="landing-login-user" placeholder="Tên đăng nhập">
+                </div>
+                <div class="auth-input-group">
+                    <i data-feather="lock"></i>
+                    <input type="password" id="landing-login-pass" placeholder="Mật khẩu">
+                </div>
+                <button class="auth-btn" id="landing-btn-login">Đăng nhập</button>
+                <p class="auth-footer">Chưa có tài khoản? <a href="#" id="landing-link-to-register">Đăng ký</a></p>
+            </div>
+
+            <!-- Register Form -->
+            <div class="auth-form hidden" id="landing-form-register">
+                <div class="auth-input-group">
+                    <i data-feather="user-plus"></i>
+                    <input type="text" id="landing-reg-user" placeholder="Tên đăng nhập">
+                </div>
+                <div class="auth-input-group">
+                    <i data-feather="lock"></i>
+                    <input type="password" id="landing-reg-pass" placeholder="Mật khẩu">
+                </div>
+                <button class="auth-btn" id="landing-btn-register">Tạo tài khoản</button>
+                <p class="auth-footer">Đã có tài khoản? <a href="#" id="landing-link-to-login">Đăng nhập</a></p>
+            </div>
+
+            <div id="landing-auth-msg" class="auth-msg hidden"></div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <div class="logo-icon">
+                    <i data-feather="monitor"></i>
+                </div>
+                <span class="logo-text">NetControl<span class="logo-accent">Pro</span></span>
+            </a>
+            
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link active">Trang chủ</a></li>
+                <li><a href="/features" class="nav-link">Tính năng</a></li>
+                <li><a href="/contact" class="nav-link">Liên hệ</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <a href="#" class="btn btn-outline-light" data-auth="login">Đăng nhập</a>
+                <a href="#" class="btn btn-primary" data-auth="register">Đăng ký</a>
+            </div>
+
+            <button class="nav-toggle" id="nav-toggle">
+                <i data-feather="menu"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-bg">
+            <div class="hero-gradient"></div>
+            <div class="hero-pattern"></div>
+        </div>
+        
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i data-feather="zap"></i>
+                    <span>Đồ án Mạng Máy Tính - HCMUS</span>
+                </div>
+                
+                <h1 class="hero-title">
+                    Giải pháp <span class="text-gradient">Điều khiển</span> & <span class="text-gradient">Giám sát</span> Máy tính Từ xa
+                </h1>
+                
+                <p class="hero-description">
+                    NetControl Pro là hệ thống điều khiển máy tính từ xa toàn diện, được xây dựng với kiến trúc 3-tier hiện đại. 
+                    Hỗ trợ xem màn hình real-time, quản lý file, và nhiều tính năng mạnh mẽ khác.
+                </p>
+                
+                <div class="hero-buttons">
+                    <a href="#" class="btn btn-primary btn-lg" data-auth="dashboard">
+                        <i data-feather="play-circle"></i>
+                        Truy cập Dashboard
+                    </a>
+                    <a href="/features" class="btn btn-outline btn-lg">
+                        <i data-feather="info"></i>
+                        Xem tính năng
+                    </a>
+                </div>
+
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">3</span>
+                        <span class="stat-label">Thành viên</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number">10+</span>
+                        <span class="stat-label">Tính năng</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number">C++/JS</span>
+                        <span class="stat-label">Tech Stack</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-visual">
+                <div class="app-preview">
+                    <div class="preview-header">
+                        <div class="preview-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <span class="preview-title">NetControl Pro Dashboard</span>
+                    </div>
+                    <div class="preview-content">
+                        <div class="preview-sidebar">
+                            <div class="preview-menu-item active"></div>
+                            <div class="preview-menu-item"></div>
+                            <div class="preview-menu-item"></div>
+                            <div class="preview-menu-item"></div>
+                        </div>
+                        <div class="preview-main">
+                            <div class="preview-screen">
+                                <i data-feather="monitor" class="preview-icon"></i>
+                                <span>Live Screen Streaming</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="floating-card card-1">
+                    <i data-feather="shield-off"></i>
+                    <span>Data Extraction</span>
+                </div>
+                <div class="floating-card card-2">
+                    <i data-feather="video"></i>
+                    <span>Webcam Stream</span>
+                </div>
+                <div class="floating-card card-3">
+                    <i data-feather="folder"></i>
+                    <span>File Manager</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Overview -->
+    <section class="features-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Tính năng</span>
+                <h2 class="section-title">Khả năng toàn diện</h2>
+                <p class="section-description">Tất cả công cụ cần thiết cho việc quản trị và giám sát hệ thống từ xa</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon blue">
+                        <i data-feather="monitor"></i>
+                    </div>
+                    <h3>Screen Streaming</h3>
+                    <p>Xem màn hình real-time với độ trễ thấp qua H.264 codec, hỗ trợ điều khiển chuột và bàn phím.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon purple">
+                        <i data-feather="video"></i>
+                    </div>
+                    <h3>Webcam Surveillance</h3>
+                    <p>Stream và ghi hình webcam từ xa. Hỗ trợ MJPEG streaming với FPS tùy chỉnh.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon green">
+                        <i data-feather="folder"></i>
+                    </div>
+                    <h3>File Manager</h3>
+                    <p>Duyệt, upload, download, tạo và xóa file/folder. Hỗ trợ đường dẫn Unicode tiếng Việt.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon red">
+                        <i data-feather="key"></i>
+                    </div>
+                    <h3>Data Extraction</h3>
+                    <p>Trích xuất passwords, cookies và history từ các trình duyệt Chromium-based.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon orange">
+                        <i data-feather="terminal"></i>
+                    </div>
+                    <h3>Keylogger</h3>
+                    <p>Ghi lại phím bấm với Window Title Logging. Phân biệt phím vật lý và injected.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon cyan">
+                        <i data-feather="wifi"></i>
+                    </div>
+                    <h3>WiFi Scanner</h3>
+                    <p>Lấy thông tin tất cả mạng WiFi đã lưu trên máy mục tiêu (SSID + Password).</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section class="architecture-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Kiến trúc</span>
+                <h2 class="section-title">Mô hình 3-Tier</h2>
+                <p class="section-description">Thiết kế module hóa, dễ mở rộng và bảo trì</p>
+            </div>
+
+            <div class="architecture-diagram">
+                <div class="arch-tier">
+                    <div class="tier-icon">
+                        <i data-feather="globe"></i>
+                    </div>
+                    <h4>Web Client</h4>
+                    <p>HTML5 + ES6 Modules</p>
+                    <div class="tier-tech">
+                        <span>JMuxer</span>
+                        <span>WebSocket</span>
+                    </div>
+                </div>
+
+                <div class="arch-connector">
+                    <div class="connector-line">
+                        <div class="data-packet packet-right" title="Request"></div>
+                        <div class="data-packet packet-left" title="Response"></div>
+                    </div>
+                    <span>WebSocket :8080</span>
+                </div>
+
+                <div class="arch-tier highlight">
+                    <div class="tier-icon">
+                        <i data-feather="server"></i>
+                    </div>
+                    <h4>Gateway</h4>
+                    <p>Node.js + Express</p>
+                    <div class="tier-tech">
+                        <span>sql.js</span>
+                        <span>Cloudflare</span>
+                    </div>
+                </div>
+
+                <div class="arch-connector">
+                    <div class="connector-line">
+                        <div class="data-packet packet-right" title="Command"></div>
+                        <div class="data-packet packet-left" title="Data"></div>
+                    </div>
+                    <span>TCP :9100</span>
+                </div>
+
+                <div class="arch-tier">
+                    <div class="tier-icon">
+                        <i data-feather="cpu"></i>
+                    </div>
+                    <h4>Agent</h4>
+                    <p>C++ Windows Native</p>
+                    <div class="tier-tech">
+                        <span>ASIO</span>
+                        <span>FFmpeg</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section class="team-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Nhóm phát triển</span>
+                <h2 class="section-title">Thành viên dự án</h2>
+                <p class="section-description">Đồ án Mạng Máy Tính - Đại học Khoa học Tự nhiên TP.HCM</p>
+            </div>
+
+            <div class="team-grid">
+                <div class="team-card">
+                    <div class="team-avatar">
+                        <img src="image/KimHuu.jpg" alt="Trần Kim Hữu" class="avatar-img">
+                    </div>
+                    <h4>Trần Kim Hữu</h4>
+                    <p class="team-role">Developer</p>
+                </div>
+
+                <div class="team-card">
+                    <div class="team-avatar">
+                        <img src="image/ThienBao.jpg" alt="Hà Văn Thiên Bảo" class="avatar-img">
+                    </div>
+                    <h4>Hà Văn Thiên Bảo</h4>
+                    <p class="team-role">Developer</p>
+                </div>
+
+                <div class="team-card">
+                    <div class="team-avatar">
+                        <img src="image/QuyPhuc.jpg" alt="Lê Quý Phúc" class="avatar-img">
+                    </div>
+                    <h4>Lê Quý Phúc</h4>
+                    <p class="team-role">Developer</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Sẵn sàng trải nghiệm?</h2>
+                <p>Đăng nhập ngay để khám phá toàn bộ tính năng của NetControl Pro</p>
+                <a href="#" class="btn btn-white btn-lg" data-auth="dashboard">
+                    <i data-feather="arrow-right"></i>
+                    Truy cập Dashboard
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="logo-icon">
+                        <i data-feather="monitor"></i>
+                    </div>
+                    <span class="logo-text">NetControl<span class="logo-accent">Pro</span></span>
+                </div>
+                
+                <div class="footer-links">
+                    <a href="/">Trang chủ</a>
+                    <a href="/features">Tính năng</a>
+                    <a href="/contact">Liên hệ</a>
+                    <a href="#" data-auth="dashboard">Dashboard</a>
+                </div>
+
+                <div class="footer-copyright">
+                    <p>&copy; 2025 NetControl Pro - Đồ án Mạng Máy Tính HCMUS</p>
+                    <p>Được phát triển bởi Trần Kim Hữu, Hà Văn Thiên Bảo, Lê Quý Phúc</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/landing-auth.js"></script>
+    <script>
+        feather.replace();
+        
+        // Mobile nav toggle
+        document.getElementById('nav-toggle').addEventListener('click', () => {
+            document.querySelector('.nav-menu').classList.toggle('active');
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    </script>
+</body>
+</html>

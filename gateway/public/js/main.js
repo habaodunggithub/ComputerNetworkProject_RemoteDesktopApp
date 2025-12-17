@@ -19,6 +19,8 @@ import { initChat, resetChat } from './modules/chat.js';
 import { initWifiManager, requestWifiScan } from './modules/wifi.js';
 import { closeHistoryModal, exportHistoryCSV } from './modules/stealer.js';
 
+// Theme is initialized inline in HTML to prevent flash
+
 document.addEventListener('DOMContentLoaded', () => {
 
     if (typeof feather !== 'undefined') feather.replace();
@@ -921,20 +923,31 @@ document.addEventListener('DOMContentLoaded', () => {
     $('.dot.yellow').onclick = () => { if ($('#theme-toggle')) $('#theme-toggle').click(); };
     $('.dot.green').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
 
+    // Theme toggle - Default is dark (no class), light-theme class for light mode
     const themeToggle = $('#theme-toggle');
     if (themeToggle) {
-        themeToggle.onchange = e => {
-            document.body.className = e.target.checked ? 'dark-theme' : '';
-            localStorage.setItem('theme', e.target.checked ? 'dark' : 'light');
-        };
-        const saved = localStorage.getItem('theme');
-        if (saved === 'dark') {
-            document.body.classList.add('dark-theme');
-            themeToggle.checked = true;
-        } else {
-            document.body.classList.remove('dark-theme');
+        // Initialize checkbox state FIRST based on current theme
+        const currentTheme = localStorage.getItem('theme');
+        if (currentTheme === 'light') {
+            document.body.classList.add('light-theme');
             themeToggle.checked = false;
+        } else {
+            document.body.classList.remove('light-theme');
+            themeToggle.checked = true; // Dark is default (checked)
+            localStorage.setItem('theme', 'dark');
         }
+        
+        // Then set up the change handler
+        themeToggle.onchange = e => {
+            // Checked = dark mode (default, no class), Unchecked = light mode
+            if (e.target.checked) {
+                document.body.classList.remove('light-theme');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.body.classList.add('light-theme');
+                localStorage.setItem('theme', 'light');
+            }
+        };
     }
 
     // Final Init

@@ -361,6 +361,23 @@ app.use(bodyParser.json());
 // --- KÍCH HOẠT AUTH MODULE ---
 Auth.setup(app); // Cài đặt các route /api/register, /api/login
 
+// --- ROUTING CHO LANDING PAGES ---
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "home.html"));
+});
+
+app.get("/features", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "features.html"));
+});
+
+app.get("/contact", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "contact.html"));
+});
+
+app.get("/dashboard", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "dashboard.html"));
+});
+
 app.get("/api/scan", (_, res) => {
     const now = Date.now();
     const activeAgents = Array.from(agents.values())

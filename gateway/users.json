@@ -22,5 +22,11 @@
     "password": "$2b$10$0ztfcDO3kpPlHrfZzxM.O.QKDOainN00Kyev92TVm6BdDw7hZcx8i",
     "approved": true,
     "createdAt": 1765603243464
+  },
+  {
+    "username": "kimhuu",
+    "password": "$2b$10$cCdCVwvtpeet/TOy1jSTu.gFixJV69RlDtiMWe.D/50D1L1AWYVmW",
+    "approved": true,
+    "createdAt": 1765980120181
   }
 ]

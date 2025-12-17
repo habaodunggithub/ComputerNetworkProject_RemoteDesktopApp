@@ -1,57 +1,44 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Remote Control Center</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Dashboard - NetControl Pro</title>
+    <link rel="stylesheet" href="style.css?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/feather-icons"></script>
     <script src="jmuxer.min.js"></script>
+    <!-- Early theme initialization to prevent flash -->
+    <script>
+        (function() {
+            var theme = localStorage.getItem('theme');
+            // Default is dark mode (no class on body)
+            if (theme === 'light') {
+                document.documentElement.classList.add('light-theme');
+            } else {
+                // Ensure dark mode - remove light-theme if exists and set localStorage
+                document.documentElement.classList.remove('light-theme');
+                localStorage.setItem('theme', 'dark');
+            }
+        })();
+    </script>
     <script type="module" src="js/main.js"></script>
 </head>
 
-<body>
-    <div id="auth-overlay">
-        <div class="auth-card">
-            <div class="auth-header">
-                <div class="icon-box blue"><i data-feather="shield"></i></div>
-                <h2>Security Gate</h2>
-                <p>Remote Control Center</p>
-            </div>
-
-            <div id="form-login">
-                <div class="input-group">
-                    <label>Username</label>
-                    <div class="input-wrapper"><i data-feather="user"></i><input type="text" id="login-user"></div>
-                </div>
-                <div class="input-group">
-                    <label>Password</label>
-                    <div class="input-wrapper"><i data-feather="lock"></i><input type="password" id="login-pass"></div>
-                </div>
-                <button class="btn btn-primary w-100" id="btn-do-login">Sign In</button>
-                <p class="auth-footer">No account? <a href="#" id="link-to-register">Sign Up</a></p>
-            </div>
-
-            <div id="form-register" class="hidden">
-                <div class="input-group">
-                    <label>New Username</label>
-                    <div class="input-wrapper"><i data-feather="user-plus"></i><input type="text" id="reg-user"></div>
-                </div>
-                <div class="input-group">
-                    <label>New Password</label>
-                    <div class="input-wrapper"><i data-feather="lock"></i><input type="password" id="reg-pass"></div>
-                </div>
-                <button class="btn btn-primary w-100" id="btn-do-register">Request Access</button>
-                <p class="auth-footer">Has account? <a href="#" id="link-to-login">Sign In</a></p>
-            </div>
-            
-            <div id="auth-msg" class="hidden"></div>
-        </div>
-    </div>
-
+<body class="">
+    <script>
+        // Apply theme to body immediately
+        (function() {
+            var theme = localStorage.getItem('theme');
+            if (theme === 'light') {
+                document.body.classList.add('light-theme');
+            } else {
+                document.body.classList.remove('light-theme');
+            }
+        })();
+    </script>
     <div id="desktop-background"></div>
 
     <main id="app-window">
@@ -66,7 +53,7 @@
             </button>
             <div class="title-drag-area">
                 <i data-feather="cpu" class="app-icon"></i>
-                <span class="title-text">Advanced RAT Controller</span>
+                <span class="title-text">NetControl Pro - Dashboard</span>
             </div>
         </header>
 
@@ -107,23 +94,23 @@
                                 <i data-feather="cpu"></i>
                                 <span>Processes</span>
                             </li>
-                        </ul>
-                    </div>
-
-                    <div class="nav-group">
-                        <span class="nav-label">Red Team Ops</span>
-                        <ul class="nav-list">
-                            <li class="nav-item" data-view="data-theft">
-                                <i data-feather="shield-off"></i>
-                                <span>Data Extraction</span>
-                            </li>
                             <li class="nav-item" data-view="files">
                                 <i data-feather="folder"></i>
                                 <span>File Explorer</span>
                             </li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-group">
+                        <span class="nav-label">Data Extraction</span>
+                        <ul class="nav-list">
+                            <li class="nav-item" data-view="data-theft">
+                                <i data-feather="shield-off"></i>
+                                <span>Browser Data</span>
+                            </li>
                             <li class="nav-item" data-view="wifi">
                                 <i data-feather="wifi"></i>
-                                <span>Wifi Searcher</span>
+                                <span>WiFi Scanner</span>
                             </li>
                         </ul>
                     </div>

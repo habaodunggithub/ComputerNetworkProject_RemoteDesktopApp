@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tính năng - NetControl Pro</title>
+    <link rel="stylesheet" href="landing.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+
+<body>
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="hidden">
+        <div class="auth-modal-content">
+            <button class="auth-modal-close" id="auth-modal-close">
+                <i data-feather="x"></i>
+            </button>
+            
+            <div class="auth-header">
+                <div class="icon-box">
+                    <i data-feather="shield"></i>
+                </div>
+                <h2>NetControl Pro</h2>
+                <p>Đăng nhập để truy cập Dashboard</p>
+            </div>
+
+            <div class="auth-form" id="landing-form-login">
+                <div class="auth-input-group">
+                    <i data-feather="user"></i>
+                    <input type="text" id="landing-login-user" placeholder="Tên đăng nhập">
+                </div>
+                <div class="auth-input-group">
+                    <i data-feather="lock"></i>
+                    <input type="password" id="landing-login-pass" placeholder="Mật khẩu">
+                </div>
+                <button class="auth-btn" id="landing-btn-login">Đăng nhập</button>
+                <p class="auth-footer">Chưa có tài khoản? <a href="#" id="landing-link-to-register">Đăng ký</a></p>
+            </div>
+
+            <div class="auth-form hidden" id="landing-form-register">
+                <div class="auth-input-group">
+                    <i data-feather="user-plus"></i>
+                    <input type="text" id="landing-reg-user" placeholder="Tên đăng nhập">
+                </div>
+                <div class="auth-input-group">
+                    <i data-feather="lock"></i>
+                    <input type="password" id="landing-reg-pass" placeholder="Mật khẩu">
+                </div>
+                <button class="auth-btn" id="landing-btn-register">Tạo tài khoản</button>
+                <p class="auth-footer">Đã có tài khoản? <a href="#" id="landing-link-to-login">Đăng nhập</a></p>
+            </div>
+
+            <div id="landing-auth-msg" class="auth-msg hidden"></div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <div class="logo-icon">
+                    <i data-feather="monitor"></i>
+                </div>
+                <span class="logo-text">NetControl<span class="logo-accent">Pro</span></span>
+            </a>
+            
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link">Trang chủ</a></li>
+                <li><a href="/features" class="nav-link active">Tính năng</a></li>
+                <li><a href="/contact" class="nav-link">Liên hệ</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <a href="#" class="btn btn-outline-light" data-auth="login">Đăng nhập</a>
+                <a href="#" class="btn btn-primary" data-auth="register">Đăng ký</a>
+            </div>
+
+            <button class="nav-toggle" id="nav-toggle">
+                <i data-feather="menu"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Features Hero -->
+    <section class="page-hero">
+        <div class="container">
+            <div class="page-hero-content">
+                <span class="section-badge">Tính năng</span>
+                <h1>Khả năng toàn diện</h1>
+                <p>Khám phá tất cả các tính năng mạnh mẽ của NetControl Pro</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Detail -->
+    <section class="features-detail-section">
+        <div class="container">
+            
+            <!-- Surveillance Category -->
+            <div class="feature-category">
+                <div class="category-header">
+                    <div class="category-icon blue">
+                        <i data-feather="eye"></i>
+                    </div>
+                    <div class="category-info">
+                        <h2>Giám sát (Surveillance)</h2>
+                        <p>Các công cụ theo dõi và giám sát máy mục tiêu theo thời gian thực</p>
+                    </div>
+                </div>
+
+                <div class="feature-detail-grid">
+                    <div class="feature-detail-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-sm blue">
+                                <i data-feather="monitor"></i>
+                            </div>
+                            <h3>Desktop View</h3>
+                        </div>
+                        <p>Xem màn hình máy mục tiêu theo thời gian thực với độ trễ cực thấp.</p>
+                        <ul class="feature-list">
+                            <li><i data-feather="check"></i> H.264 video streaming</li>
+                            <li><i data-feather="check"></i> Điều khiển chuột & bàn phím</li>
+                            <li><i data-feather="check"></i> Hỗ trợ tiếng Việt (Unicode)</li>
+                            <li><i data-feather="check"></i> Chụp ảnh màn hình</li>
+                            <li><i data-feather="check"></i> Block input người dùng</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-detail-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-sm purple">
+                                <i data-feather="video"></i>
+                            </div>
+                            <h3>Webcam</h3>
+                        </div>
+                        <p>Stream và ghi hình webcam từ máy mục tiêu.</p>
+                        <ul class="feature-list">
+                            <li><i data-feather="check"></i> Live streaming MJPEG</li>
+                            <li><i data-feather="check"></i> Ghi hình MP4</li>
+                            <li><i data-feather="check"></i> Tự động phát hiện thiết bị</li>
+                            <li><i data-feather="check"></i> Tải video về máy</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-detail-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-sm orange">
+                                <i data-feather="terminal"></i>
+                            </div>
+                            <h3>Keylogger</h3>
+                        </div>
+                        <p>Ghi lại tất cả phím bấm trên máy mục tiêu.</p>
+                        <ul class="feature-list">
+                            <li><i data-feather="check"></i> Real-time streaming</li>
+                            <li><i data-feather="check"></i> Window Title Logging</li>
+                            <li><i data-feather="check"></i> Phân biệt physical/injected</li>
+                            <li><i data-feather="check"></i> Hỗ trợ Unicode</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Manager Category -->
+            <div class="feature-category">
+                <div class="category-header">
+                    <div class="category-icon green">
+                        <i data-feather="settings"></i>
+                    </div>
+                    <div class="category-info">
+                        <h2>Quản lý Hệ thống</h2>
+                        <p>Công cụ quản lý tiến trình, ứng dụng và file hệ thống</p>
+                    </div>
+                </div>
+
+                <div class="feature-detail-grid">
+                    <div class="feature-detail-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-sm green">
+                                <i data-feather="grid"></i>
+                            </div>
+                            <h3>Applications</h3>
+                        </div>
+                        <p>Quản lý các ứng dụng đang chạy trên máy mục tiêu.</p>
+                        <ul class="feature-list">
+                            <li><i data-feather="check"></i> Liệt kê ứng dụng đang chạy</li>
+                            <li><i data-feather="check"></i> Khởi chạy ứng dụng</li>
+                            <li><i data-feather="check"></i> Force quit ứng dụng</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-detail-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-sm cyan">
+                                <i data-feather="cpu"></i>
+                            </div>
+                            <h3>Processes</h3>
+                        </div>
+                        <p>Task Manager từ xa - quản lý tiến trình hệ thống.</p>
+                        <ul class="feature-list">
+                            <li><i data-feather="check"></i> Liệt kê tất cả tiến trình</li>
+                            <li><i data-feather="check"></i> Hiển thị PID, Memory, Path</li>
+                            <li><i data-feather="check"></i> Kill process theo PID</li>
+                            <li><i data-feather="check"></i> Chạy command/path</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-detail-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-sm blue">
+                                <i data-feather="folder"></i>
+                            </div>
+                            <h3>File Explorer</h3>
+                        </div>
+                        <p>Duyệt và quản lý file system từ xa.</p>
+                        <ul class="feature-list">
+                            <li><i data-feather="check"></i> Duyệt tất cả ổ đĩa</li>
+                            <li><i data-feather="check"></i> Upload/Download file</li>
+                            <li><i data-feather="check"></i> Tạo file/folder</li>
+                            <li><i data-feather="check"></i> Xóa file/folder</li>
+                            <li><i data-feather="check"></i> Xem nội dung file</li>
+                            <li><i data-feather="check"></i> Hỗ trợ đường dẫn tiếng Việt</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Red Team Category -->
+            <div class="feature-category">
+                <div class="category-header">
+                    <div class="category-icon red">
+                        <i data-feather="shield-off"></i>
+                    </div>
+                    <div class="category-info">
+                        <h2>Red Team Operations</h2>
+                        <p>Công cụ trích xuất dữ liệu và thông tin nhạy cảm</p>
+                    </div>
+                </div>
+
+                <div class="feature-detail-grid">
+                    <div class="feature-detail-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-sm red">
+                                <i data-feather="key"></i>
+                            </div>
+                            <h3>Password Stealer</h3>
+                        </div>
+                        <p>Trích xuất mật khẩu đã lưu từ trình duyệt.</p>
+                        <ul class="feature-list">
+                            <li><i data-feather="check"></i> Chrome, Edge, Brave, CocCoc</li>
+                            <li><i data-feather="check"></i> Opera, Vivaldi</li>
+                            <li><i data-feather="check"></i> DPAPI Decryption</li>
+                            <li><i data-feather="check"></i> Export CSV</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-detail-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-sm orange">
+                                <i data-feather="globe"></i>
+                            </div>
+                            <h3>Cookie Stealer</h3>
+                        </div>
+                        <p>Lấy cookies qua Chrome DevTools Protocol.</p>
+                        <ul class="feature-list">
+                            <li><i data-feather="check"></i> Bypass App-Bound Encryption</li>
+                            <li><i data-feather="check"></i> CDP Remote Debugging</li>
+                            <li><i data-feather="check"></i> Session Hijacking</li>
+                            <li><i data-feather="check"></i> Chrome v127+ support</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-detail-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-sm purple">
+                                <i data-feather="clock"></i>
+                            </div>
+                            <h3>Browser History</h3>
+                        </div>
+                        <p>Trích xuất lịch sử duyệt web.</p>
+                        <ul class="feature-list">
+                            <li><i data-feather="check"></i> Chromium-based browsers</li>
+                            <li><i data-feather="check"></i> Firefox support</li>
+                            <li><i data-feather="check"></i> SQLite parsing</li>
+                            <li><i data-feather="check"></i> Export CSV</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-detail-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-sm cyan">
+                                <i data-feather="wifi"></i>
+                            </div>
+                            <h3>WiFi Searcher</h3>
+                        </div>
+                        <p>Lấy thông tin WiFi đã lưu trên máy.</p>
+                        <ul class="feature-list">
+                            <li><i data-feather="check"></i> Liệt kê tất cả profiles</li>
+                            <li><i data-feather="check"></i> Hiển thị SSID + Password</li>
+                            <li><i data-feather="check"></i> Đánh dấu mạng đang kết nối</li>
+                            <li><i data-feather="check"></i> Copy all to clipboard</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Features -->
+            <div class="feature-category">
+                <div class="category-header">
+                    <div class="category-icon purple">
+                        <i data-feather="zap"></i>
+                    </div>
+                    <div class="category-info">
+                        <h2>Tính năng khác</h2>
+                        <p>Các chức năng bổ sung và điều khiển hệ thống</p>
+                    </div>
+                </div>
+
+                <div class="feature-detail-grid">
+                    <div class="feature-detail-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-sm blue">
+                                <i data-feather="message-square"></i>
+                            </div>
+                            <h3>Chat System</h3>
+                        </div>
+                        <p>Giao tiếp 2 chiều với máy mục tiêu.</p>
+                        <ul class="feature-list">
+                            <li><i data-feather="check"></i> Cửa sổ chat popup</li>
+                            <li><i data-feather="check"></i> Force foreground</li>
+                            <li><i data-feather="check"></i> Real-time messaging</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-detail-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-sm red">
+                                <i data-feather="power"></i>
+                            </div>
+                            <h3>Power Control</h3>
+                        </div>
+                        <p>Điều khiển nguồn máy mục tiêu.</p>
+                        <ul class="feature-list">
+                            <li><i data-feather="check"></i> Shutdown từ xa</li>
+                            <li><i data-feather="check"></i> Restart từ xa</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-detail-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-sm green">
+                                <i data-feather="wifi"></i>
+                            </div>
+                            <h3>Auto Discovery</h3>
+                        </div>
+                        <p>Tự động tìm kiếm Agent trong mạng LAN.</p>
+                        <ul class="feature-list">
+                            <li><i data-feather="check"></i> UDP Beacon</li>
+                            <li><i data-feather="check"></i> Leader Election</li>
+                            <li><i data-feather="check"></i> Multi-Gateway support</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Sẵn sàng trải nghiệm?</h2>
+                <p>Đăng nhập ngay để sử dụng tất cả các tính năng</p>
+                <a href="/dashboard" class="btn btn-white btn-lg">
+                    <i data-feather="arrow-right"></i>
+                    Truy cập Dashboard
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="logo-icon">
+                        <i data-feather="monitor"></i>
+                    </div>
+                    <span class="logo-text">NetControl<span class="logo-accent">Pro</span></span>
+                </div>
+                
+                <div class="footer-links">
+                    <a href="/">Trang chủ</a>
+                    <a href="/features">Tính năng</a>
+                    <a href="/contact">Liên hệ</a>
+                    <a href="#" data-auth="dashboard">Dashboard</a>
+                </div>
+
+                <div class="footer-copyright">
+                    <p>&copy; 2025 NetControl Pro - Đồ án Mạng Máy Tính HCMUS</p>
+                    <p>Được phát triển bởi Trần Kim Hữu, Hà Văn Thiên Bảo, Lê Quý Phúc</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/landing-auth.js"></script>
+    <script>
+        feather.replace();
+        
+        document.getElementById('nav-toggle').addEventListener('click', () => {
+            document.querySelector('.nav-menu').classList.toggle('active');
+        });
+
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    </script>
+</body>
+</html>
