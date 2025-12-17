@@ -41,11 +41,6 @@ public:
     static json handleChatCommand(const json &);
     static json getWifiInfo(const json &);
 
-    // Input Blocking
-    static json blockInput(const json &);
-    static json unblockInput(const json &);
-    static json getBlockStatus(const json &);
-
     // Browser History
     static json getBrowserList(const json &);
     static json getBrowserHistory(const json &);

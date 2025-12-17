@@ -1,5 +1,4 @@
 #include "AgentTcpServer.h"
-#include "../Handlers/InputBlocker.h"
 #include <iostream>
 #include <winsock2.h>
 
@@ -79,10 +78,6 @@ void AgentTcpServer::startRead()
                                else
                                {
                                    std::cerr << "[Agent] Disconnected (" << ec.message() << ")\n";
-
-                                   // Auto-unblock input khi mất kết nối
-                                   InputBlocker::Reset();
-
                                    m_socket.close();
                                    scheduleReconnect();
                                }

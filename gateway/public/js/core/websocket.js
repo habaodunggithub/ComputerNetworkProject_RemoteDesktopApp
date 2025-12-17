@@ -42,21 +42,6 @@ import { renderWifiData, requestWifiScan } from '../modules/wifi.js';
 
 let ws = null;
 
-// Handle input block status response
-function handleInputBlockStatus(msg) {
-    const blockToggle = $('#toggle-block-input');
-    if (!blockToggle) return;
-    
-    if (msg.success) {
-        blockToggle.checked = msg.blocked;
-        console.log(msg.message);
-    } else {
-        // Revert toggle state on failure
-        blockToggle.checked = !blockToggle.checked;
-        alert('⚠️ ' + msg.message);
-    }
-}
-
 export function connectWs() {
     const wsUrlInput = $('#ws-url-input');
     const url = wsUrlInput ? wsUrlInput.value : '';
@@ -234,9 +219,6 @@ function onWsMessage(event) {
         case 'wifi_info':
             renderWifiData(msg);
             break;
-        case 'input_block_status':
-            handleInputBlockStatus(msg);
-            break;
         case 'browser_list':
             handleBrowserListResult(msg);
             break;
@@ -264,13 +246,6 @@ function resetUI() {
     if (keylogOutput) keylogOutput.textContent = 'Waiting...';
     const keylogToggle = $('#keylog-toggle');
     if (keylogToggle) keylogToggle.checked = false;
-    
-    // Reset Block Input toggle
-    const blockInputToggle = $('#toggle-block-input');
-    if (blockInputToggle) {
-        blockInputToggle.checked = false;
-        blockInputToggle.disabled = true;
-    }
     
     // Reset Control toggle
     const controlToggle = $('#toggle-control');

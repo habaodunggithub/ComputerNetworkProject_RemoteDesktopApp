@@ -78,10 +78,5 @@ public:
         map["chat_message"] = ProcessHandlers::handleChatCommand;
 
         map["wifi_info"] = ProcessHandlers::getWifiInfo;
-
-        // === INPUT BLOCKING ===
-        map["block_input"] = ProcessHandlers::blockInput;
-        map["unblock_input"] = ProcessHandlers::unblockInput;
-        map["get_block_status"] = ProcessHandlers::getBlockStatus;
     }
 };
