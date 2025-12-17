@@ -2958,3 +2958,557 @@ body.light-theme #btn-scan-lan {
     min-height: 200px;        /* Đảm bảo có chiều cao tối thiểu để căn giữa */
     padding-top: 0;           /* Reset padding-top không cần thiết */
 }
+
+/* ======================================================================== */
+/*  DEVICE INFO PAGE - SYSTEM MONITOR                                      */
+/* ======================================================================== */
+
+.device-info-container {
+    padding: 24px 32px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.device-section {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.device-section:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.section-header svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* System Info Grid */
+.system-info-grid,
+.cpu-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.info-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+}
+
+.info-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main);
+    word-break: break-word;
+}
+
+.temp-badge {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+/* Gauge Cards Row */
+.device-gauges-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+@media (max-width: 900px) {
+    .device-gauges-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.gauge-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+}
+
+.gauge-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.gauge-title {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+.gauge-circle {
+    position: relative;
+    width: 140px;
+    height: 140px;
+}
+
+.gauge-circle svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.gauge-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 10;
+}
+
+.gauge-fill {
+    fill: none;
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.8s ease, stroke 0.5s ease;
+}
+
+.gauge-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.gauge-percent {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1;
+}
+
+.gauge-sub {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.gauge-temp,
+.gauge-extra {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.gauge-temp {
+    color: #f59e0b;
+}
+
+/* GPU Detail Cards */
+.gpu-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.gpu-detail-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.gpu-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: rgba(139, 92, 246, 0.15);
+    border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.gpu-card-header svg {
+    width: 18px;
+    height: 18px;
+}
+
+.gpu-card-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.gpu-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.gpu-info-row:last-child {
+    border-bottom: none;
+}
+
+.gpu-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.gpu-value {
+    font-size: 13px;
+    color: var(--text-main);
+    font-weight: 600;
+    text-align: right;
+    max-width: 60%;
+    word-break: break-word;
+}
+
+/* RAM Capacity Bar */
+.ram-detail-container {
+    padding: 8px 0;
+}
+
+.ram-capacity-bar-wrapper {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ram-capacity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.ram-cap-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.ram-cap-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.ram-capacity-bar {
+    height: 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.ram-capacity-fill {
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.8s ease;
+}
+
+.ram-capacity-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.ram-capacity-stats strong {
+    color: var(--text-main);
+}
+
+/* Storage Drives Grid */
+.storage-drives-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.drive-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.drive-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.drive-header svg {
+    width: 20px;
+    height: 20px;
+    color: #3b82f6;
+}
+
+.drive-letter {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.drive-bar-container {
+    margin-bottom: 10px;
+}
+
+.drive-bar {
+    height: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.drive-bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.5s ease;
+}
+
+.drive-stats {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Network Speed Cards */
+.network-speed-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 600px) {
+    .network-speed-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.speed-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.speed-card.upload .speed-icon {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+}
+
+.speed-card.download .speed-icon {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+.speed-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.speed-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.speed-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.speed-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1;
+}
+
+.speed-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* Network Adapters List */
+.adapters-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.adapter-item {
+    padding: 14px 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.adapter-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 4px;
+}
+
+.adapter-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.adapter-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.adapter-ip,
+.adapter-mac {
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.adapter-ip.ipv6 {
+    word-break: break-all;
+}
+
+/* Top Processes Table */
+.top-processes-table {
+    overflow-x: auto;
+}
+
+.top-processes-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.top-processes-table th,
+.top-processes-table td {
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.top-processes-table th {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.top-processes-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.pid-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.proc-name {
+    font-weight: 500;
+    color: var(--text-main);
+}
+
+.proc-mem {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: 'Fira Code', monospace;
+}
+
+/* Light Theme Adjustments */
+body.light-theme .device-section {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .gauge-card {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+body.light-theme .gauge-bg {
+    stroke: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .info-item,
+body.light-theme .gpu-detail-card,
+body.light-theme .ram-capacity-bar-wrapper,
+body.light-theme .drive-card,
+body.light-theme .speed-card,
+body.light-theme .adapter-item {
+    background: rgba(255, 255, 255, 0.6);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .ram-capacity-bar,
+body.light-theme .drive-bar {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .top-processes-table th {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+body.light-theme .top-processes-table tbody tr:hover {
+    background: rgba(0, 0, 0, 0.03);
+}

