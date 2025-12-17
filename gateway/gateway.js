@@ -532,7 +532,11 @@ const tcpServer = net.createServer((socket) => {
     });
 
     socket.on("error", (e) => console.error(`[TCP] Error ${id}: ${e.message}`));
-    socket.on("close", () => console.log(`[TCP] Disconnect: ${id}`));
+    socket.on("close", () => {
+        console.log(`[TCP] Disconnect: ${id}`);
+        // Xóa agent khỏi Map ngay khi disconnect để scan list cập nhật real-time
+        agents.delete(id);
+    });
 });
 
 tcpServer.listen(CFG.AGENT_PORT, "0.0.0.0", () => {
