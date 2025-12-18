@@ -1,9 +1,11 @@
+// --- Module: Authentication ---
 const fs = require("fs");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const readline = require("readline");
 
-const USERS_FILE = path.join(__dirname, "users.json");
+// Đường dẫn tới users.json (nằm ở thư mục gateway, không phải modules)
+const USERS_FILE = path.join(__dirname, "..", "users.json");
 
 // --- HELPER FUNCTIONS ---
 const getUsers = () => {
@@ -58,14 +60,13 @@ module.exports = {
         });
     },
 
-startCLI: () => {
+    startCLI: () => {
         const rl = readline.createInterface({ 
             input: process.stdin, 
             output: process.stdout, 
             prompt: 'ADMIN> ' 
         });
 
-        // --- FIX GIAO DIỆN LOG ---
         // Lưu lại hàm log gốc của Node.js
         const originalLog = console.log;
 
@@ -95,7 +96,6 @@ startCLI: () => {
 
             switch (cmd) {
                 case 'help':
-                    // Đã cập nhật bảng help đẹp như bạn yêu cầu
                     console.log(`
   ================== ADMIN COMMANDS ==================
   list                : Show pending registration requests
