@@ -3,10 +3,17 @@ import { getCorrectCoordinates } from '../core/utils.js';
 
 // Các biến nội bộ (State)
 let mouseTimer = null;
+let rafId = null;         // requestAnimationFrame ID
 let _sendFn = null;       // Hàm gửi WebSocket (sendWsMessage)
 let _checkConnFn = null;  // Hàm kiểm tra kết nối (isWsConnected)
 let _controlToggle = null; // Element checkbox bật/tắt quyền điều khiển
-let pendingMove = null; // Dữ liệu di chuyển chuột chờ gửi
+let pendingMove = null;   // Dữ liệu di chuyển chuột chờ gửi
+let lastSentTime = 0;     // Thời điểm gửi lần cuối (throttle)
+let lastSentPos = null;   // Vị trí gửi lần cuối (tránh gửi trùng)
+
+// Cấu hình tối ưu cho độ trễ thấp
+const MOUSE_SEND_INTERVAL = 16; // ~60fps 
+const MIN_MOVE_DELTA = 0.01;   // Ngưỡng thay đổi tối thiểu để gửi
 
 /**
  * Khởi tạo Mouse Control
@@ -27,7 +34,7 @@ export function initMouseControl(options) {
     // Gán sự kiện cho video element
     attachListeners(videoElement);
 
-    // Bắt đầu vòng lặp gửi hàng đợi (Batch Sender)
+    // Bắt đầu vòng lặp gửi hàng đợi (sử dụng RAF + Interval hybrid)
     startBatchSender();
 }
 
@@ -86,17 +93,53 @@ function attachListeners(element) {
 }
 
 /**
- * Logic gửi hàng đợi định kỳ (30ms)
+ * Logic gửi hàng đợi định kỳ (16ms ~ 60fps) + RAF hybrid
+ * Sử dụng kết hợp setInterval và requestAnimationFrame để tối ưu
  */
 function startBatchSender() {
     if (mouseTimer) clearInterval(mouseTimer);
+    if (rafId) cancelAnimationFrame(rafId);
     
-    mouseTimer = setInterval(() => {
+    // Phương pháp Hybrid: RAF cho smooth, setInterval làm fallback
+    function sendLoop() {
+        const now = performance.now();
+        
         if (pendingMove && shouldSend()) {
-            
+            // Throttle: chỉ gửi nếu đủ khoảng cách thời gian
+            if (now - lastSentTime >= MOUSE_SEND_INTERVAL) {
+                const moveData = pendingMove;
+                
+                // Kiểm tra có thực sự thay đổi vị trí không
+                const hasMoved = !lastSentPos || 
+                    Math.abs(moveData.x - lastSentPos.x) > MIN_MOVE_DELTA ||
+                    Math.abs(moveData.y - lastSentPos.y) > MIN_MOVE_DELTA;
+                
+                if (hasMoved) {
+                    pendingMove = null;
+                    lastSentTime = now;
+                    lastSentPos = { x: moveData.x, y: moveData.y };
+                    
+                    _sendFn({
+                        command: 'mouse_input',
+                        a: 'mv',    
+                        x: moveData.x,
+                        y: moveData.y
+                    });
+                }
+            }
+        }
+        
+        rafId = requestAnimationFrame(sendLoop);
+    }
+    
+    // Bắt đầu loop với RAF
+    rafId = requestAnimationFrame(sendLoop);
+    
+    // Fallback setInterval cho trường hợp tab bị background (RAF pause)
+    mouseTimer = setInterval(() => {
+        if (pendingMove && shouldSend() && document.hidden) {
             const moveData = pendingMove;
-
-            pendingMove = null; 
+            pendingMove = null;
             
             _sendFn({
                 command: 'mouse_input',
@@ -105,7 +148,7 @@ function startBatchSender() {
                 y: moveData.y
             });
         }
-    }, 50);
+    }, MOUSE_SEND_INTERVAL);
 }
 
 /**
@@ -141,5 +184,11 @@ export function destroyMouseControl() {
         clearInterval(mouseTimer);
         mouseTimer = null;
     }
+    if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+    }
     pendingMove = null;
+    lastSentPos = null;
+    lastSentTime = 0;
 }

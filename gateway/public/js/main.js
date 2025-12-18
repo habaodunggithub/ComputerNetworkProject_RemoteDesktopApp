@@ -586,7 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!canUseAgentFeature()) return;
         $('#capture-display-area .empty-state').classList.add('hidden');
         $('#capture-spinner').classList.remove('hidden');
-        sendWsMessage({ command: 'start_screen_stream', fps: 15 });
+        sendWsMessage({ command: 'start_screen_stream', fps: 20 });
         $('#btn-start-stream').classList.add('hidden');
         $('#btn-stop-stream').classList.remove('hidden');
         $('#btn-copy-screenshot').classList.add('hidden');

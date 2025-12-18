@@ -9,6 +9,12 @@ function initWebSocketServer(server, agents) {
     wss.on("connection", (ws) => {
         if (webClient) { ws.close(1013, "Busy"); return; }
         webClient = ws;
+        
+        // Enable TCP NoDelay for WebSocket underlying socket
+        if (ws._socket) {
+            ws._socket.setNoDelay(true);
+        }
+        
         console.log("[Gateway] Web Client connected");
 
         ws.on("message", (raw) => {

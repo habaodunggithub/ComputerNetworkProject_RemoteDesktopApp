@@ -103,7 +103,8 @@ void AgentTcpServer::processLine(std::string line)
 
 void AgentTcpServer::sendJson(const nlohmann::json &j)
 {
-    if (!m_socket.is_open())
+    // Bỏ qua empty JSON để tiết kiệm bandwidth (đặc biệt cho mouse_input)
+    if (!m_socket.is_open() || j.empty())
         return;
     try
     {

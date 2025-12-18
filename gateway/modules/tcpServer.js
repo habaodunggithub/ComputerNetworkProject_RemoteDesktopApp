@@ -16,6 +16,7 @@ function initTcpServer(agentsMap, webClientGetter) {
     const tcpServer = net.createServer((socket) => {
         const id = socket.remoteAddress;
         socket.setEncoding("utf8");
+        socket.setNoDelay(true); // Disable Nagle's algorithm for low latency
 
         let agent = agents.get(id);
         if (agent?.socket) agent.socket.destroy();
