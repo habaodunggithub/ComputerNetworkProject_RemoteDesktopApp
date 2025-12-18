@@ -112,6 +112,7 @@
 
 ### 📊 System Monitor
 
+- 💻 **Device Info**: Xem thông tin chi tiết phần cứng (CPU, RAM, Disk, OS, Network)
 - 📋 **Process Manager**: Liệt kê, kết thúc tiến trình (như Task Manager)
 - 📱 **Application Manager**: Quản lý ứng dụng đang chạy
 - ⚡ **Power Control**: Shutdown, Restart máy từ xa
@@ -881,13 +882,13 @@ Chúng tôi hoan nghênh mọi đóng góp! Vui lòng:
 
 ## 👨‍💻 Tác giả
 
-**Đồ án Mạng Máy Tính** 
+**Đồ án Mạng Máy Tính**
 
-| Thành viên               | Vai trò     |
-| ------------------------ | ----------- |
-| **Trần Kim Hữu**         | Development |
-| **Hà Văn Thiên Bảo**     | Development |
-| **Lê Quý Phúc**          | Development |
+| Thành viên           | Vai trò     |
+| -------------------- | ----------- |
+| **Trần Kim Hữu**     | Development |
+| **Hà Văn Thiên Bảo** | Development |
+| **Lê Quý Phúc**      | Development |
 
 ---
 
