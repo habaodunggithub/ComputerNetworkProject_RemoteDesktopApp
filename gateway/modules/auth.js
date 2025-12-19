@@ -4,8 +4,19 @@ const path = require("path");
 const bcrypt = require("bcryptjs");
 const readline = require("readline");
 
-// Đường dẫn tới users.json (nằm ở thư mục gateway, không phải modules)
-const USERS_FILE = path.join(__dirname, "..", "users.json");
+// --- SỬA ĐỔI ĐOẠN KHAI BÁO ĐƯỜNG DẪN ---
+
+const isPkg = typeof process.pkg !== 'undefined';
+
+let USERS_FILE;
+
+let baseDir;
+if (isPkg) {
+    USERS_FILE = path.join(path.dirname(process.execPath), "users.json");
+} 
+else {
+    USERS_FILE = path.join(__dirname, "..", "users.json");
+}
 
 // --- HELPER FUNCTIONS ---
 const getUsers = () => {
