@@ -25,4 +25,4 @@ yarn-error.log*
 *.o
 *.mp4
 *.png
-*.jpg
+# *.jpg
