@@ -75,19 +75,13 @@
 ### 🖥️ Remote Desktop & Control
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  📺 Screen Streaming    │  ⌨️ Keyboard Control             │
-│  ─────────────────────  │  ────────────────────             │
-│  • H.264 real-time      │  • Full keyboard support          │
-│  • Adjustable FPS       │  • Vietnamese typing (Unicode)    │
-│  • Low latency (<100ms) │  • Special keys (Ctrl, Alt, etc.) │
-├─────────────────────────┼───────────────────────────────────┤
-│  🖱️ Mouse Control       │  🔒 Input Blocker                │
-│  ─────────────────────  │  ────────────────────             │
-│  • Click (L/R/M)        │  • Block keyboard                 │
-│  • Scroll               │  • Block mouse                    │
-│  • Drag & Drop          │  • Bypass SendInput()             |
-└─────────────────────────┴───────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│  📺 Screen Streaming    │  ⌨️ Keyboard Control        │  🖱️ Mouse Control       │
+│  ─────────────────────  │  ────────────────────        │  ─────────────────────   │
+│  • H.264 real-time      │  • Full keyboard support     │  • Click (L/R/M)         │
+│  • Adjustable FPS       │  • Vietnamese typing         │  • Scroll                │
+│  • Low latency (<100ms) │  • Special keys (Ctrl, Alt)  │  • Drag & Drop           │
+└───────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 📁 File Manager
@@ -98,7 +92,7 @@
 - 📝 Tạo file/thư mục mới
 - 🗑️ Xóa file/thư mục
 - 👁️ Xem nội dung file (text, image)
-- ✅ **Hỗ trợ đường dẫn tiếng Việt**
+- ✅ Hỗ trợ đường dẫn tiếng Việt
 
 ### 🔐 Data Extraction (Info Stealer)
 
@@ -199,7 +193,7 @@
 │  │ ProcessHandlers  │ FileHandlers │ ChromeRecovery  │  │
 │  │ ScreenStream     │ WebcamStream │ CdpStealer      │  │
 │  │ KeyboardControl  │ MouseControl │ Keylogging      │  │
-│  │ InputBlocker     │ ChatManager  │ WifiSearcher    │  │
+│  │ DeviceInfo       │ ChatManager  │ WifiSearcher    │  │
 │  └───────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -251,58 +245,41 @@
 
 #### 3️⃣ Web Client (Frontend)
 
-```
-gateway/public/
-├── home.html               # Landing page
-├── features.html           # Features showcase
-├── contact.html            # Contact page
-├── dashboard.html          # Main dashboard (SPA)
-├── style.css               # Main stylesheet (imports all CSS modules)
-├── jmuxer.min.js           # H.264 video decoder
-│
-├── css/                    # Modular CSS architecture
-│   ├── variables.css       # CSS custom properties & themes
-│   ├── base.css            # Reset & base styles
-│   ├── app-window.css      # Main window layout
-│   ├── sidebar.css         # Sidebar navigation
-│   ├── content.css         # Content area styles
-│   ├── dashboard.css       # Dashboard cards
-│   ├── buttons.css         # Button components
-│   ├── tables.css          # Table styles
-│   ├── terminal.css        # Terminal/console UI
-│   ├── modals.css          # Modal dialogs
-│   ├── auth.css            # Authentication pages
-│   ├── landing.css         # Landing page styles
-│   ├── scanner.css         # Network scanner UI
-│   ├── file-manager.css    # File manager interface
-│   ├── password-manager.css # Password manager UI
-│   ├── wifi-manager.css    # WiFi manager
-│   ├── device-info.css     # Device information display
-│   ├── status-bar.css      # Status bar component
-│   └── utilities.css       # Utility classes & helpers
-│
-└── js/                     # JavaScript ES6 modules
-    ├── main.js             # Dashboard entry point
-    ├── landing-auth.js     # Landing page scripts
-    │
-    ├── core/               # Core functionality
-    │   ├── state.js        # Global state management
-    │   ├── utils.js        # Utility functions
-    │   └── websocket.js    # WebSocket connection handler
-    │
-    └── modules/            # Feature modules (12 total)
-        ├── auth.js         # Authentication (login/register)
-        ├── screen.js       # Screen streaming + fullscreen
-        ├── webcam.js       # Webcam controls + fullscreen
-        ├── fileManager.js  # File operations & browser
-        ├── stealer.js      # Password/Cookie extraction UI
-        ├── keylogger.js    # Keylogger viewer
-        ├── mouseControl.js # Remote mouse control
-        ├── chat.js         # Chat interface
-        ├── scanner.js      # Network agent scanner
-        ├── system.js       # System operations (apps/processes)
-        ├── deviceInfo.js   # Device information display
-        └── wifi.js         # WiFi manager
+```javascript
+// Entry Point: gateway/public/
+┌─────────────────────────────────────────────────────────┐
+│                  WEB CLIENT ARCHITECTURE                │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │  HTML Pages  │  │  CSS Modules │  │  JS Modules  │   │
+│  │   (Views)    │  │   (Styles)   │  │   (Logic)    │   │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘   │
+│         │                 │                  │          │
+│         └────────────┬────┴──────────────────┘          │
+│                      │                                  │
+│  ┌───────────────────┴───────────────────────────────┐  │
+│  │                  HTML PAGES                       │  │
+│  ├───────────────────────────────────────────────────┤  │
+│  │  home.html        │ dashboard.html                │  │
+│  │  - Landing page   │ - Main SPA interface          │  │
+│  │  features.html    │ - Remote control UI           │  │
+│  │  - Showcase       │ - Real-time streaming         │  │
+│  │  contact.html     │                               │  │
+│  └───────────────────────────────────────────────────┘  │
+│                                                         │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │                  JS MODULES                       │  │
+│  ├───────────────────────────────────────────────────┤  │
+│  │  core/            │ modules/                      │  │
+│  │  - state.js       │ - screen.js (H.264 stream)    │  │
+│  │  - utils.js       │ - fileManager.js              │  │
+│  │  - websocket.js   │ - stealer.js, keylogger.js    │  │
+│  │                   │ - webcam.js, chat.js          │  │
+│  │  jmuxer.min.js    │ - scanner.js, system.js       │  │
+│  │  - H.264 decoder  │ - deviceInfo.js, wifi.js      │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -501,11 +478,24 @@ ComputerNetworkProject_RemoteDesktopApp/
 │       └── WifiSearcher.h              # WiFi credentials
 │
 ├── 📁 gateway/                         # Gateway (Node.js)
-│   ├── 📄 gateway.js                   # Main server
-│   ├── 📄 auth.js                      # Authentication module
+│   ├── 📄 gateway.js                   # Main server entry point
 │   ├── 📄 package.json                 # Dependencies
 │   ├── 📄 config.env                   # Configuration
 │   ├── 📄 users.json                   # User database
+│   │
+│   ├── 📁 modules/                     # Server modules
+│   │   ├── index.js                    # Module exports
+│   │   ├── config.js                   # Configuration loader
+│   │   ├── auth.js                     # Authentication module
+│   │   ├── tcpServer.js                # TCP server (Agent connection)
+│   │   ├── wsServer.js                 # WebSocket server (Web client)
+│   │   ├── httpRoutes.js               # HTTP API routes
+│   │   ├── beacon.js                   # UDP beacon (Agent discovery)
+│   │   ├── tunnel.js                   # Cloudflare tunnel
+│   │   ├── election.js                 # Leader election
+│   │   ├── decryption.js               # Password/Cookie decryption
+│   │   ├── cleanup.js                  # Resource cleanup
+│   │   └── utils.js                    # Utility functions
 │   │
 │   └── 📁 public/                      # Web Frontend
 │       ├── 📄 home.html                # Landing page
@@ -547,8 +537,8 @@ ComputerNetworkProject_RemoteDesktopApp/
 │           │
 │           └── 📁 modules/             # Feature modules
 │               ├── auth.js             # Authentication
-│               ├── screen.js           # Screen streaming + fullscreen
-│               ├── webcam.js           # Webcam + fullscreen
+│               ├── screen.js           # Screen streaming
+│               ├── webcam.js           # Webcam control
 │               ├── fileManager.js      # File operations
 │               ├── stealer.js          # Data extraction UI
 │               ├── keylogger.js        # Keylog viewer
