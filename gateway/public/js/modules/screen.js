@@ -6,6 +6,7 @@
 import { $ } from '../core/utils.js';
 
 let jmuxer = null;
+let keepAliveInterval = null;
 
 // Khởi tạo Player
 function initMuxer() {
@@ -24,6 +25,34 @@ function initMuxer() {
         fps: 20,
         debug: false
     });
+    
+    // Bắt đầu keep-alive interval để tránh browser throttle video khi fullscreen
+    startKeepAlive();
+}
+
+// Keep video alive - tránh browser throttle khi fullscreen
+function startKeepAlive() {
+    stopKeepAlive();
+    keepAliveInterval = setInterval(() => {
+        const videoEl = $('#stream-video');
+        if (videoEl && !videoEl.classList.contains('hidden')) {
+            // Nếu video bị pause do browser throttle, play lại
+            if (videoEl.paused) {
+                videoEl.play().catch(() => {});
+            }
+            // Trigger một small update để giữ video active
+            if (document.fullscreenElement && videoEl.readyState >= 2) {
+                videoEl.currentTime = videoEl.currentTime;
+            }
+        }
+    }, 1000);
+}
+
+function stopKeepAlive() {
+    if (keepAliveInterval) {
+        clearInterval(keepAliveInterval);
+        keepAliveInterval = null;
+    }
 }
 
 export function handleScreenshotResult(base64) {
@@ -75,6 +104,9 @@ export function handleVideoChunk(base64) {
 }
 
 export function resetScreenUI() {
+    // Dừng keep-alive trước
+    stopKeepAlive();
+    
     if (jmuxer) {
         try {
             jmuxer.destroy();
@@ -107,8 +139,14 @@ export function resetScreenUI() {
 // Toggle fullscreen for screen display
 export function toggleScreenFullscreen() {
     const displayArea = $('#capture-display-area');
+    const videoEl = $('#stream-video');
     
     if (!document.fullscreenElement) {
+        // Trước khi vào fullscreen, đảm bảo video đang play
+        if (videoEl && !videoEl.paused) {
+            videoEl.play().catch(() => {});
+        }
+        
         displayArea.requestFullscreen().catch(err => {
             console.error('Error enabling fullscreen:', err);
         });
@@ -136,4 +174,15 @@ function updateFullscreenIcon() {
 // Listen for fullscreen changes
 document.addEventListener('fullscreenchange', () => {
     updateFullscreenIcon();
+    
+    // Workaround: Khi vào/ra fullscreen, đảm bảo video vẫn play
+    const videoEl = $('#stream-video');
+    if (videoEl && !videoEl.classList.contains('hidden')) {
+        // Force video tiếp tục play sau khi fullscreen change
+        setTimeout(() => {
+            if (videoEl.paused) {
+                videoEl.play().catch(() => {});
+            }
+        }, 100);
+    }
 });

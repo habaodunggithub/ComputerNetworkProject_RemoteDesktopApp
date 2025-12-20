@@ -6,6 +6,39 @@
 import { state } from '../core/state.js';
 import { $ } from '../core/utils.js';
 
+let keepAliveInterval = null;
+
+// Keep webcam alive - tránh browser throttle khi fullscreen
+function startKeepAlive() {
+    stopKeepAlive();
+    keepAliveInterval = setInterval(() => {
+        const streamImg = $('#webcam-stream-img');
+        const videoOut = $('#webcam-video-output');
+        
+        // Nếu đang stream và ở fullscreen, giữ cho element active
+        if (document.fullscreenElement) {
+            if (streamImg && !streamImg.classList.contains('hidden')) {
+                // Trigger reflow nhẹ để giữ image active
+                streamImg.style.opacity = '0.999';
+                setTimeout(() => { streamImg.style.opacity = '1'; }, 10);
+            }
+            if (videoOut && !videoOut.classList.contains('hidden') && videoOut.paused === false) {
+                // Giữ video active
+                if (videoOut.readyState >= 2) {
+                    videoOut.currentTime = videoOut.currentTime;
+                }
+            }
+        }
+    }, 1000);
+}
+
+function stopKeepAlive() {
+    if (keepAliveInterval) {
+        clearInterval(keepAliveInterval);
+        keepAliveInterval = null;
+    }
+}
+
 export function handleWebcamStatus(msg) {
     const webcamStatus = $('#webcam-status');
     const webcamPlaceholder = $('#webcam-placeholder');
@@ -85,9 +118,17 @@ export function handleWebcamFrame(base64) {
     const img = $('#webcam-stream-img');
     img.classList.remove('hidden');
     img.src = "data:image/jpeg;base64," + base64;
+    
+    // Bắt đầu keep-alive nếu chưa có
+    if (!keepAliveInterval) {
+        startKeepAlive();
+    }
 }
 
 export function clearWebcamStreamUI() {
+    // Dừng keep-alive trước
+    stopKeepAlive();
+    
     const img = $('#webcam-stream-img');
     img.src = "";
     img.classList.add('hidden');
@@ -111,8 +152,14 @@ export function clearWebcamStreamUI() {
 // Toggle fullscreen for webcam display
 export function toggleWebcamFullscreen() {
     const displayArea = $('#webcam-display-area');
+    const videoOut = $('#webcam-video-output');
     
     if (!document.fullscreenElement) {
+        // Đảm bảo video đang play trước khi vào fullscreen
+        if (videoOut && !videoOut.paused) {
+            videoOut.play().catch(() => {});
+        }
+        
         displayArea.requestFullscreen().catch(err => {
             console.error('Error enabling fullscreen:', err);
         });
@@ -140,4 +187,21 @@ function updateFullscreenIcon() {
 // Listen for fullscreen changes
 document.addEventListener('fullscreenchange', () => {
     updateFullscreenIcon();
+    
+    // Workaround: Khi vào/ra fullscreen, đảm bảo stream vẫn hoạt động
+    const streamImg = $('#webcam-stream-img');
+    const videoOut = $('#webcam-video-output');
+    
+    setTimeout(() => {
+        if (streamImg && !streamImg.classList.contains('hidden')) {
+            // Force refresh image nếu đang stream
+            const currentSrc = streamImg.src;
+            if (currentSrc) {
+                streamImg.src = currentSrc;
+            }
+        }
+        if (videoOut && !videoOut.classList.contains('hidden') && videoOut.paused) {
+            videoOut.play().catch(() => {});
+        }
+    }, 100);
 });
