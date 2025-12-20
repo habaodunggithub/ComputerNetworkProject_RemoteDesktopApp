@@ -11,6 +11,17 @@
 .terminal-header .dot { cursor: default; }
 pre { flex: 1; padding: 16px; overflow: auto; margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
 
+/* Keylogger Output - Scrollbar Styling */
+#keylog-output {
+    flex: 500px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+#keylog-output::-webkit-scrollbar { width: 8px; }
+#keylog-output::-webkit-scrollbar-track { background: #1e1e1e; border-radius: 4px; }
+#keylog-output::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+#keylog-output::-webkit-scrollbar-thumb:hover { background: #00ff00; }
+
 #capture-display-area, #webcam-display-area {
     flex: 1; display: flex; justify-content: center; align-items: center;
     background: rgba(0,0,0,0.03); overflow: hidden; padding: 20px; margin: 0 32px 24px 32px;

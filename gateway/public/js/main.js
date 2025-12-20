@@ -18,6 +18,7 @@ import { clearWebcamStreamUI, toggleWebcamFullscreen } from './modules/webcam.js
 import { initChat, resetChat } from './modules/chat.js';
 import { initWifiManager, requestWifiScan } from './modules/wifi.js';
 import { closeHistoryModal, exportHistoryCSV, initStealer } from './modules/stealer.js';
+import { resetWindowFrameIndex } from './modules/keylogger.js';
 
 // Theme is initialized inline in HTML to prevent flash
 
@@ -835,6 +836,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if ($('#btn-clear-keylog')) $('#btn-clear-keylog').onclick = () => {
         $('#keylog-output').textContent = 'Cleared.';
         state.isKeylogClean = true;
+        resetWindowFrameIndex(); // Reset vị trí khung cửa sổ
     };
 
     // --- Device Info Events ---

