@@ -125,11 +125,12 @@ function startElection() {
         }
     });
     
+    console.log(`[Election] Oldest gateway: ${oldestGateway.id} (started: ${new Date(oldestGateway.startTime).toLocaleTimeString()})`);
+    
     if (oldestGateway.id === GATEWAY_ID) {
         becomeLeader();
     } else {
-        currentLeader = oldestGateway.id;
-        console.log(`[Election] Leader is: ${oldestGateway.id}`);
+        console.log(`[Election] Yielding to older gateway: ${oldestGateway.id}`);
         becomeFollower(oldestGateway.id);
     }
 }
@@ -151,11 +152,17 @@ function becomeLeader() {
 }
 
 function becomeFollower(leaderId) {
-    if (!isLeader) return;
+    // Cập nhật currentLeader dù có phải leader hay không
+    currentLeader = leaderId;
+    
+    if (!isLeader) {
+        // Đã là follower rồi, chỉ cập nhật leader mới
+        console.log(`[Election] 📡 Current leader: ${leaderId}`);
+        return;
+    }
     
     isLeader = false;
-    currentLeader = leaderId;
-    console.log(`\n[Election] 📡 Running as FOLLOWER (Leader: ${leaderId})`);
+    console.log(`\n[Election] 📡 Stepping down to FOLLOWER (Leader: ${leaderId})`);
     console.log(`[Election] This gateway is on STANDBY mode\n`);
 }
 
