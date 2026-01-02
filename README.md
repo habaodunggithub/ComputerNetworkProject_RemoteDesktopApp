@@ -7,7 +7,7 @@
 [![C++](https://img.shields.io/badge/C++-17-blue.svg?style=flat&logo=cplusplus)](https://isocpp.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg?style=flat&logo=node.js)](https://nodejs.org/)
 [![Windows](https://img.shields.io/badge/Platform-Windows-0078D6.svg?style=flat&logo=windows)](https://www.microsoft.com/windows)
-[![License](https://img.shields.io/badge/License-Educational-orange.svg?style=flat)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
   <img src="https://img.shields.io/badge/FFmpeg-007808?style=for-the-badge&logo=ffmpeg&logoColor=white" alt="FFmpeg"/>
@@ -23,6 +23,14 @@
 [Sử dụng](#-hướng-dẫn-sử-dụng) •
 [Kiến trúc](#-kiến-trúc-hệ-thống) •
 [API](#-api-reference)
+
+---
+
+> [!WARNING]
+> **🎓 EDUCATIONAL PROJECT ONLY**
+> 
+> Dự án này được phát triển với mục đích **giáo dục và nghiên cứu** cho môn học Mạng Máy Tính.
+> Chỉ sử dụng trên hệ thống bạn sở hữu hoặc có phép. Việc sử dụng trái phép là **vi phạm pháp luật**.
 
 </div>
 
@@ -781,16 +789,9 @@ Chúng tôi hoan nghênh mọi đóng góp! Vui lòng:
 
 ## 📄 Giấy phép
 
-```
-MIT License
+Dự án này được phát hành dưới [Giấy phép MIT](LICENSE) - xem file [LICENSE](LICENSE) để biết chi tiết.
 
-Copyright (c) 2024-2025
-
-Dự án này được phát triển với mục đích GIÁO DỤC và NGHIÊN CỨU.
-Việc sử dụng cho mục đích bất hợp pháp là NGHIÊM CẤM.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
-```
+**Lưu ý quan trọng**: Dự án được phát triển cho **mục đích giáo dục và nghiên cứu**. Xem phần [Disclaimer](#️-disclaimer) để biết thêm chi tiết về trách nhiệm sử dụng.
 
 ---
 

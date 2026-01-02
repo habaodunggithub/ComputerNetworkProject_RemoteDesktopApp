@@ -2,6 +2,7 @@
   "name": "gateway-remote",
   "version": "1.0.0",
   "description": "Remote Control Gateway",
+  "license": "MIT",
   "main": "gateway.js",
   "bin": "gateway.js",
   "scripts": {
